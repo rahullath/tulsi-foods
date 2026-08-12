@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block body %}
+<header class="topbar">
+  <div>
+    <h1>Today's menu</h1>
+    <p class="sub" id="day">{{ "now" }}</p>
+    <div class="admin-bar">
+      <button id="repeat-yesterday">Repeat yesterday</button>
+      <span id="save-state"></span>
+    </div>
+  </div>
+</header>
+
+<main id="admin-main">
+  {% for g in groups %}
+  <section class="group">
+    <h2>{{ g["group"] }}</h2>
+    <ul class="toggle-list">
+      {% for it in g["items"] %}
+      <li class="toggle-row" data-id="{{ it.id }}">
+        <label class="toggle">
+          <input type="checkbox" class="avail-check" data-id="{{ it.id }}">
+          <span class="slider"></span>
+        </label>
+        <span class="tname">{{ it.name }}</span>
+        <span class="tprice">₹{{ it.price }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</main>
+
+<script src="/static/admin.js"></script>
+{% endblock %}

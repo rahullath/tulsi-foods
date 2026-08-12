@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+data/*.db
+data/*.log
+data/whatsapp.log
+*.csv
+*.xlsx
+*.bak

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block body %}
+<header class="topbar">
+  <div>
+    <h1>Tulsi Foods</h1>
+    <p class="sub">Order direct — no app, no platform fees. Today's menu.</p>
+    <p class="tip">Tip: order before 11 AM for lunch and 5 PM for dinner to skip the rush.</p>
+  </div>
+</header>
+
+<main>
+  <nav class="group-nav">
+    {% for g in groups %}<a href="#g-{{ loop.index }}" class="chip">{{ g["group"] }}</a>{% endfor %}
+  </nav>
+
+  {% for g in groups %}
+  <section class="group" id="g-{{ loop.index }}">
+    <h2>{{ g["group"] }}</h2>
+    <ul class="items">
+      {% for it in g["items"] %}
+      <li class="item{% if not it.available %} off{% endif %}" data-id="{{ it.id }}">
+        <div class="info">
+          <span class="name">{{ it.name }}{% if it.popular %} <span class="pop">popular</span>{% endif %}</span>
+          <span class="price">₹{{ it.price }}</span>
+        </div>
+        {% if it.available %}
+        <div class="stepper" data-id="{{ it.id }}">
+          <button data-act="dec" aria-label="decrease">−</button>
+          <span class="qty" data-role="qty">0</span>
+          <button data-act="inc" aria-label="increase">+</button>
+        </div>
+        {% else %}
+        <span class="off-tag">not today</span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</main>
+
+<div id="cart" class="cart hidden">
+  <div class="cart-head">
+    <span>Your order</span>
+    <button id="cart-toggle" aria-label="toggle cart">▴</button>
+  </div>
+  <div id="cart-body">
+    <ul id="cart-items"></ul>
+    <div class="row"><span>Subtotal</span><span id="subtotal">₹0</span></div>
+    <div class="row" id="fee-row" hidden><span>Delivery fee</span><span id="delivery-fee">₹0</span></div>
+    <div class="row total"><span>Total</span><span id="total">₹0</span></div>
+
+    <form id="checkout">
+      <label>Name <input name="name" required placeholder="Your name"></label>
+      <label>Phone <input name="phone" required placeholder="10-digit number" pattern="[0-9]{10,}"></label>
+      <label>Order type
+        <select name="order_type">
+          <option value="delivery">Delivery</option>
+          <option value="pickup">Pickup</option>
+        </select>
+      </label>
+      <label id="km-wrap">Distance from restaurant
+        <select name="km">
+          <option value="2">≤ 3 km</option>
+          <option value="4">3–5 km</option>
+          <option value="6">5–7 km</option>
+        </select>
+      </label>
+      <label>Address <textarea name="address" rows="2" placeholder="Area, street, landmark"></textarea></label>
+      <label>Payment
+        <select name="payment_method">
+          <option value="cod">Cash on delivery</option>
+          <option value="upi">UPI</option>
+        </select>
+      </label>
+      <label>Note <input name="instructions" placeholder="e.g. no coriander, call before delivery"></label>
+      <button type="submit" id="place-order">Place order</button>
+      <p id="order-msg"></p>
+    </form>
+  </div>
+</div>
+
+<button id="cart-fab" class="fab hidden">Cart (<span id="fab-count">0</span>)</button>
+
+<script src="/static/app.js"></script>
+{% endblock %}
