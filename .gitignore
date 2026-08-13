@@ -8,3 +8,4 @@ data/whatsapp.log
 *.csv
 *.xlsx
 *.bak
+session-*.md
