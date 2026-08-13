@@ -11,11 +11,39 @@ import logging
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
-from .config import WHATSAPP_APP_SECRET, WHATSAPP_VERIFY_TOKEN
+from .config import WHATSAPP_APP_SECRET, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN
 from .whatsapp import client, conversation
 
 log = logging.getLogger("webhook")
 router = APIRouter(prefix="/webhook", tags=["webhook"])
+
+
+def _extract_messages(body: dict) -> list[dict]:
+    out = []
+    for entry in body.get("entry", []):
+        for change in entry.get("changes", []):
+            value = change.get("value", {})
+            for msg in value.get("messages", []):
+                if msg.get("from") == WHATSAPP_PHONE_ID:
+                    continue  # echo of a message WE sent / mom's app reply — never self-reply
+                m = msg.get("text", {}).get("body")
+                if msg.get("type") == "interactive":
+                    intr = msg.get("interactive", {})
+                    if intr.get("type") == "button_reply":
+                        m = intr.get("button_reply", {}).get("id")
+                    elif intr.get("type") == "list_reply":
+                        m = intr.get("list_reply", {}).get("id")
+                if m is None:
+                    continue
+                profile_name = ""
+                for contact in value.get("contacts", []):
+                    profile_name = contact.get("profile", {}).get("name", "")
+                out.append({
+                    "wa_id": msg.get("from", ""),
+                    "text": str(m),
+                    "profile_name": profile_name,
+                })
+    return out
 
 
 def _verify_signature(raw_body: bytes, signature: str | None) -> bool:
@@ -36,32 +64,6 @@ def verify(
     if hub_mode == "subscribe" and hub_token == WHATSAPP_VERIFY_TOKEN:
         return PlainTextResponse(hub_challenge or "")
     return PlainTextResponse("Verification failed", status_code=403)
-
-
-def _extract_messages(body: dict) -> list[dict]:
-    out = []
-    for entry in body.get("entry", []):
-        for change in entry.get("changes", []):
-            value = change.get("value", {})
-            for msg in value.get("messages", []):
-                m = msg.get("text", {}).get("body")
-                if msg.get("type") == "interactive":
-                    intr = msg.get("interactive", {})
-                    if intr.get("type") == "button_reply":
-                        m = intr.get("button_reply", {}).get("id")
-                    elif intr.get("type") == "list_reply":
-                        m = intr.get("list_reply", {}).get("id")
-                if m is None:
-                    continue
-                profile_name = ""
-                for contact in value.get("contacts", []):
-                    profile_name = contact.get("profile", {}).get("name", "")
-                out.append({
-                    "wa_id": msg.get("from", ""),
-                    "text": str(m),
-                    "profile_name": profile_name,
-                })
-    return out
 
 
 @router.post("/whatsapp")
