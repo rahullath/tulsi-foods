@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS wa_sessions (
     state       TEXT NOT NULL DEFAULT 'root',
     cart        TEXT NOT NULL DEFAULT '{}',
     ctx         TEXT NOT NULL DEFAULT '{}',
+    human       INTEGER NOT NULL DEFAULT 0,
     updated_at  TEXT DEFAULT (datetime('now'))
 );
 """
@@ -29,8 +30,53 @@ def _conn() -> sqlite3.Connection:
 def init_sessions() -> None:
     conn = _conn()
     conn.executescript(SCHEMA)
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(wa_sessions)")]
+    if "human" not in cols:
+        conn.execute("ALTER TABLE wa_sessions ADD COLUMN human INTEGER NOT NULL DEFAULT 0")
     conn.commit()
     conn.close()
+
+
+def is_human(wa_id: str) -> bool:
+    """True when a human has taken over this chat (bot stays quiet)."""
+    conn = _conn()
+    row = conn.execute("SELECT human FROM wa_sessions WHERE wa_id=?", (wa_id,)).fetchone()
+    conn.close()
+    return bool(row and row["human"])
+
+
+def set_human(wa_id: str, value: bool) -> None:
+    conn = _conn()
+    conn.execute(
+        "INSERT INTO wa_sessions(wa_id, human) VALUES(?,?) "
+        "ON CONFLICT(wa_id) DO UPDATE SET human=excluded.human",
+        (wa_id, 1 if value else 0),
+    )
+    conn.commit()
+    conn.close()
+
+
+def all_sessions() -> list[dict]:
+    """Recent conversations for the admin panel."""
+    conn = _conn()
+    rows = conn.execute(
+        "SELECT wa_id, human, ctx, updated_at FROM wa_sessions "
+        "ORDER BY updated_at DESC"
+    ).fetchall()
+    conn.close()
+    out = []
+    for r in rows:
+        try:
+            ctx = json.loads(r["ctx"])
+        except ValueError:
+            ctx = {}
+        out.append({
+            "wa_id": r["wa_id"],
+            "human": bool(r["human"]),
+            "name": ctx.get("profile_name") or ctx.get("name") or "",
+            "updated_at": r["updated_at"],
+        })
+    return out
 
 
 def load(wa_id: str) -> dict:

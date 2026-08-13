@@ -108,6 +108,39 @@ def main():
         r = c.post("/webhook/whatsapp", json=payload)
         check("webhook message accepted", r.status_code == 200, r.status_code)
 
+        # human takeover: mom replies from the Business app -> echo webhook
+        echo = {
+            "entry": [{"changes": [{"value": {
+                "smb_message_echoes": [{
+                    "id": "919888888888",
+                    "messages": [{"from": "999888777666", "to": "919888888888",
+                                  "type": "text", "id": "echo-1"}],
+                }],
+            }}]}],
+        }
+        r = c.post("/webhook/whatsapp", json=echo)
+        check("echo accepted", r.status_code == 200, r.status_code)
+
+        r = c.get("/api/admin/conversations", headers={"X-Admin-Token": TOKEN})
+        conv = next((x for x in r.json()["conversations"] if x["wa_id"] == "919888888888"), None)
+        check("echo marks chat human", conv is not None and conv["human"] is True, conv)
+
+        # after takeover the bot must not reply to that customer
+        log_path = Path(__file__).resolve().parent.parent / "data" / "whatsapp.log"
+        log_before = log_path.read_text()
+        r = c.post("/webhook/whatsapp", json=payload)
+        check("message while human-owned accepted", r.status_code == 200, r.status_code)
+        log_after = log_path.read_text()
+        check("bot silent after takeover", log_after == log_before, log_after[-200:])
+
+        # admin can switch back to Bot
+        r = c.post("/api/admin/conversations/919888888888/human",
+                   json={"human": False}, headers={"X-Admin-Token": TOKEN})
+        check("toggle back to bot", r.status_code == 200 and r.json()["human"] is False, r.json())
+        r = c.post("/webhook/whatsapp", json=payload)
+        check("message after toggle accepted", r.status_code == 200, r.status_code)
+        check("bot replies again", log_path.read_text() != log_after, "")
+
     print("whatsapp conversation flow")
     from app import db
     from app.whatsapp import conversation, sessions

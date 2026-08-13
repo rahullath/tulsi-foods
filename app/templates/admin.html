@@ -12,6 +12,14 @@
 </header>
 
 <main id="admin-main">
+  <section class="group" id="convos-section">
+    <h2>WhatsApp conversations</h2>
+    <p class="sub">When a chat is set to <strong>Human</strong>, the bot stops replying there
+      (use this after answering someone personally).</p>
+    <ul id="convos" class="toggle-list"></ul>
+    <p id="convos-empty" class="sub" hidden>No conversations yet.</p>
+  </section>
+
   {% for g in groups %}
   <section class="group">
     <h2>{{ g["group"] }}</h2>

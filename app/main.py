@@ -90,6 +90,28 @@ def admin_repeat_yesterday(x_admin_token: str | None = Header(None)):
     return {"ok": True, "copied_from": last, "copied_items": n}
 
 
+# ---- WhatsApp conversations (admin) ----
+
+class HumanIn(BaseModel):
+    human: bool
+
+
+@app.get("/api/admin/conversations")
+def admin_conversations(x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    from .whatsapp import sessions as wa_sessions
+    return {"conversations": wa_sessions.all_sessions()}
+
+
+@app.post("/api/admin/conversations/{wa_id}/human")
+def admin_conversation_human(wa_id: str, body: HumanIn,
+                             x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    from .whatsapp import sessions as wa_sessions
+    wa_sessions.set_human(wa_id, body.human)
+    return {"wa_id": wa_id, "human": body.human, "ok": True}
+
+
 # ---- orders ----
 
 class OrderItemIn(BaseModel):

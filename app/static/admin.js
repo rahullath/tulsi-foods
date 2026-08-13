@@ -67,4 +67,47 @@
   });
 
   load().catch((err) => { saveState.textContent = "Load failed: " + err.message; });
+
+  // WhatsApp conversations: per-chat bot on/off
+  const convos = document.getElementById("convos");
+  const convosEmpty = document.getElementById("convos-empty");
+
+  async function loadConvos() {
+    const d = await api("/api/admin/conversations");
+    convosEmpty.hidden = d.conversations.length > 0;
+    convos.innerHTML = "";
+    for (const c of d.conversations) {
+      const li = document.createElement("li");
+      li.className = "toggle-row";
+      const btn = document.createElement("button");
+      btn.className = "human-btn";
+      btn.textContent = c.human ? "Human" : "Bot";
+      btn.dataset.human = c.human ? "1" : "0";
+      btn.addEventListener("click", async () => {
+        const next = !(btn.dataset.human === "1");
+        btn.disabled = true;
+        try {
+          await api(`/api/admin/conversations/${encodeURIComponent(c.wa_id)}/human`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ human: next }),
+          });
+          btn.dataset.human = next ? "1" : "0";
+          btn.textContent = next ? "Human" : "Bot";
+        } finally {
+          btn.disabled = false;
+        }
+      });
+      const name = document.createElement("span");
+      name.className = "tname";
+      name.textContent = c.name ? `${c.name} · ${c.wa_id}` : c.wa_id;
+      const when = document.createElement("span");
+      when.className = "tprice";
+      when.textContent = c.updated_at || "";
+      li.append(btn, name, when);
+      convos.append(li);
+    }
+  }
+
+  loadConvos().catch(() => {});
 })();

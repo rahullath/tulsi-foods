@@ -121,6 +121,13 @@ Meta Dashboard → WhatsApp → Configuration → Webhook:
 when → payment → confirm), `STATUS`, `REORDER` (repeat last order), `HELP`, `YES`/`EDIT`/`CANCEL`,
 and a one-time "add a Masala Chai?" nudge on the first item.
 
+## Human takeover (WhatsApp Coexistence)
+
+When mom replies from the WhatsApp Business app, Meta mirrors those messages to the
+webhook as `smb_message_echoes`. The bot detects them and marks that chat **human-owned**,
+then stays silent there so the customer doesn't get double replies. Admins can flip any chat
+between **Bot / Human** in the admin panel (`/api/admin/conversations`, toggle in `/admin`).
+
 ## Delivery rules (from spec §7, real distance data)
 
 | Zone | Distance | Fee | Min order |
@@ -145,8 +152,9 @@ Free delivery above ₹700. **No order flow for desserts; pre-order is a theme, 
 ## Current status / next steps
 
 - [x] Data analysis + spec v2 (backup: `spec.v1.bak.md`)
-- [x] Web ordering + admin + availability (37/37 smoke checks)
+- [x] Web ordering + admin + availability (42/42 smoke checks)
 - [x] WhatsApp bot (menu → cart → checkout → order → status → reorder), webhook wired
+- [x] Human takeover: Coexistence echoes auto-pause the bot; admin per-chat Bot/Human toggle
 - [x] Live on Railway at api.tulsifoods.app; Meta webhook connected (test phase)
 - [ ] **Production WhatsApp switch** (tomorrow, mom must be awake for the OTP):
       1. Permanent system-user token (test token expires ~24h)

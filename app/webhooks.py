@@ -12,10 +12,27 @@ from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
 from .config import WHATSAPP_APP_SECRET, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN
-from .whatsapp import client, conversation
+from .whatsapp import client, conversation, sessions
 
 log = logging.getLogger("webhook")
 router = APIRouter(prefix="/webhook", tags=["webhook"])
+
+
+def _echo_customers(body: dict) -> list[str]:
+    """Customer numbers whose chats the business answered from the WhatsApp
+    Business app (Coexistence `smb_message_echoes` webhook). Once a human has
+    replied to a chat, the bot stays out of it."""
+    customers = set()
+    for entry in body.get("entry", []):
+        for change in entry.get("changes", []):
+            value = change.get("value", {})
+            for thread in value.get("smb_message_echoes", []):
+                tid = thread.get("id")
+                for msg in thread.get("messages", []):
+                    cust = msg.get("to") or tid or msg.get("from")
+                    if cust and cust != WHATSAPP_PHONE_ID:
+                        customers.add(str(cust))
+    return list(customers)
 
 
 def _extract_messages(body: dict) -> list[dict]:
@@ -76,7 +93,13 @@ async def inbound(request: Request, x_hub_signature_256: str | None = Header(Non
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid JSON")
     log.debug("webhook payload: %s", body)
+    for cust in _echo_customers(body):
+        sessions.set_human(cust, True)
+        log.info("human took over chat for %s", cust)
     for msg in _extract_messages(body):
+        if sessions.is_human(msg["wa_id"]):
+            log.info("bot paused for %s (human-owned)", msg["wa_id"])
+            continue
         try:
             replies = conversation.handle(msg["wa_id"], msg["text"], msg["profile_name"])
             for reply in replies:
