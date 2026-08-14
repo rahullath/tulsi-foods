@@ -35,6 +35,11 @@ def admin_page(request: Request):
     )
 
 
+@app.get("/privacy-policy", response_class=HTMLResponse)
+def privacy_page(request: Request):
+    return templates.TemplateResponse(request, "privacy.html", {})
+
+
 # ---- menu API ----
 
 @app.get("/api/menu")

@@ -27,6 +27,9 @@ def main():
         r = c.get("/admin")
         check("GET /admin renders", r.status_code == 200 and b"Today" in r.content, r.status_code)
 
+        r = c.get("/privacy-policy")
+        check("GET /privacy-policy renders", r.status_code == 200 and b"Privacy Policy" in r.content, r.status_code)
+
         r = c.get("/api/menu")
         data = r.json()
         check("menu has 10 groups", len(data["groups"]) == 10, len(data["groups"]))
