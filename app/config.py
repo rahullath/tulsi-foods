@@ -38,7 +38,7 @@ WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN", "")
 WHATSAPP_PHONE_ID = os.environ.get("WHATSAPP_PHONE_ID", "")
 WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN", "tulsi_verify")
 WHATSAPP_APP_SECRET = os.environ.get("WHATSAPP_APP_SECRET", "")
-WHATSAPP_GRAPH_VERSION = "v23.0"
+WHATSAPP_GRAPH_VERSION = "v26.0"
 WHATSAPP_GRAPH_URL = "https://graph.facebook.com"
 
 # If set, the bot appends replies here instead of sending to WhatsApp (dev mode)
