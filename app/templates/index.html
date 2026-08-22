@@ -1,14 +1,36 @@
 {% extends "base.html" %}
 {% block body %}
-<header class="topbar">
-  <div>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="badges">
+      <span class="badge badge-veg"><span class="veg-mark" aria-hidden="true"></span> 100% Pure Veg</span>
+      <span class="badge badge-woman">Woman-Owned</span>
+    </div>
     <h1>Tulsi Foods</h1>
-    <p class="sub">Order direct — no app, no platform fees. Today's menu.</p>
+    <p class="sub">Home-style Mylapore cooking, ordered direct — no app, no platform fees.</p>
+    <div class="hero-cta">
+      <a class="btn-whatsapp" href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.14h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.26-8.24 2.21 0 4.28.86 5.84 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.55-3.7 8.25-8.25 8.25zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.97-.14.16-.29.18-.53.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.24-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.47-.01a.9.9 0 0 0-.65.31c-.23.24-.86.85-.86 2.06 0 1.22.88 2.4 1 2.56.12.16 1.73 2.64 4.19 3.7.59.25 1.04.4 1.4.52.59.19 1.12.16 1.54.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.08.14-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
+        Order on WhatsApp
+      </a>
+      <a class="btn-ghost" href="#menu">See today's menu ↓</a>
+    </div>
     <p class="tip">Tip: order before 11 AM for lunch and 5 PM for dinner to skip the rush.</p>
+  </div>
+  <div class="hero-gallery" aria-hidden="true">
+    <div class="img-slot img-slot-1"><img src="/static/img/hero-1.jpg" alt="" loading="lazy" onerror="this.parentElement.classList.add('img-empty');this.remove()"></div>
+    <div class="img-slot img-slot-2"><img src="/static/img/hero-2.jpg" alt="" loading="lazy" onerror="this.parentElement.classList.add('img-empty');this.remove()"></div>
+    <div class="img-slot img-slot-3"><img src="/static/img/hero-3.jpg" alt="" loading="lazy" onerror="this.parentElement.classList.add('img-empty');this.remove()"></div>
   </div>
 </header>
 
-<main>
+<section class="trust-strip">
+  <div class="trust-item"><span class="trust-icon">🍲</span> Cooked fresh, same day</div>
+  <div class="trust-item"><span class="trust-icon">🛵</span> Delivery across Mylapore</div>
+  <div class="trust-item"><span class="trust-icon">🤝</span> No platform markup</div>
+</section>
+
+<main id="menu">
   <nav class="group-nav">
     {% for g in groups %}<a href="#g-{{ loop.index }}" class="chip">{{ g["group"] }}</a>{% endfor %}
   </nav>
@@ -81,6 +103,12 @@
 </div>
 
 <button id="cart-fab" class="fab hidden">Cart (<span id="fab-count">0</span>)</button>
+
+<section class="how">
+  <div class="how-step"><span class="how-num">1</span> Browse today's menu, add what you like</div>
+  <div class="how-step"><span class="how-num">2</span> Enter your address &amp; place the order</div>
+  <div class="how-step"><span class="how-num">3</span> Pay on delivery or UPI — no app to install</div>
+</section>
 
 <footer class="footer">
   <p>Tulsi Foods, Mylapore, Chennai · Order direct on WhatsApp · <a href="/privacy-policy">Privacy Policy</a></p>

@@ -44,8 +44,15 @@ Repo `facebook/openapi` (MIT) has one spec: `business-messaging-api_v23.0.yaml` 
 ### 3. Meta Developer Tools MCP → feed to me
 Endpoint `https://mcp.facebook.com/devtools` (OAuth, 10 `devtools_*` tools). Lets me self-serve: verification status (`devtools_app_review`), list/test webhooks (`devtools_webhook_list/_manage/_test`), API usage/deprecations (`devtools_api_usage`), docs. Useful **while user is abroad**. Plan: add to `opencode.json` (project MCP config); one-time browser OAuth by user.
 
-### 4. Landing page: Wix AI vs Claude design
-Recommend **Claude/AI-generated static single-page site** served by FastAPI at `/` (replaces current basic home) — not Wix (domain-connect paywall, lock-in; domain on name.com can point at Railway). Structure: hero + **"Order on WhatsApp" CTA** (`wa.me/91…?text=Hi Tulsi, I'd like today's menu`), today's menu teaser (live from `/api/menu`), how-it-works, delivery zones, pure-veg + woman-owned badges, testimonials, footer + privacy link. Mobile-first, Tailwind CDN, webp images. Wix AI only if insisted (adds monthly cost + redirect).
+### 4. Landing page: Wix AI vs Claude design — **done 2026-08-22**
+Decided against Wix (domain-connect paywall, lock-in) — restyled the existing `/` page in place instead of a separate marketing page, so the ordering flow (menu→cart→checkout) stays a single page. Shipped:
+- Hero band (green gradient, `Fraunces`/`Inter` via Google Fonts) with **pure-veg mark** + **woman-owned** badges, **"Order on WhatsApp" CTA** (`wa.me/919940062840?text=Hi Tulsi, I'd like today's menu`), and a "see today's menu" anchor into the existing menu.
+- 3-image collage placeholder row (`/static/img/hero-1.jpg`, `-2.jpg`, `-3.jpg`) — gracefully falls back to a gradient card via `onerror` when files don't exist yet, so real photos (§5) can drop in later with **no code changes**.
+- Trust strip (fresh same-day, delivery zone, no platform markup) + a 3-step "how it works" block before the footer.
+- Skipped testimonials — no real customer quotes exist yet; don't fabricate them. Add once mom has a few to share.
+- Verified: 43/43 smoke suite still green, admin page (`.topbar`) untouched, screenshots checked at mobile (390px) and desktop (1280px).
+
+**Still open:** drop real photos into `app/static/img/` as `hero-1.jpg`/`hero-2.jpg`/`hero-3.jpg` (see §5); Tailwind CDN was skipped in favor of the existing hand-written `style.css` (small enough, avoids a render-blocking CDN dependency).
 
 ### 5. Food images plan
 - **Recommended:** real phone photos of ~8–12 hero dishes (thalis, paratha, dal, chai) — mom shoots during service (1-page photo checklist: daylight, plain plate, top-down, no clutter). Authentic, free, right for a mom-run kitchen; best for trust/conversion.
