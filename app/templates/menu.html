@@ -9,13 +9,13 @@
 <div id="menu-app">
   <header class="mh">
     <div class="mh-top">
-      <div class="mh-brand">
+      <a class="mh-brand" href="/">
         <img src="/static/logo.png" alt="" class="mh-logo">
         <div>
           <div class="mh-name">Tulsi Foods</div>
           <div class="mh-sub">Mylapore · pure veg</div>
         </div>
-      </div>
+      </a>
       <span class="mh-badge">Lunch</span>
     </div>
     <div class="mh-search" id="search-box">
@@ -78,8 +78,15 @@
       </div>
       <a href="#checkout" id="cart-checkout" class="cart-btn">Checkout →</a>
     </div>
-    <div class="cart-wa">or <a href="https://wa.me/919840012345?text=Hi%20Tulsi%20Foods" target="_blank">continue on WhatsApp</a></div>
+    <div class="cart-warn" id="cart-warn" hidden></div>
+    <div class="cart-wa">or <a href="https://wa.me/919940062840?text=Hi%20Tulsi%20Foods" target="_blank">continue on WhatsApp</a></div>
   </div>
+
+  <footer class="mf">
+    <a href="/">← Tulsi Foods home</a>
+    <span class="mf-sep">·</span>
+    <a href="/privacy-policy">Privacy policy</a>
+  </footer>
 </div>
 
 <style>
@@ -96,7 +103,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 /* Header */
 .mh { background: var(--g); color: #fff; padding: 16px 18px 18px; }
 .mh-top { display: flex; align-items: center; gap: 12px; }
-.mh-brand { display: flex; align-items: center; gap: 12px; flex: 1; }
+.mh-brand { display: flex; align-items: center; gap: 12px; flex: 1; text-decoration: none; color: inherit; }
 .mh-logo { width: 36px; height: 36px; background: #fff; border-radius: 50%; padding: 4px; object-fit: contain; }
 .mh-name { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; line-height: 1.1; }
 .mh-sub { font-size: 11px; opacity: .85; }
@@ -109,16 +116,18 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 /* Group nav */
 .group-nav { display: flex; gap: 8px; overflow-x: auto; padding: 12px 14px; background: var(--bg); border-bottom: 1px solid var(--line2); position: sticky; top: 0; z-index: 5; }
 .group-nav::-webkit-scrollbar { display: none; }
-.chip { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; text-decoration: none; color: var(--ink); white-space: nowrap; font-size: 13px; cursor: pointer; }
+.chip { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; text-decoration: none; color: var(--ink); white-space: nowrap; font-size: 13px; cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease; }
 .chip.active { background: var(--g); color: #fff; border-color: var(--g); }
 
 /* Menu main */
 main { flex: 1; padding: 14px; padding-bottom: 100px; }
+.group { scroll-margin-top: 64px; }
 .group h2 { font-size: 16px; margin: 20px 0 10px; color: var(--ink); font-weight: 600; }
 .group:first-child h2 { margin-top: 0; }
 
 /* Item card */
-.menu-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 12px; display: flex; gap: 12px; margin-bottom: 12px; }
+.menu-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 12px; display: flex; gap: 12px; margin-bottom: 12px; transition: box-shadow .15s ease, transform .15s ease; }
+.menu-card:hover { box-shadow: 0 4px 16px rgba(23,26,20,.08); transform: translateY(-1px); }
 .menu-card.off { opacity: .55; }
 .card-photo { width: 84px; height: 84px; flex: 0 0 auto; border-radius: 12px; background: repeating-linear-gradient(135deg, var(--line2) 0 8px, #E6E1D7 8px 16px); display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -145,6 +154,13 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .cart-btn { color: #fff; text-decoration: none; font-size: 15px; font-weight: 600; white-space: nowrap; }
 .cart-wa { text-align: center; font-size: 12px; color: var(--sub); margin-top: 10px; }
 .cart-wa a { color: var(--g); text-decoration: underline; }
+.cart-warn { text-align: center; font-size: 12px; color: #B3261E; margin-top: 8px; }
+
+/* Footer */
+.mf { padding: 18px 14px 32px; text-align: center; font-size: 12px; color: var(--sub); }
+.mf a { color: var(--g); text-decoration: none; }
+.mf a:hover { text-decoration: underline; }
+.mf-sep { margin: 0 6px; }
 
 /* Checkout overlay */
 .checkout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
@@ -161,6 +177,10 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .checkout-place:disabled { opacity: .6; cursor: not-allowed; }
 .checkout-msg { font-size: 13px; margin-top: 8px; text-align: center; }
 .checkout-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--sub); }
+.checkout-success { text-align: center; padding: 20px 4px 4px; }
+.checkout-success-icon { width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%; background: var(--g); color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; }
+.checkout-success .checkout-title { margin-bottom: 8px; }
+.checkout-success-detail { font-size: 14px; line-height: 1.6; color: var(--sub); margin-bottom: 20px; }
 
 /* Responsive */
 @media (min-width: 600px) {
@@ -172,6 +192,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 
 <script>
 (() => {
+  const CART_KEY = "tulsi_menu_cart";
   const cart = {};
   const PRICES = {};
   const NAMES = {};
@@ -179,9 +200,13 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   const cartCount = document.getElementById("cart-count");
   const cartSubtotal = document.getElementById("cart-subtotal");
   const cartGap = document.getElementById("cart-gap");
+  const cartWarn = document.getElementById("cart-warn");
   const searchInput = document.getElementById("search-input");
   const noResults = document.getElementById("no-results");
+  const menuMain = document.getElementById("menu-main");
   const MIN_ORDER = 250;
+
+  let activeCategory = "all";
 
   // Build price/name lookup
   document.querySelectorAll(".menu-card").forEach(card => {
@@ -190,6 +215,18 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     if (priceEl) PRICES[id] = parseInt(priceEl.textContent.replace(/[₹,]/g, ""));
     NAMES[id] = card.dataset.name;
   });
+
+  // Restore cart from a previous visit
+  try {
+    const saved = JSON.parse(localStorage.getItem(CART_KEY) || "{}");
+    Object.entries(saved).forEach(([id, qty]) => {
+      if (PRICES[id] !== undefined && qty > 0) cart[id] = qty;
+    });
+  } catch (_) { /* ignore corrupt storage */ }
+
+  function saveCart() {
+    try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (_) { /* storage unavailable */ }
+  }
 
   // Stepper buttons
   document.querySelectorAll(".card-stepper").forEach(stepper => {
@@ -210,6 +247,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   });
 
   function updateCart() {
+    saveCart();
+    cartWarn.hidden = true;
     const ids = Object.keys(cart);
     const count = ids.reduce((s, id) => s + cart[id], 0);
     const subtotal = ids.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
@@ -225,49 +264,63 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     } else {
       cartBar.classList.add("hidden");
     }
-    // Update stepper displays
-    document.querySelectorAll(".card-stepper").forEach(s => {
-      const id = s.dataset.id;
-      s.querySelector("[data-role=qty]").textContent = cart[id] || 0;
-    });
   }
+
+  // Apply saved cart quantities to the stepper UI on load
+  document.querySelectorAll(".card-stepper").forEach(s => {
+    const id = s.dataset.id;
+    if (cart[id]) s.querySelector("[data-role=qty]").textContent = cart[id];
+  });
+  updateCart();
+
+  // Filtering: category chips + search share one predicate so empty
+  // sections never end up with a floating, item-less heading.
+  function render() {
+    const q = searchInput.value.toLowerCase().trim();
+    let totalVisible = 0;
+    document.querySelectorAll(".group").forEach(sec => {
+      let visibleInGroup = 0;
+      sec.querySelectorAll(".menu-card").forEach(card => {
+        let visible;
+        if (q) {
+          visible = card.dataset.name.includes(q);
+        } else if (activeCategory === "all") {
+          visible = card.dataset.popular === "true";
+        } else {
+          visible = sec.id === "g-" + activeCategory;
+        }
+        card.style.display = visible ? "" : "none";
+        if (visible) visibleInGroup++;
+      });
+      sec.style.display = visibleInGroup > 0 ? "" : "none";
+      totalVisible += visibleInGroup;
+    });
+    noResults.hidden = totalVisible > 0;
+  }
+  render();
 
   // Group nav
   document.querySelectorAll(".chip").forEach(chip => {
     chip.addEventListener("click", (e) => {
       e.preventDefault();
+      searchInput.value = "";
+      activeCategory = chip.dataset.group;
       document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
       chip.classList.add("active");
-      const g = chip.dataset.group;
-      if (g === "all") {
-        // Popular: show only popular items across all groups
-        document.querySelectorAll(".group").forEach(sec => { sec.style.display = ""; });
-        document.querySelectorAll(".menu-card").forEach(card => {
-          card.style.display = card.dataset.popular === "true" ? "" : "none";
-        });
-      } else {
-        document.querySelectorAll(".group").forEach(sec => {
-          sec.style.display = sec.id === "g-" + g ? "" : "none";
-        });
-        document.querySelectorAll(".menu-card").forEach(card => { card.style.display = ""; });
-      }
+      render();
+      menuMain.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
 
-  // Search
-  searchInput.addEventListener("input", () => {
-    const q = searchInput.value.toLowerCase().trim();
-    let found = 0;
-    document.querySelectorAll(".menu-card").forEach(card => {
-      const match = !q || card.dataset.name.includes(q);
-      card.style.display = match ? "" : "none";
-      if (match) found++;
-    });
-    document.querySelectorAll(".group").forEach(sec => {
-      if (q) sec.style.display = "";
-    });
-    noResults.hidden = found > 0;
-  });
+  // Deep-link support: /menu#g-3 opens straight into that category
+  if (location.hash.startsWith("#g-")) {
+    const g = location.hash.slice(3);
+    const chip = document.querySelector(`.chip[data-group="${g}"]`);
+    if (chip) chip.click();
+  }
+
+  // Search (overrides the active category while a query is present)
+  searchInput.addEventListener("input", render);
 
   // Checkout
   document.getElementById("cart-checkout").addEventListener("click", (e) => {
@@ -276,7 +329,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     if (!ids.length) return;
     const subtotal = ids.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
     if (subtotal < MIN_ORDER) {
-      alert("Minimum order is ₹" + MIN_ORDER + ". Add ₹" + (MIN_ORDER - subtotal) + " more.");
+      cartWarn.textContent = "₹" + (MIN_ORDER - subtotal) + " more to reach the ₹" + MIN_ORDER + " minimum";
+      cartWarn.hidden = false;
       return;
     }
     openCheckout();
@@ -349,12 +403,21 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Order failed");
-        msg.style.color = "#0E7A45";
-        msg.textContent = "Order #" + data.order_id + " placed! Total: ₹" + data.total;
-        btn.textContent = "Placed ✓";
         Object.keys(cart).forEach(k => delete cart[k]);
         updateCart();
         document.querySelectorAll(".card-stepper .qty").forEach(el => el.textContent = "0");
+        overlay.querySelector(".checkout-panel").innerHTML = `
+          <button class="checkout-close" id="checkout-close-2">✕</button>
+          <div class="checkout-success">
+            <div class="checkout-success-icon">✓</div>
+            <div class="checkout-title">Order placed!</div>
+            <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}<br>We'll message you on WhatsApp with updates.</p>
+            <button class="checkout-place" id="checkout-continue">Continue browsing</button>
+          </div>
+        `;
+        const closeAndReset = () => overlay.remove();
+        overlay.querySelector("#checkout-close-2").addEventListener("click", closeAndReset);
+        overlay.querySelector("#checkout-continue").addEventListener("click", closeAndReset);
       } catch (err) {
         msg.style.color = "#B3261E";
         msg.textContent = err.message;

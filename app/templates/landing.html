@@ -9,17 +9,34 @@
 <style>
 :root { --g: #0E7A45; --sf: #E08A1E; --bg: #FBF8F2; --card: #fff; --border: #E7E1D6; --ink: #171A14; --sub: #6F7468; --line2: #EFEBE3; }
 * { box-sizing: border-box; margin: 0; }
+html { scroll-behavior: smooth; }
 body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+section[id] { scroll-margin-top: 76px; }
 
 /* Nav */
-.nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--line2); }
-.nav-brand { display: flex; align-items: center; gap: 12px; }
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--line2); position: sticky; top: 0; z-index: 30; background: var(--bg); }
+.nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
 .nav-brand img { width: 40px; height: 40px; object-fit: contain; }
 .nav-brand span { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: var(--ink); }
-.nav-links { display: flex; align-items: center; gap: 28px; font-size: 14px; color: #4A4F45; }
-.nav-links span { cursor: pointer; }
-.nav-cta { background: var(--g); color: #fff; border-radius: 999px; padding: 11px 20px; font-weight: 600; text-decoration: none; }
-.nav-cta:hover { opacity: .9; }
+.nav-links { display: flex; align-items: center; gap: 28px; font-size: 14px; }
+.nav-links a { color: #4A4F45; text-decoration: none; }
+.nav-links a:hover { color: var(--ink); }
+.nav-cta { background: var(--g); color: #fff; border-radius: 999px; padding: 11px 20px; font-weight: 600; text-decoration: none; transition: opacity .15s ease, transform .15s ease; }
+.nav-cta:hover { opacity: .9; transform: translateY(-1px); }
+
+/* Floating mobile WhatsApp button */
+.float-wa { position: fixed; right: 18px; bottom: 18px; z-index: 40; width: 56px; height: 56px; border-radius: 50%; background: var(--g); color: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; box-shadow: 0 6px 20px rgba(14,122,69,.35); opacity: 0; transform: translateY(14px); pointer-events: none; transition: opacity .2s ease, transform .2s ease; }
+.float-wa.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+@media (min-width: 769px) { .float-wa { display: none; } }
+
+/* Scroll-reveal */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .float-wa { transition: none; }
+}
 
 /* Hero */
 .hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; padding: 56px 40px; align-items: center; max-width: 1200px; margin: 0 auto; }
@@ -27,24 +44,47 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .hero h1 { margin: 20px 0 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(36px, 5vw, 62px); line-height: 1.02; letter-spacing: -.025em; color: var(--ink); text-wrap: pretty; }
 .hero-sub { margin: 20px 0 0; font-size: 17px; line-height: 1.6; color: #4A4F45; max-width: 460px; }
 .hero-actions { display: flex; gap: 14px; margin-top: 32px; }
-.btn-wa { background: var(--g); color: #fff; border-radius: 12px; padding: 16px 28px; font-size: 16px; font-weight: 600; text-decoration: none; }
-.btn-menu { border: 1px solid #C9C4B8; border-radius: 12px; padding: 16px 28px; font-size: 16px; font-weight: 600; color: var(--ink); text-decoration: none; }
+.btn-wa { background: var(--g); color: #fff; border-radius: 12px; padding: 16px 28px; font-size: 16px; font-weight: 600; text-decoration: none; display: inline-block; transition: opacity .15s ease, transform .15s ease; }
+.btn-wa:hover { opacity: .9; transform: translateY(-1px); }
+.btn-menu { border: 1px solid #C9C4B8; border-radius: 12px; padding: 16px 28px; font-size: 16px; font-weight: 600; color: var(--ink); text-decoration: none; display: inline-block; transition: border-color .15s ease, transform .15s ease; }
+.btn-menu:hover { border-color: var(--ink); transform: translateY(-1px); }
 .hero-info { display: flex; gap: 28px; margin-top: 34px; font-size: 13px; color: var(--sub); }
 .hero-photo { height: 420px; border-radius: 16px; background: repeating-linear-gradient(135deg, var(--line2) 0 12px, #E6E1D7 12px 24px); overflow: hidden; }
 .hero-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* Features */
 .features { padding: 0 40px 56px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1200px; margin: 0 auto; }
-.feat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 26px; }
+.feat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 26px; transition: box-shadow .2s ease, transform .2s ease; }
+.feat-card:hover { box-shadow: 0 8px 24px rgba(23,26,20,.08); transform: translateY(-2px); }
 .feat-num { font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; color: var(--g); }
 .feat-title { font-size: 15px; font-weight: 600; margin-top: 8px; }
 .feat-desc { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--sub); }
+
+/* Delivery area */
+.delivery { padding: 8px 40px 56px; max-width: 1200px; margin: 0 auto; }
+.section-head { max-width: 560px; margin-bottom: 28px; }
+.section-tag { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--g); text-transform: uppercase; letter-spacing: .04em; }
+.section-head h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(24px, 3vw, 32px); margin: 8px 0 0; }
+.zone-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.zone-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+.zone-name { font-weight: 600; font-size: 15px; }
+.zone-areas { font-size: 13px; color: var(--sub); margin-top: 4px; }
+.zone-fee { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; color: var(--g); margin-top: 14px; }
+.zone-min { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+/* Our story */
+.story { padding: 8px 40px 56px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.story-body p { font-size: 15px; line-height: 1.7; color: #4A4F45; margin-top: 14px; }
+.story-body p:first-of-type { margin-top: 8px; }
+.story-photo { border-radius: 16px; overflow: hidden; height: 320px; }
+.story-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* CTA banner */
 .cta-banner { background: var(--g); color: #fff; padding: 48px 40px; display: flex; justify-content: space-between; align-items: center; gap: 40px; max-width: 1200px; margin: 0 auto; border-radius: 0; }
 .cta-text { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(22px, 3vw, 34px); line-height: 1.15; }
 .cta-sub { margin: 10px 0 0; font-size: 15px; opacity: .85; max-width: 520px; }
-.cta-btn { background: #fff; color: var(--g); border-radius: 12px; padding: 16px 30px; font-size: 16px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.cta-btn { background: #fff; color: var(--g); border-radius: 12px; padding: 16px 30px; font-size: 16px; font-weight: 600; text-decoration: none; white-space: nowrap; display: inline-block; transition: transform .15s ease; }
+.cta-btn:hover { transform: translateY(-1px); }
 
 /* Footer */
 .footer { padding: 26px 40px 34px; display: flex; justify-content: space-between; font-size: 13px; color: var(--sub); max-width: 1200px; margin: 0 auto; }
@@ -56,23 +96,31 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
   .hero { grid-template-columns: 1fr; padding: 32px 18px; }
   .hero-photo { height: 240px; }
   .features { grid-template-columns: 1fr; padding: 0 18px 40px; }
+  .delivery { padding: 8px 18px 40px; }
+  .zone-grid { grid-template-columns: 1fr; }
+  .story { grid-template-columns: 1fr; padding: 8px 18px 40px; gap: 24px; }
+  .story-photo { height: 220px; order: -1; }
   .cta-banner { flex-direction: column; text-align: center; padding: 36px 18px; }
   .footer { flex-direction: column; gap: 8px; padding: 20px 18px 30px; }
 }
 </style>
 
 <nav class="nav">
-  <div class="nav-brand">
+  <a class="nav-brand" href="/">
     <img src="/static/logo.png" alt="Tulsi Foods">
     <span>Tulsi Foods</span>
-  </div>
+  </a>
   <div class="nav-links">
-    <span><a href="/menu" style="color:inherit;text-decoration:none">Menu</a></span>
-    <span>Delivery area</span>
-    <span>Our story</span>
+    <a href="/menu">Menu</a>
+    <a href="#delivery">Delivery area</a>
+    <a href="#story">Our story</a>
     <a href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank" class="nav-cta">Order on WhatsApp</a>
   </div>
 </nav>
+
+<a class="float-wa" id="float-wa" href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank" aria-label="Order on WhatsApp">
+  <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.14h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.26-8.24 2.21 0 4.28.86 5.84 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.55-3.7 8.25-8.25 8.25zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.97-.14.16-.29.18-.53.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.24-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.47-.01a.9.9 0 0 0-.65.31c-.23.24-.86.85-.86 2.06 0 1.22.88 2.4 1 2.56.12.16 1.73 2.64 4.19 3.7.59.25 1.04.4 1.4.52.59.19 1.12.16 1.54.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.08.14-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
+</a>
 
 <section class="hero">
   <div>
@@ -93,24 +141,63 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 </section>
 
 <div class="features">
-  <div class="feat-card">
+  <div class="feat-card reveal">
     <div class="feat-num">₹0</div>
     <div class="feat-title">Platform fee</div>
     <p class="feat-desc">Aggregators take 27–32% of every order. Ordering direct keeps that with the kitchen and the prices honest.</p>
   </div>
-  <div class="feat-card">
+  <div class="feat-card reveal">
     <div class="feat-num">140</div>
     <div class="feat-title">Dishes, cooked to order</div>
     <p class="feat-desc">Thalis, parathas, chaats, sabzi, rice bowls. What's off the menu today is marked off, not silently missing.</p>
   </div>
-  <div class="feat-card">
+  <div class="feat-card reveal">
     <div class="feat-num">7 km</div>
     <div class="feat-title">Delivery radius</div>
     <p class="feat-desc">₹30 up to 3 km, ₹50 to 5 km, ₹70 to 7 km. Minimum order ₹250, ₹300, ₹350 by zone.</p>
   </div>
 </div>
 
-<div class="cta-banner">
+<section class="delivery" id="delivery">
+  <div class="section-head reveal">
+    <div class="section-tag">Delivery area</div>
+    <h2>Mylapore, Alwarpet, Teynampet — and nearby.</h2>
+  </div>
+  <div class="zone-grid">
+    <div class="zone-card reveal">
+      <div class="zone-name">Zone A · Core</div>
+      <div class="zone-areas">Up to 3 km — Mylapore, Alwarpet</div>
+      <div class="zone-fee">₹30</div>
+      <div class="zone-min">Minimum order ₹250</div>
+    </div>
+    <div class="zone-card reveal">
+      <div class="zone-name">Zone B</div>
+      <div class="zone-areas">Up to 5 km — Teynampet &amp; around</div>
+      <div class="zone-fee">₹50</div>
+      <div class="zone-min">Minimum order ₹300</div>
+    </div>
+    <div class="zone-card reveal">
+      <div class="zone-name">Zone C</div>
+      <div class="zone-areas">Up to 7 km</div>
+      <div class="zone-fee">₹70</div>
+      <div class="zone-min">Minimum order ₹350</div>
+    </div>
+  </div>
+</section>
+
+<section class="story" id="story">
+  <div class="story-body reveal">
+    <div class="section-tag">Our story</div>
+    <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(24px,3vw,32px);margin-top:8px;">Run by Kavita Lath, from a home kitchen in Mylapore.</h2>
+    <p>Tulsi Foods started the way most good home food does — cooking for family, then for neighbours, then for whoever found their way to the door. It's still pure vegetarian, still cooked fresh each day, and still run by the same family.</p>
+    <p>Going direct on WhatsApp means the person who takes your order is connected to the same kitchen that cooks it — no call centre, no aggregator in between.</p>
+  </div>
+  <div class="story-photo reveal">
+    <img src="/static/img/story-photo.jpg" alt="A Tulsi Foods thali with roti, sabzi, dal and curd" loading="lazy">
+  </div>
+</section>
+
+<div class="cta-banner reveal">
   <div>
     <div class="cta-text">Send us a "Hi". We'll take it from there.</div>
     <p class="cta-sub">Today's menu, your last order, and payment all happen in the chat. Someone from the family is always on the other end.</p>
@@ -122,4 +209,29 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
   <span>Tulsi Foods, Kutchery Road, Mylapore, Chennai 600004 · 11 AM – 10 PM</span>
   <span><a href="/privacy-policy">Privacy policy</a> · <a href="/menu">Order now</a></span>
 </div>
+
+<script>
+(() => {
+  // Reveal sections as they scroll into view
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("visible");
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll(".reveal").forEach(el => revealObserver.observe(el));
+
+  // Show the floating WhatsApp button once the hero has scrolled out of view
+  const hero = document.querySelector(".hero");
+  const floatWa = document.getElementById("float-wa");
+  if (hero && floatWa) {
+    const heroObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => floatWa.classList.toggle("visible", !entry.isIntersecting));
+    }, { threshold: 0 });
+    heroObserver.observe(hero);
+  }
+})();
+</script>
 {% endblock %}
