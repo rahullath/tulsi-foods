@@ -81,14 +81,11 @@
           <option value="pickup">Pickup</option>
         </select>
       </label>
-      <label id="km-wrap">Distance from restaurant
-        <select name="km">
-          <option value="2">≤ 3 km</option>
-          <option value="4">3–5 km</option>
-          <option value="6">5–7 km</option>
-        </select>
+      <label>Address <textarea name="address" rows="2" placeholder="Full address for delivery (street, area, landmark)"></textarea></label>
+      <label id="pincode-wrap">Pincode
+        <input name="pincode" type="text" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode">
       </label>
-      <label>Address <textarea name="address" rows="2" placeholder="Area, street, landmark"></textarea></label>
+      <span id="delivery-status" class="sub"></span>
       <label>Payment
         <select name="payment_method">
           <option value="cod">Cash on delivery</option>

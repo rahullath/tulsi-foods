@@ -16,21 +16,29 @@ CREATE TABLE IF NOT EXISTS customers (
     phone      TEXT UNIQUE,
     name       TEXT,
     address    TEXT,
+    pincode    TEXT,
     created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS orders (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id INTEGER REFERENCES customers(id),
-    status      TEXT NOT NULL DEFAULT 'new',
-    order_type  TEXT NOT NULL DEFAULT 'delivery',
-    subtotal    REAL NOT NULL,
-    delivery_fee REAL NOT NULL DEFAULT 0,
-    total       REAL NOT NULL,
-    payment_method TEXT NOT NULL DEFAULT 'cod',
-    paid        INTEGER NOT NULL DEFAULT 0,
-    instructions TEXT,
-    scheduled_at TEXT,
-    created_at  TEXT DEFAULT (datetime('now'))
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id     INTEGER REFERENCES customers(id),
+    status          TEXT NOT NULL DEFAULT 'new',
+    order_type      TEXT NOT NULL DEFAULT 'delivery',
+    subtotal        REAL NOT NULL,
+    delivery_fee    REAL NOT NULL DEFAULT 0,
+    total           REAL NOT NULL,
+    payment_method  TEXT NOT NULL DEFAULT 'cod',
+    paid            INTEGER NOT NULL DEFAULT 0,
+    instructions    TEXT,
+    scheduled_at    TEXT,
+    delivery_address TEXT,
+    delivery_pincode TEXT,
+    sr_order_id     INTEGER,
+    sr_awb          TEXT,
+    sr_courier      TEXT,
+    sr_tracking_url TEXT,
+    dispatched_at   TEXT,
+    created_at      TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS order_items (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,6 +54,11 @@ CREATE TABLE IF NOT EXISTS availability (
     available INTEGER NOT NULL DEFAULT 1,
     PRIMARY KEY (date, item_id)
 );
+CREATE TABLE IF NOT EXISTS daily_specials (
+    date      TEXT PRIMARY KEY,
+    item_name TEXT NOT NULL,
+    price     REAL NOT NULL
+);
 """
 
 
@@ -60,8 +73,40 @@ def init_db() -> None:
     Path(DB_FILE).parent.mkdir(parents=True, exist_ok=True)
     conn = get_conn()
     conn.executescript(SCHEMA)
+    _migrate(conn)
     conn.commit()
     conn.close()
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Add columns that may not exist in older databases."""
+    def _has_col(table: str, col: str) -> bool:
+        return col in [r[1] for r in conn.execute(f"PRAGMA table_info({table})")]
+
+    if not _has_col("customers", "pincode"):
+        conn.execute("ALTER TABLE customers ADD COLUMN pincode TEXT")
+    if not _has_col("orders", "delivery_address"):
+        conn.execute("ALTER TABLE orders ADD COLUMN delivery_address TEXT")
+    if not _has_col("orders", "delivery_pincode"):
+        conn.execute("ALTER TABLE orders ADD COLUMN delivery_pincode TEXT")
+    if not _has_col("orders", "sr_order_id"):
+        conn.execute("ALTER TABLE orders ADD COLUMN sr_order_id INTEGER")
+    if not _has_col("orders", "sr_awb"):
+        conn.execute("ALTER TABLE orders ADD COLUMN sr_awb TEXT")
+    if not _has_col("orders", "sr_courier"):
+        conn.execute("ALTER TABLE orders ADD COLUMN sr_courier TEXT")
+    if not _has_col("orders", "sr_tracking_url"):
+        conn.execute("ALTER TABLE orders ADD COLUMN sr_tracking_url TEXT")
+    if not _has_col("orders", "dispatched_at"):
+        conn.execute("ALTER TABLE orders ADD COLUMN dispatched_at TEXT")
+    # daily_specials table (may not exist in older databases)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS daily_specials ("
+        "    date      TEXT PRIMARY KEY,"
+        "    item_name TEXT NOT NULL,"
+        "    price     REAL NOT NULL"
+        ")"
+    )
 
 
 # ---- availability ----
@@ -121,13 +166,15 @@ def copy_availability(from_day: str, to_day: str) -> int:
 
 # ---- customers & orders ----
 
-def upsert_customer(phone: str, name: str, address: str | None = None) -> int:
+def upsert_customer(phone: str, name: str, address: str | None = None,
+                     pincode: str | None = None) -> int:
     conn = get_conn()
     conn.execute(
-        "INSERT INTO customers(phone, name, address) VALUES(?,?,?) "
+        "INSERT INTO customers(phone, name, address, pincode) VALUES(?,?,?,?) "
         "ON CONFLICT(phone) DO UPDATE SET name=excluded.name, "
-        "address=COALESCE(excluded.address, customers.address)",
-        (phone, name, address),
+        "address=COALESCE(excluded.address, customers.address), "
+        "pincode=COALESCE(excluded.pincode, customers.pincode)",
+        (phone, name, address, pincode),
     )
     conn.commit()
     cid = conn.execute("SELECT id FROM customers WHERE phone=?", (phone,)).fetchone()["id"]
@@ -135,15 +182,29 @@ def upsert_customer(phone: str, name: str, address: str | None = None) -> int:
     return cid
 
 
+def get_customer(phone: str) -> dict | None:
+    """Get customer record by phone number."""
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT id, phone, name, address, pincode FROM customers WHERE phone=?",
+        (phone,),
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
 def create_order(customer_id: int, order_type: str, subtotal: float,
                  delivery_fee: float, total: float, payment_method: str,
-                 instructions: str | None, items: list[dict]) -> int:
+                 instructions: str | None, items: list[dict],
+                 delivery_address: str | None = None,
+                 delivery_pincode: str | None = None) -> int:
     conn = get_conn()
     cur = conn.execute(
         "INSERT INTO orders(customer_id, status, order_type, subtotal, delivery_fee, "
-        "total, payment_method, instructions) VALUES(?,?,?,?,?,?,?,?)",
+        "total, payment_method, instructions, delivery_address, delivery_pincode) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?)",
         (customer_id, "new", order_type, subtotal, delivery_fee, total,
-         payment_method, instructions),
+         payment_method, instructions, delivery_address, delivery_pincode),
     )
     oid = cur.lastrowid
     conn.executemany(
@@ -153,6 +214,20 @@ def create_order(customer_id: int, order_type: str, subtotal: float,
     conn.commit()
     conn.close()
     return oid
+
+
+def update_order_dispatch(order_id: int, sr_order_id: int, awb: str,
+                          courier: str, tracking_url: str) -> None:
+    """Store Shiprocket dispatch details and mark as out_for_delivery."""
+    from datetime import datetime
+    conn = get_conn()
+    conn.execute(
+        "UPDATE orders SET status='out_for_delivery', sr_order_id=?, sr_awb=?, "
+        "sr_courier=?, sr_tracking_url=?, dispatched_at=? WHERE id=?",
+        (sr_order_id, awb, courier, tracking_url, datetime.utcnow().isoformat(), order_id),
+    )
+    conn.commit()
+    conn.close()
 
 
 def get_order(order_id: int) -> dict | None:
@@ -197,6 +272,44 @@ def recent_orders(limit: int = 20) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def customer_orders(phone: str, limit: int = 5) -> list[dict]:
+    """Get recent orders for a customer (for reorder)."""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT o.id, o.status, o.total, o.order_type, o.created_at "
+        "FROM orders o LEFT JOIN customers c ON c.id=o.customer_id "
+        "WHERE c.phone=? AND o.status != 'cancelled' "
+        "ORDER BY o.id DESC LIMIT ?",
+        (phone, limit),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def today_orders() -> list[dict]:
+    """Today's orders with full details for admin dashboard."""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT o.*, c.name AS customer_name, c.phone AS customer_phone "
+        "FROM orders o LEFT JOIN customers c ON c.id=o.customer_id "
+        "WHERE date(o.created_at) = date('now') "
+        "ORDER BY o.id DESC"
+    ).fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        ic = get_conn()
+        items = ic.execute(
+            "SELECT item_id, name, price, qty FROM order_items WHERE order_id=?",
+            (d["id"],),
+        ).fetchall()
+        ic.close()
+        d["items"] = [dict(i) for i in items]
+        result.append(d)
+    conn.close()
+    return result
+
+
 def seeded() -> None:
     """Seed menu ids into availability so 'today's menu' = full menu until toggled."""
     from .menu import load_menu
@@ -204,3 +317,34 @@ def seeded() -> None:
     today = date.today().isoformat()
     ids = [m["id"] for m in menu]
     set_availability(today, ids, [])
+
+
+# ---- daily specials ----
+
+def get_special(day: str | None = None) -> dict | None:
+    day = day or date.today().isoformat()
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT item_name, price FROM daily_specials WHERE date=?", (day,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def set_special(day: str, item_name: str, price: float) -> None:
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO daily_specials(date, item_name, price) VALUES(?,?,?) "
+        "ON CONFLICT(date) DO UPDATE SET item_name=excluded.item_name, price=excluded.price",
+        (day, item_name, price),
+    )
+    conn.commit()
+    conn.close()
+
+
+def clear_special(day: str | None = None) -> None:
+    day = day or date.today().isoformat()
+    conn = get_conn()
+    conn.execute("DELETE FROM daily_specials WHERE date=?", (day,))
+    conn.commit()
+    conn.close()

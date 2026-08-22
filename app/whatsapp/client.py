@@ -77,7 +77,60 @@ def send_buttons(to: str, body: str, buttons: list[str]) -> dict:
         return r.json()
 
 
+def send_list(to: str, body: str, button: str, sections: list[dict]) -> dict:
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": to,
+        "type": "interactive",
+        "interactive": {
+            "type": "list",
+            "body": {"text": body},
+            "action": {
+                "button": button,
+                "sections": sections,
+            },
+        },
+    }
+    if not configured():
+        _dry_log(payload)
+        return {"dry_run": True, "to": to, "text": body}
+    with httpx.Client(timeout=20) as c:
+        r = c.post(_url(), headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}, json=payload)
+        r.raise_for_status()
+        return r.json()
+
+
 def send_outbound(to: str, msg: dict) -> dict:
     if msg.get("type") == "buttons":
         return send_buttons(to, msg["text"], msg["buttons"])
+    if msg.get("type") == "list":
+        return send_list(to, msg["text"], msg["button"], msg["sections"])
+    if msg.get("type") == "template":
+        return send_template(to, msg["name"], msg.get("language", "en"), msg.get("params", []))
     return send_text(to, msg["text"])
+
+
+def send_template(to: str, name: str, language: str = "en",
+                  params: list[dict] | None = None) -> dict:
+    """Send a pre-approved template message.
+
+    Each param is {"type": "text", "text": "value"}.
+    """
+    template: dict = {"name": name, "language": {"code": language}}
+    if params:
+        template["components"] = [{"type": "body", "parameters": params}]
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": to,
+        "type": "template",
+        "template": template,
+    }
+    if not configured():
+        _dry_log(payload)
+        return {"dry_run": True, "to": to, "template": name}
+    with httpx.Client(timeout=20) as c:
+        r = c.post(_url(), headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}, json=payload)
+        r.raise_for_status()
+        return r.json()

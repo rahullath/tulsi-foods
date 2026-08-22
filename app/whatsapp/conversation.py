@@ -12,8 +12,20 @@ ITEM_PAGE = 15
 ADDON_GROUPS = {"Thalis & Combos", "Parathas & Breads", "Chaats & Snacks",
                 "Starters", "Soups & Rice", "Sabzi", "Italian", "Specialities"}
 
-KMS = {"1": 2.0, "2": 4.0, "3": 6.0}
-KM_LABEL = {"1": "≤3 km", "2": "3–5 km", "3": "5–7 km"}
+# Upsell suggestions keyed by item group
+UPSELL_MAP = {
+    "Thalis & Combos": ["raita-250ml", "masala-chai"],
+    "Parathas & Breads": ["masala-chai", "raita-250ml"],
+    "Chaats & Snacks": ["masala-chai"],
+    "Sabzi": ["masala-chai"],
+    "Starters": ["masala-chai"],
+}
+
+# Minimal price upsell items (fallback if specific items not in menu)
+UPSELL_FALLBACK = {
+    "raita-250ml": {"id": "raita-250ml", "name": "Raita (250ml)", "price": 35},
+    "masala-chai": {"id": "masala-chai", "name": "Masala Chai", "price": 51},
+}
 
 STATUS_LABEL = {
     "new": "just placed",
@@ -60,6 +72,76 @@ def render_categories() -> str:
     lines.append("")
     lines.append("Reply with a number to see items. Also try: CART, CHECKOUT, REORDER, STATUS, HELP.")
     return "\n".join(lines)
+
+
+CATEGORY_SECTIONS = [
+    {
+        "title": "MAINS",
+        "rows": [
+            {"id": "cat_0", "title": "Thalis & Combos"},
+            {"id": "cat_1", "title": "Sabzi"},
+            {"id": "cat_2", "title": "Parathas & Breads"},
+        ],
+    },
+    {
+        "title": "SNACKS & SIDES",
+        "rows": [
+            {"id": "cat_3", "title": "Chaats & Snacks"},
+            {"id": "cat_4", "title": "Starters"},
+            {"id": "cat_5", "title": "Soups & Rice"},
+        ],
+    },
+    {
+        "title": "EXTRAS",
+        "rows": [
+            {"id": "cat_6", "title": "Italian"},
+            {"id": "cat_7", "title": "Specialities"},
+            {"id": "cat_8", "title": "Desserts"},
+            {"id": "cat_9", "title": "Beverages"},
+        ],
+    },
+]
+
+
+def render_categories_list() -> dict:
+    groups = _groups()
+    # Map group name -> section
+    group_section = {
+        "Thalis & Combos": "MAINS",
+        "Sabzi": "MAINS",
+        "Parathas & Breads": "MAINS",
+        "Chaats & Snacks": "SNACKS & SIDES",
+        "Starters": "SNACKS & SIDES",
+        "Soups & Rice": "SNACKS & SIDES",
+    }
+    sections: dict[str, list[dict]] = {"MAINS": [], "SNACKS & SIDES": [], "EXTRAS": []}
+    for i, g in enumerate(groups):
+        avail = _available_items(g)
+        total = len(g["items"])
+        prices = [it["price"] for it in avail] or [0]
+        price_min = money(min(prices))
+        price_max = money(max(prices))
+        label = f"{total} item{'s' if total != 1 else ''}"
+        if total != len(g["items"]):
+            label = f"{total} of {len(g['items'])} items"
+        desc = f"{label} · {price_min}–{price_max}" if price_min != price_max else label
+        row = {"id": f"cat_{i}", "title": g["group"], "description": desc}
+        sec = group_section.get(g["group"], "EXTRAS")
+        sections[sec].append(row)
+    return {
+        "type": "list",
+        "text": "What would you like to order?",
+        "button": "Browse menu",
+        "sections": [{"title": k, "rows": v} for k, v in sections.items() if v],
+    }
+
+
+def _category_section(index: int) -> str:
+    if index <= 2:
+        return "MAINS"
+    if index <= 5:
+        return "SNACKS & SIDES"
+    return "EXTRAS"
 
 
 def render_items(group_index: int, page: int) -> tuple[str, int | None]:
@@ -109,15 +191,23 @@ def _show_categories(sess: dict) -> list[dict]:
     sess["state"] = "root"
     sess["ctx"].pop("cat_index", None)
     sess["ctx"].pop("page", None)
+    msgs = []
     if not sess["ctx"].get("seen"):
         sess["ctx"]["seen"] = True
-        intro = (
+        msgs.append(text(
             "Namaste! Welcome to Tulsi Foods, Mylapore. 🍛\n"
             "Order direct on WhatsApp — no app, no platform fees.\n"
-            f"Tip: order before 11 AM for lunch & 5 PM for dinner to beat the rush.\n\n"
-        )
-        return [text(intro + render_categories())]
-    return [text(render_categories())]
+            f"Tip: order before 11 AM for lunch & 5 PM for dinner to beat the rush."
+        ))
+    # Show daily special if set
+    from .. import db as _db
+    special = _db.get_special()
+    if special:
+        msgs.append(text(
+            f"Today's special: {special['item_name']} — ₹{int(special['price'])} ✨"
+        ))
+    msgs.append(render_categories_list())
+    return msgs
 
 
 def _show_cart(sess: dict) -> list[dict]:
@@ -164,31 +254,85 @@ def _add_item(sess: dict, group_index: int, page: int, raw: str) -> list[dict]:
                 if m["id"] in sess["cart"])
     out = [text(f"Added {item['name']} × {qty_disp(qty)} ({money(item['price'] * qty)}). Cart: {money(total)}")]
 
-    # gentle add-on nudge only for the first item
-    if was_empty and item["group"] in ADDON_GROUPS:
-        chai = menu.get_item("masala-chai")
-        if chai and menu.is_available("masala-chai"):
+    # Context-aware upsell for the first item
+    if was_empty:
+        upsell_ids = UPSELL_MAP.get(item["group"], [])
+        available_upsells = [
+            menu.get_item(uid) for uid in upsell_ids
+            if menu.get_item(uid) and menu.is_available(uid)
+        ]
+        if available_upsells:
+            btns = [u["id"] for u in available_upsells[:2]]
+            btns.append("No thanks")
+            names = " or ".join(f"{u['name']} for {money(u['price'])}" for u in available_upsells[:2])
             out.append(buttons(
-                f"Add a {chai['name']} for {money(chai['price'])} with your meal?",
-                ["Yes, add chai", "No thanks"],
+                f"{item['group'].split()[0].rstrip('&s')} goes well with {names}. Add one?",
+                btns,
             ))
     return out
 
 
 def _reorder_ask(sess: dict) -> list[dict]:
-    oid = sess["ctx"].get("last_order_id")
-    if not oid:
+    phone = sess["wa_id"]
+    orders = db.customer_orders(phone, limit=5)
+    if not orders:
         return [text("No previous order found yet. Send MENU to start.")]
-    o = db.get_order(oid)
+    # Show last order with items
+    o = db.get_order(orders[0]["id"])
     if not o:
         return [text("Couldn't find your last order. Send MENU to start.")]
-    lines = ["Your last order:"]
-    for it in o["items"]:
-        lines.append(f"{it['name']} × {qty_disp(it['qty'])} — {money(it['price'] * it['qty'])}")
-    lines.append(f"Total: {money(o['total'])}")
+    excluded = sess["ctx"].get("reorder_excluded", [])
+    lines = [f"Your last order · {_format_order_time(o['created_at'])}"]
+    for i, it in enumerate(o["items"]):
+        if it["item_id"] in excluded:
+            lines.append(f"~~{it['name']} × {qty_disp(it['qty'])} — {money(it['price'] * it['qty'])}~~")
+        else:
+            lines.append(f"{it['name']} × {qty_disp(it['qty'])} — {money(it['price'] * it['qty'])}")
+    active_items = [it for it in o["items"] if it["item_id"] not in excluded]
+    active_total = sum(it["price"] * it["qty"] for it in active_items)
+    lines.append(f"Total: {money(active_total)}")
+
+    btns = ["Place this order", "Cancel"]
+    if len(orders) > 1:
+        btns.insert(1, "Older orders")
+
     sess["state"] = "reorder_confirm"
-    sess["ctx"]["reorder_id"] = oid
-    return [buttons("\n".join(lines) + "\n\nReorder this? Reply YES, or CANCEL.", ["YES", "CANCEL"])]
+    sess["ctx"]["reorder_id"] = o["id"]
+    sess["ctx"]["reorder_orders"] = [{"id": ordr["id"], "total": ordr["total"], "created_at": ordr["created_at"]} for ordr in orders]
+    return [buttons(
+        "\n".join(lines) + "\n\nREMOVE <n> to remove an item (e.g. 'REMOVE 2')",
+        btns,
+    )]
+
+
+def _format_order_time(created_at: str) -> str:
+    """Format order time for display."""
+    from datetime import datetime
+    try:
+        dt = datetime.fromisoformat(created_at)
+        now = datetime.now()
+        if dt.date() == now.date():
+            return "today"
+        from datetime import timedelta
+        if dt.date() == (now - timedelta(days=1)).date():
+            return "yesterday"
+        return dt.strftime("%a")
+    except (ValueError, TypeError):
+        return ""
+
+
+def _reorder_older(sess: dict) -> list[dict]:
+    """Show older orders for reorder selection."""
+    orders_list = sess["ctx"].get("reorder_orders", [])
+    if len(orders_list) <= 1:
+        return [text("No older orders found.")]
+    lines = ["Your recent orders:"]
+    for i, o in enumerate(orders_list):
+        t = _format_order_time(o["created_at"])
+        lines.append(f"{i + 1}. {t} · {money(o['total'])}")
+    lines.append("\nSend a number to reorder, or CANCEL.")
+    sess["state"] = "reorder_older"
+    return [text("\n".join(lines))]
 
 
 def _status(sess: dict) -> list[dict]:
@@ -197,7 +341,12 @@ def _status(sess: dict) -> list[dict]:
         return [text("No order yet on this number. Send MENU to start.")]
     o = db.get_order(oid)
     label = STATUS_LABEL.get(o["status"], o["status"])
-    return [text(f"Order #{oid} is {label}.")]
+    msg = f"Order #{oid} is {label}."
+    if o.get("sr_tracking_url"):
+        msg += f"\nTrack: {o['sr_tracking_url']}"
+    if o.get("sr_courier"):
+        msg += f"\nCourier: {o['sr_courier']}"
+    return [text(msg)]
 
 
 # ---------------------------------------------------------------- checkout
@@ -205,16 +354,65 @@ def _status(sess: dict) -> list[dict]:
 CHECKOUT_STEPS = {}
 
 
+MIN_ORDER_SUGGESTIONS = ["masala-chai", "samosa-2-pcs", "aloo-tikki-chaat", "manchow-soup"]
+
+
+def _min_order_nudge(sess: dict, subtotal: float, zone_min: int = 250) -> list[dict] | None:
+    """Show min-order nudge if cart is below minimum. Returns messages or None."""
+    if subtotal >= zone_min:
+        return None
+    gap = zone_min - subtotal
+    # Find available items that bridge the gap
+    suggestions = []
+    for uid in MIN_ORDER_SUGGESTIONS:
+        it = menu.get_item(uid)
+        if it and menu.is_available(uid) and it["price"] <= gap + 50:
+            suggestions.append(it)
+        if len(suggestions) >= 2:
+            break
+    # If no specific suggestions, find cheap popular items
+    if not suggestions:
+        for it in menu.load_menu():
+            if it.get("popular") and menu.is_available(it["id"]) and it["price"] <= gap + 50:
+                suggestions.append(it)
+            if len(suggestions) >= 2:
+                break
+
+    btns = [s["id"] for s in suggestions]
+    btns.append(f"Order anyway (+₹30)")
+    lines = [f"₹{int(gap)} short of the ₹{zone_min} minimum."]
+    if suggestions:
+        sug_text = " or ".join(f"{s['name']} for {money(s['price'])}" for s in suggestions)
+        lines.append(f"Add one of these?")
+    else:
+        lines.append(f"Add something worth ₹{int(gap)}+.")
+    return [buttons("\n".join(lines), btns)]
+
+
 def _checkout_resume(sess: dict) -> list[dict]:
     state = sess["state"]
+    ctx = sess["ctx"]
     if state == "checkout_name":
         return [text("Almost there! What name should the order be under?")]
     if state == "checkout_type":
         return [buttons("Delivery or pickup?", ["Delivery", "Pickup"])]
     if state == "checkout_address":
-        return [text("Please send your delivery address (area, street, landmark).")]
-    if state == "checkout_km":
-        return [text("How far are you from the restaurant?\n1. ≤3 km\n2. 3–5 km\n3. 5–7 km")]
+        # Check if we have a saved address
+        saved = ctx.get("saved_address")
+        if saved:
+            return [buttons(
+                f"Deliver to: {saved}?\nReply YES or send a new address.",
+                ["YES, same address"]
+            )]
+        return [text("Please send your full delivery address (street, area, landmark).")]
+    if state == "checkout_pincode":
+        saved_pin = ctx.get("saved_pincode")
+        if saved_pin:
+            return [buttons(
+                f"Pincode: {saved_pin}?\nReply YES or send a new 6-digit pincode.",
+                ["YES, same pincode"]
+            )]
+        return [text("What's your 6-digit pincode? (e.g. 600018)")]
     if state == "checkout_when":
         return [text("When do you want it?\nSend NOW, or a time like 12:30 for a pre-order.")]
     if state == "checkout_payment":
@@ -229,20 +427,22 @@ def _summary(sess: dict) -> list[dict]:
     body, total = cart_summary(sess)
     lines = [body, ""]
     if ctx.get("order_type") == "delivery":
-        lines.append(f"Delivery to: {ctx.get('address')} ({ctx.get('km_label')})")
+        addr = ctx.get("address", "")
+        pin = ctx.get("pincode", "")
+        lines.append(f"Delivery to: {addr} ({pin})")
     else:
         lines.append("Pickup from the restaurant.")
     lines.append(f"When: {ctx.get('when', 'Now')}")
     lines.append(f"Pay: {ctx.get('payment', 'COD')}")
-    try:
-        if ctx.get("order_type") == "delivery":
-            quote = orders.delivery_quote(ctx["km"], total)
-            fee = quote["fee"]
-        else:
-            fee = 0
-    except orders.OrderError as e:
-        return [text(e.message + "\nSend MENU to restart.")]
-    lines.append(f"Delivery fee: {money(fee)}")
+    # Delivery fee: zone estimate (actual calculated at dispatch)
+    fee = 0
+    if ctx.get("order_type") == "delivery" and total < 700:
+        fee = 30  # Zone A estimate
+    # Order-anyway surcharge
+    if ctx.get("order_anyway_fee"):
+        fee += 30
+        lines.append(f"Small order fee: {money(30)}")
+    lines.append(f"Delivery fee: {money(fee)} (approx, confirmed at dispatch)")
     lines.append(f"Total: {money(total + fee)}")
     sess["ctx"]["fee"] = fee
     return [buttons("\n".join(lines) + "\n\nReply YES to confirm, EDIT to change, or CANCEL.",
@@ -265,22 +465,45 @@ def _route(sess: dict, incoming: str) -> list[dict]:
     raw = incoming.strip()
     t = raw.upper()
 
-    # YES handling (confirmations / add-on)
-    if t in ("YES", "Y", "YES, ADD CHAI", "YES, ADD", "YES ADD CHAI"):
+    # YES handling (confirmations / add-on / address memory)
+    if t in ("YES", "Y"):
         if sess["state"] == "reorder_confirm":
             return _place_reorder(sess)
         if sess["state"] == "checkout_confirm":
             return _place_order(sess)
-        # add-on yes
-        chai = menu.get_item("masala-chai")
-        if chai and menu.is_available("masala-chai") and sess["cart"]:
-            sess["cart"]["masala-chai"] = sess["cart"].get("masala-chai", 0) + 1
-            return [text(f"Added Masala Chai × 1. {cart_summary(sess)[0]}")]
+        # Address memory: YES = use saved address
+        if sess["state"] == "checkout_address" and sess["ctx"].get("saved_address"):
+            sess["ctx"]["address"] = sess["ctx"]["saved_address"]
+            sess["state"] = "checkout_pincode"
+            return _checkout_resume(sess)
+        # Pincode memory: YES = use saved pincode
+        if sess["state"] == "checkout_pincode" and sess["ctx"].get("saved_pincode"):
+            sess["ctx"]["pincode"] = sess["ctx"]["saved_pincode"]
+            sess["state"] = "checkout_when"
+            return _checkout_resume(sess)
         return _show_cart(sess)
-    if t in ("NO", "N", "NO THANKS", "NO, ADD CHAI"):
+    # Handle upsell button replies (item IDs like "raita", "masala-chai")
+    if t in ("NO", "N", "NO THANKS"):
         if sess["state"] in ("checkout_confirm",):
             return [text("Order not placed. Reply CART or MENU to continue.")]
+        if sess["state"] == "checkout_address":
+            return [text("Please send your full delivery address (street, area, landmark).")]
+        if sess["state"] == "checkout_pincode":
+            return [text("What's your 6-digit pincode? (e.g. 600018)")]
         return _show_cart(sess)
+    upsell_item = menu.get_item(t.lower())
+    if upsell_item and sess["cart"]:
+        sess["cart"][upsell_item["id"]] = sess["cart"].get(upsell_item["id"], 0) + 1
+        return [text(f"Added {upsell_item['name']} × 1. {cart_summary(sess)[0]}")]
+    # "Order anyway" from min-order nudge
+    if t.startswith("ORDER ANYWAY") or t.startswith("ORDERANYWAY"):
+        sess["ctx"]["order_anyway_fee"] = True
+        _load_saved_address(sess)
+        sess["state"] = "checkout_name"
+        if sess["ctx"].get("name") or sess["ctx"].get("profile_name"):
+            sess["state"] = "checkout_type"
+            return _checkout_resume(sess)
+        return [text("Almost there! What name should the order be under?")]
     if t in ("EDIT",):
         sess["state"] = "checkout_name"
         return [text("Let's fix it up. What name should the order be under?")]
@@ -293,6 +516,20 @@ def _route(sess: dict, incoming: str) -> list[dict]:
     # global commands
     if t in ("MENU", "BACK", "B"):
         return _show_categories(sess)
+    # Handle list reply (cat_N) globally — can jump to any category from any state
+    if t.startswith("CAT_"):
+        try:
+            gi = int(t.split("_", 1)[1])
+        except (ValueError, IndexError):
+            gi = -1
+        groups = _groups()
+        if 0 <= gi < len(groups):
+            sess["ctx"]["cat_index"] = gi
+            sess["ctx"]["page"] = 0
+            sess["state"] = "items"
+            body, page = render_items(gi, 0)
+            return [text(body)]
+        return [text("That category doesn't exist. Send MENU to start over.")]
     if t == "CART":
         return _show_cart(sess)
     if t == "HELP":
@@ -330,7 +567,18 @@ def _route(sess: dict, incoming: str) -> list[dict]:
         if t == "CHECKOUT" or t.startswith("CHECKOUT"):
             if not sess["cart"]:
                 return [text("Cart is empty. Send MENU to order.")]
+            # Check minimum order
+            _, subtotal = cart_summary(sess)
+            nudge = _min_order_nudge(sess, subtotal)
+            if nudge:
+                return nudge
+            # Load saved address from customer record
+            _load_saved_address(sess)
             sess["state"] = "checkout_name"
+            # Skip name if we already have it
+            if sess["ctx"].get("name") or sess["ctx"].get("profile_name"):
+                sess["state"] = "checkout_type"
+                return _checkout_resume(sess)
             return [text("Almost there! What name should the order be under?")]
         if t.startswith("REMOVE"):
             return _remove_from_cart(sess, raw)
@@ -353,15 +601,16 @@ def _route(sess: dict, incoming: str) -> list[dict]:
         return [text("Reply D for delivery or P for pickup.")]
     if state == "checkout_address":
         sess["ctx"]["address"] = raw[:200]
-        sess["state"] = "checkout_km"
+        sess["state"] = "checkout_pincode"
         return _checkout_resume(sess)
-    if state == "checkout_km":
-        if t in KMS:
-            sess["ctx"]["km"] = KMS[t]
-            sess["ctx"]["km_label"] = KM_LABEL[t]
+    if state == "checkout_pincode":
+        # Validate 6-digit pincode
+        pin = raw.replace(" ", "")
+        if len(pin) == 6 and pin.isdigit():
+            sess["ctx"]["pincode"] = pin
             sess["state"] = "checkout_when"
             return _checkout_resume(sess)
-        return [text("Reply 1, 2, or 3 for your distance.")]
+        return [text("Please enter a valid 6-digit pincode (e.g. 600018).")]
     if state == "checkout_when":
         if t == "NOW":
             sess["ctx"]["when"] = "Now"
@@ -382,11 +631,41 @@ def _route(sess: dict, incoming: str) -> list[dict]:
         return _summary(sess)
 
     if state == "reorder_confirm":
+        if t in ("PLACE THIS ORDER", "PLACE", "PLACEORDER"):
+            return _place_reorder(sess)
+        if t in ("OLDER ORDERS", "OLDER"):
+            return _reorder_older(sess)
+        if t.startswith("REMOVE"):
+            return _reorder_remove(sess, raw)
         return _reorder_ask(sess)
+
+    if state == "reorder_older":
+        if t.isdigit():
+            idx = int(t) - 1
+            orders_list = sess["ctx"].get("reorder_orders", [])
+            if 0 <= idx < len(orders_list):
+                sess["ctx"]["reorder_id"] = orders_list[idx]["id"]
+                sess["ctx"]["reorder_excluded"] = []
+                sess["state"] = "reorder_confirm"
+                return _reorder_ask(sess)
+        return [text("Send a number to reorder, or CANCEL.")]
 
     # fallback
     sess["state"] = "root"
     return [text(render_categories())]
+
+
+def _load_saved_address(sess: dict) -> None:
+    """Load saved address/pincode from customer record for address memory."""
+    phone = sess["wa_id"]
+    customer = db.get_customer(phone)
+    if customer:
+        if customer.get("address"):
+            sess["ctx"]["saved_address"] = customer["address"]
+        if customer.get("pincode"):
+            sess["ctx"]["saved_pincode"] = customer["pincode"]
+        if customer.get("name") and not sess["ctx"].get("name"):
+            sess["ctx"]["name"] = customer["name"]
 
 
 def _remove_from_cart(sess: dict, raw: str) -> list[dict]:
@@ -402,6 +681,27 @@ def _remove_from_cart(sess: dict, raw: str) -> list[dict]:
     return _show_cart(sess)
 
 
+def _reorder_remove(sess: dict, raw: str) -> list[dict]:
+    """Remove an item from the reorder list by index."""
+    tokens = raw.split()
+    if len(tokens) < 2 or not tokens[1].isdigit():
+        return [text("Usage: REMOVE <number> (see item numbers in the list).")]
+    pos = int(tokens[1])
+    o = db.get_order(sess["ctx"].get("reorder_id"))
+    if not o:
+        return [text("Order not found.")]
+    items = o["items"]
+    if not (1 <= pos <= len(items)):
+        return [text("That number isn't in the order list.")]
+    excluded = sess["ctx"].setdefault("reorder_excluded", [])
+    item_id = items[pos - 1]["item_id"]
+    if item_id in excluded:
+        excluded.remove(item_id)
+    else:
+        excluded.append(item_id)
+    return _reorder_ask(sess)
+
+
 def _place_order(sess: dict) -> list[dict]:
     ctx = sess["ctx"]
     items = [{"item_id": i, "qty": q} for i, q in sess["cart"].items()]
@@ -411,7 +711,7 @@ def _place_order(sess: dict) -> list[dict]:
             name=ctx.get("name") or ctx.get("profile_name") or "Customer",
             address=ctx.get("address"),
             order_type=ctx.get("order_type") or "delivery",
-            km=ctx.get("km"),
+            pincode=ctx.get("pincode"),
             payment_method="upi" if ctx.get("payment") == "UPI" else "cod",
             instructions=None,
             scheduled_at=ctx.get("scheduled_at"),
@@ -427,13 +727,14 @@ def _place_order(sess: dict) -> list[dict]:
     order_type = ctx.get("order_type")
     sess["cart"] = {}
     sess["state"] = "root"
-    for k in ("name", "address", "km", "km_label", "when", "scheduled_at", "payment", "order_type", "fee"):
+    for k in ("name", "address", "pincode", "saved_address", "saved_pincode",
+              "when", "scheduled_at", "payment", "order_type", "fee"):
         sess["ctx"].pop(k, None)
     msg = (
         f"Order #{oid} confirmed ✅\n"
         f"Total: {money(result['total'])} ({payment})\n"
         f"{'Pickup' if order_type == 'pickup' else 'Delivery'} — {when}\n"
-        "We'll update you here as it's prepared. Thanks!"
+        "We'll WhatsApp you when your food is on its way! 🛵"
     )
     return [text(msg)]
 
@@ -443,14 +744,18 @@ def _place_reorder(sess: dict) -> list[dict]:
     o = db.get_order(oid) if oid else None
     if not o:
         return [text("Couldn't find that order. Send MENU.")]
-    items = [{"item_id": it["item_id"], "qty": it["qty"]} for it in o["items"]]
+    excluded = sess["ctx"].get("reorder_excluded", [])
+    items = [{"item_id": it["item_id"], "qty": it["qty"]}
+             for it in o["items"] if it["item_id"] not in excluded]
+    if not items:
+        return [text("All items were removed. Send MENU to start fresh.")]
     try:
         result = orders.create_order(
             phone=sess["wa_id"],
             name=o.get("customer_name") or sess["ctx"].get("profile_name") or "Customer",
-            address=o.get("customer_address"),
+            address=o.get("delivery_address") or o.get("customer_address"),
             order_type=o["order_type"],
-            km=o["order_type"] == "delivery" and 2.0 or None,
+            pincode=o.get("delivery_pincode"),
             payment_method=o["payment_method"],
             items=items,
         )

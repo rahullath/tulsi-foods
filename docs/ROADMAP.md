@@ -12,8 +12,9 @@ Saved 2026-08-14. Status snapshot + forward plan + exploratory notes.
 - Bot stack: webhooks (verify + text/interactive parsing + `smb_message_echoes` human takeover), conversation state machine (menu→cart→checkout→status→reorder), dry-run→real sends, SQLite sessions. **Smoke suite 43/43 PASS**.
 - Human takeover: chat flagged `human` when mom replies from Business app; admin toggles Bot/Human; admin conversation list.
 - Delivery logic: `delivery_fee` (quote, honors free≥700) vs `delivery_quote` (enforces zone min A₹250/B₹300/C₹350).
+- **Shiprocket Quick integration (code complete, account not ready):** full hyperlocal delivery package (`app/delivery/`). Auth works, standard couriers available (Blue Dart ₹258). Pincode-based delivery check, address memory for repeat customers, "Food Ready" dispatch button on admin, WhatsApp tracking notifications. Waiting on mom to: (1) add pickup address in Shiprocket panel, (2) enable Quick, (3) note channel ID.
 - Live: `api.tulsifoods.app` (Railway, always-on, volume), CNAME live, webhook **active** (object `whatsapp_business_account`, field `messages`, v26.0, verified). Config bumped to `v26.0` and pushed.
-- GitHub public: `rahullath/tulsi-foods`. `.env` (gitignored) holds: system-user token, 2nd system-user token (same app/user), `WHATSAPP_PHONE_ID=111402012015862`, `WHATSAPP_APP_ID`, `WHATSAPP_APP_SECRET` (HMAC now enforced), verify token `tulsi_verify`.
+- GitHub public: `rahullath/tulsi-foods`. `.env` (gitignored) holds: system-user token, 2nd system-user token (same app/user), `WHATSAPP_PHONE_ID=111402012015862`, `WHATSAPP_APP_ID`, `WHATSAPP_APP_SECRET` (HMAC now enforced), verify token `tulsi_verify`, `SHIPROCKET_API_EMAIL`, `SHIPROCKET_API_PASSWORD`.
 
 **ID map:**
 - `714196232763226` = business portfolio "tulsi.foods_chennai"
@@ -79,9 +80,43 @@ Additional resilience for the abroad period:
 4. Real send test to a personal number; full loop (message → webhook → bot reply).
 5. Confirm Coexistence / BSP status (see questions) — decides whether mom keeps Business app on same number or we build admin reply box.
 
+### Shiprocket delivery go-live
+6. Mom adds pickup address in Shiprocket panel: 34, Murrays Gate Road, Alwarpet, Chennai 600018.
+7. Enable Shiprocket Quick (sidebar → Quick, or quick.shiprocket.in).
+8. Add wallet balance (prepaid, already done).
+9. Note channel ID from Sales Channels (needed for order-based tracking).
+10. Test: create order → dispatch → verify rider assigned → track via WhatsApp.
+
 ---
 
-## D. Open questions
+## D. Shiprocket Quick integration details
+
+### Architecture
+- `app/delivery/shiprocket.py` — full API client: auth (email+password → JWT, cached in SQLite `shiprocket_tokens`), serviceability check, order create, AWB assign, pickup schedule, dispatch flow, tracking (AWB-based + order-based).
+- Pickup address: 34, Murrays Gate Road, Alwarpet, Chennai 600018 (pincode 600018).
+- Dispatch is manual: mom clicks "Food Ready" on admin → Shiprocket creates order → assigns courier → schedules pickup → WhatsApp notification sent to customer.
+- Address memory: repeat customers get asked "Deliver to [saved address]? YES or new address" — stored in `customers` table.
+- Tracking: WhatsApp push on dispatch + delivery (automatic via `_send_dispatch_whatsapp()`).
+- Payment: COD + UPI. COD collected by Shiprocket rider.
+
+### API endpoints used
+- `POST /v1/external/auth/login` — get JWT token
+- `GET /v1/external/courier/serviceability/` — check pincode serviceability (only_local=1 for hyperlocal)
+- `POST /v1/external/orders/create/adhoc` — create order
+- `POST /v1/external/courier/assign/awb/{id}` — assign AWB
+- `POST /v1/external/courier/generate/pickup` — schedule pickup
+- `GET /v1/external/courier/track/awb/{awb}` — AWB-based tracking
+- `GET /v1/external/courier/track?order_id=X` — order-based tracking (richer response)
+- `GET /v1/external/settings/company/pickup` — check pickup addresses
+
+### Account status
+- Auth works: `kavitalath14@gmail.com` → token generated.
+- Standard couriers: Blue Dart Air ₹258 (Chennai→Chennai).
+- No hyperlocal couriers yet (Quick not enabled).
+- No pickup addresses (mom needs to add).
+- Channel ID: 11901391.
+
+## E. Open questions
 1. When doing "login using whatsapp business", did any **BSP/partner name** appear (Wati, Yellow.ai, Interakt, etc.)? If yes, may be on their platform instead of direct Cloud API — affects cost.
 2. Min-order: soft minimum + order-anyway + human handoff, or keep the block?
 3. Images: real photos (mom shoots) vs AI-generated vs both?

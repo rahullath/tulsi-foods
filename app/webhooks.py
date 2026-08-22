@@ -11,7 +11,7 @@ import logging
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
-from .config import WHATSAPP_APP_SECRET, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN
+from .config import WHATSAPP_APP_SECRET, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN, ADMIN_PHONE
 from .whatsapp import client, conversation, sessions
 
 log = logging.getLogger("webhook")
@@ -100,6 +100,14 @@ async def inbound(request: Request, x_hub_signature_256: str | None = Header(Non
         if sessions.is_human(msg["wa_id"]):
             log.info("bot paused for %s (human-owned)", msg["wa_id"])
             continue
+        # Check if this is an admin command from mom's phone
+        if ADMIN_PHONE and msg["wa_id"] == ADMIN_PHONE:
+            from .whatsapp.admin_commands import is_admin_command, handle_admin_command
+            if is_admin_command(msg["text"]):
+                reply_text = handle_admin_command(msg["text"])
+                client.send_text(msg["wa_id"], reply_text)
+                log.info("admin command from %s: %s → %s", msg["wa_id"], msg["text"], reply_text)
+                continue
         try:
             replies = conversation.handle(msg["wa_id"], msg["text"], msg["profile_name"])
             for reply in replies:

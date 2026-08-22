@@ -43,3 +43,10 @@ WHATSAPP_GRAPH_URL = "https://graph.facebook.com"
 
 # If set, the bot appends replies here instead of sending to WhatsApp (dev mode)
 WHATSAPP_DRY_LOG = os.environ.get("WHATSAPP_DRY_LOG", "data/whatsapp.log")
+
+# Shiprocket Quick (hyperlocal delivery) — credentials for API auth
+SHIPROCKET_API_EMAIL = os.environ.get("SHIPROCKET_API_EMAIL", "")
+SHIPROCKET_API_PASSWORD = os.environ.get("SHIPROCKET_API_PASSWORD", "")
+
+# Mom's WhatsApp phone number — messages from this number trigger admin commands
+ADMIN_PHONE = os.environ.get("ADMIN_PHONE", "")

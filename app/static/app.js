@@ -70,32 +70,112 @@
   const totalEl = document.getElementById("total");
   let fee = 0;
 
-  const kmWrap = document.getElementById("km-wrap");
+  const pincodeWrap = document.getElementById("pincode-wrap");
+  const deliveryStatus = document.getElementById("delivery-status");
   const typeSel = document.querySelector("[name=order_type]");
-  typeSel.addEventListener("change", () => { kmWrap.hidden = typeSel.value !== "delivery"; recalc(); });
-  document.querySelector("[name=km]").addEventListener("change", recalc);
+  typeSel.addEventListener("change", () => {
+    pincodeWrap.hidden = typeSel.value !== "delivery";
+    deliveryStatus.textContent = "";
+    recalc();
+  });
+
+  // Pincode-based delivery check
+  const pincodeInput = document.querySelector("[name=pincode]");
+  let pincodeTimer = null;
+  if (pincodeInput) {
+    pincodeInput.addEventListener("input", () => {
+      clearTimeout(pincodeTimer);
+      const pin = pincodeInput.value.trim();
+      if (pin.length === 6 && /^\d{6}$/.test(pin)) {
+        pincodeTimer = setTimeout(() => checkPincode(pin), 500);
+      } else {
+        deliveryStatus.textContent = "";
+        feeRow.hidden = true;
+      }
+    });
+  }
+
+  async function checkPincode(pin) {
+    deliveryStatus.textContent = "Checking delivery…";
+    deliveryStatus.style.color = "";
+    try {
+      const r = await fetch(`/api/delivery/check?pincode=${pin}`);
+      const d = await r.json();
+      if (d.serviceable) {
+        deliveryStatus.textContent = `Delivery available ${d.eta ? `(${d.eta} days)` : ""} — Fee: ${d.fee_estimate}`;
+        deliveryStatus.style.color = "var(--green)";
+        // Use zone-based fee estimate for now
+        fee = 0;
+        const sub = subtotal();
+        if (sub < 700) {
+          fee = 30; // Zone A estimate
+          feeRow.hidden = false;
+          feeVal.textContent = money(fee) + " (approx)";
+          totalEl.textContent = money(sub + fee);
+        } else {
+          feeRow.hidden = false;
+          feeVal.textContent = "Free";
+          totalEl.textContent = money(sub);
+        }
+      } else {
+        deliveryStatus.textContent = "We don't deliver to that pincode yet.";
+        deliveryStatus.style.color = "#b00";
+        feeRow.hidden = true;
+      }
+    } catch (e) {
+      deliveryStatus.textContent = "";
+    }
+  }
 
   function recalc() {
     fee = 0;
     feeRow.hidden = true;
     if (typeSel.value === "delivery") {
-      const km = parseFloat(document.querySelector("[name=km]").value);
-      const sub = subtotal();
-      fetch(`/api/delivery?km=${km}&subtotal=${sub}`).then((r) => r.json()).then((z) => {
-        if (z.fee === null) { fee = null; feeRow.hidden = false; feeVal.textContent = "outside area"; }
-        else {
-          fee = z.fee;
-          feeRow.hidden = false;
-          feeVal.textContent = money(fee);
-          totalEl.textContent = money(sub + fee);
-        }
-      });
+      const pin = pincodeInput ? pincodeInput.value.trim() : "";
+      if (pin.length === 6) checkPincode(pin);
       return;
     }
     totalEl.textContent = money(subtotal());
   }
   function subtotal() {
     return Object.entries(cart).reduce((a, [id, q]) => a + priceEl[id] * q, 0);
+  }
+
+  // Pre-fill saved address if phone number exists
+  const phoneInput = document.querySelector("[name=phone]");
+  let phoneTimer = null;
+  if (phoneInput) {
+    phoneInput.addEventListener("input", () => {
+      clearTimeout(phoneTimer);
+      const phone = phoneInput.value.trim();
+      if (phone.length >= 10) {
+        phoneTimer = setTimeout(() => prefilled = loadSavedAddress(phone), 500);
+      }
+    });
+  }
+
+  async function loadSavedAddress(phone) {
+    try {
+      const r = await fetch(`/api/customer/${phone}`);
+      const d = await r.json();
+      if (d.exists) {
+        if (d.address) {
+          const addrInput = document.querySelector("[name=address]");
+          if (addrInput && !addrInput.value) addrInput.value = d.address;
+        }
+        if (d.pincode) {
+          const pinInput = document.querySelector("[name=pincode]");
+          if (pinInput && !pinInput.value) {
+            pinInput.value = d.pincode;
+            if (d.pincode.length === 6) checkPincode(d.pincode);
+          }
+        }
+        if (d.name) {
+          const nameInput = document.querySelector("[name=name]");
+          if (nameInput && !nameInput.value) nameInput.value = d.name;
+        }
+      }
+    } catch (e) {}
   }
 
   const form = document.getElementById("checkout");
@@ -109,7 +189,7 @@
       name: fd.get("name"), phone: fd.get("phone"), order_type: fd.get("order_type"),
       payment_method: fd.get("payment_method"), instructions: fd.get("instructions"),
       address: fd.get("address") || null,
-      km: fd.get("order_type") === "delivery" ? parseFloat(fd.get("km")) : null,
+      pincode: fd.get("order_type") === "delivery" ? fd.get("pincode") : null,
       items,
     };
     msg.textContent = "Placing order…";
@@ -121,7 +201,7 @@
       });
       const data = await res.json();
       if (!res.ok) { msg.textContent = data.detail || "Could not place order"; msg.className = "err"; return; }
-      msg.textContent = `Order #${data.order_id} placed. Total ${money(data.total)}. We'll call/WhatsApp you on confirmation.`;
+      msg.textContent = `Order #${data.order_id} placed. Total ${money(data.total)}. We'll WhatsApp you when it's dispatched!`;
       msg.className = "ok";
       localStorage.removeItem("tulsi_cart");
       Object.keys(cart).forEach((k) => delete cart[k]);
