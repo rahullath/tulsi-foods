@@ -85,3 +85,18 @@ Additional resilience for the abroad period:
 1. When doing "login using whatsapp business", did any **BSP/partner name** appear (Wati, Yellow.ai, Interakt, etc.)? If yes, may be on their platform instead of direct Cloud API — affects cost.
 2. Min-order: soft minimum + order-anyway + human handoff, or keep the block?
 3. Images: real photos (mom shoots) vs AI-generated vs both?
+
+---
+
+## E. Handoff note — 2026-08-22 session (for next local session)
+
+**Context:** this session ran in an isolated cloud container with only a fresh clone of the GitHub repo — no access to the user's local machine. User has a local folder `dev/tulsi-foods` with a `media` subfolder containing **lots of photos + menu files** (mixed quality, "tonnes of useless crap" per user — needs strong filtering), which only a **local** Claude Code session can see. Continue there.
+
+**Done this session:**
+- Restyled `/` (home/ordering page) per §B.4 landing-page strategy — hero band, pure-veg + woman-owned badges, "Order on WhatsApp" CTA (`wa.me/919940062840`), 3-image collage placeholders, trust strip, 3-step "how it works". Full details + rationale already logged in §B.4 above. Commit: `e7a63cd` on branch `claude/last-commit-date-ka4ete` (pushed, no PR opened yet — user hasn't asked for one).
+- Verified: 43/43 smoke suite green, admin page untouched, screenshots checked at 390px/1280px.
+
+**Next, in the local session:**
+1. **Photos** — go through `dev/tulsi-foods/media`, pick ~3 best hero-quality shots (daylight, plain plate, top-down, no clutter — matches the photo checklist already in §B.5), crop/compress to reasonable web size (webp/jpg, square-ish aspect), save as `app/static/img/hero-1.jpg`, `hero-2.jpg`, `hero-3.jpg`. The hero markup in `app/templates/index.html` already points at those exact filenames and falls back to a gradient placeholder via `onerror` if a file is missing — dropping the files in is enough, no HTML/CSS changes needed. If there are good shots of specific dishes, consider also wiring per-item thumbnails into the menu list later (not scoped yet).
+2. Check `media` for anything else worth surfacing (e.g. an existing paper/PDF menu that reveals dishes or prices missing from `app/menu` or `data/`).
+3. **Testimonials** (§B.4 — skipped this session, don't fabricate quotes): user is going to scrape Zomato/Swiggy/Google reviews + collect physical/photo reviews and hand over a real list **later**. When that list arrives: add a "What people say" section to the hero/landing area with a handful of real short quotes (name + platform, no fabricated star ratings beyond what the source shows).
