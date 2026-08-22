@@ -44,6 +44,27 @@ def menu_page(request: Request):
     )
 
 
+RECOMMENDED_DISHES = [
+    ("north-indian-thali", "Bestseller"),
+    ("chola-bhatura", "Must try"),
+    ("paneer-butter-masala", "Trending"),
+    ("pav-bhaji", None),
+    ("sabudana-vada-2pcs", None),
+    ("dal-makhani", None),
+]
+
+
+@app.get("/bio", response_class=HTMLResponse)
+def bio_page(request: Request):
+    photos = dish_photo_ids()
+    recommendations = []
+    for item_id, tag in RECOMMENDED_DISHES:
+        item = menu.get_item(item_id)
+        if item:
+            recommendations.append({**item, "tag": tag, "has_photo": item_id in photos})
+    return templates.TemplateResponse(request, "bio.html", {"recommendations": recommendations})
+
+
 @app.get("/admin", response_class=HTMLResponse)
 def admin_page(request: Request):
     return templates.TemplateResponse(

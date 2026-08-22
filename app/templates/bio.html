@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+{% endblock %}
+{% block styles %}{% endblock %}
+{% block body %}
+<style>
+:root { --g: #0E7A45; --sf: #E08A1E; --bg: #FBF8F2; --card: #fff; --border: #E7E1D6; --ink: #171A14; --sub: #6F7468; --line2: #EFEBE3; }
+* { box-sizing: border-box; margin: 0; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+
+.bio { max-width: 460px; margin: 0 auto; padding: 40px 20px 60px; }
+
+/* Header */
+.bio-header { text-align: center; }
+.bio-logo { width: 84px; height: 84px; border-radius: 50%; background: #fff; border: 1px solid var(--border); padding: 12px; object-fit: contain; box-shadow: 0 4px 16px rgba(23,26,20,.06); }
+.bio-name { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; margin-top: 16px; }
+.bio-tag { font-size: 14px; color: var(--sub); margin-top: 4px; }
+
+/* Social row */
+.bio-social { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+.bio-social a { width: 42px; height: 42px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--ink); transition: transform .15s ease, border-color .15s ease; }
+.bio-social a:hover { transform: translateY(-2px); border-color: var(--g); color: var(--g); }
+
+/* CTAs */
+.bio-cta { display: block; text-align: center; background: var(--g); color: #fff; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 600; text-decoration: none; margin-top: 22px; transition: opacity .15s ease, transform .15s ease; }
+.bio-cta:hover { opacity: .92; transform: translateY(-1px); }
+.bio-cta-ghost { display: block; text-align: center; border: 1px solid #C9C4B8; color: var(--ink); border-radius: 14px; padding: 15px; font-size: 15px; font-weight: 600; text-decoration: none; margin-top: 10px; transition: border-color .15s ease; }
+.bio-cta-ghost:hover { border-color: var(--ink); }
+
+/* Sections */
+.bio-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin-top: 28px; }
+.bio-card-tag { font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--g); text-transform: uppercase; letter-spacing: .04em; }
+.bio-card h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px; margin: 8px 0 10px; }
+.bio-card p { font-size: 14px; line-height: 1.65; color: #4A4F45; margin-top: 8px; }
+.bio-card p:first-of-type { margin-top: 0; }
+
+/* Recommendations grid */
+.rec-head { margin-top: 34px; text-align: center; }
+.rec-head .bio-card-tag { display: block; }
+.rec-head h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 21px; margin-top: 8px; }
+.rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.rec-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.rec-photo { aspect-ratio: 1/1; background: repeating-linear-gradient(135deg, var(--line2) 0 10px, #E6E1D7 10px 20px); position: relative; }
+.rec-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rec-badge { position: absolute; top: 8px; left: 8px; background: rgba(255,255,255,.95); color: var(--g); font: 600 9px/1 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .03em; padding: 4px 8px; border-radius: 999px; }
+.rec-body { padding: 10px 12px 12px; }
+.rec-name { font-size: 13px; font-weight: 600; line-height: 1.3; }
+.rec-price { font-size: 13px; color: var(--sub); margin-top: 3px; }
+
+/* Instagram */
+.bio-ig { text-align: center; }
+.bio-ig-count { font-size: 13px; color: var(--sub); margin-top: 6px; }
+
+/* Visit us */
+.visit-row { display: flex; gap: 12px; align-items: flex-start; margin-top: 14px; font-size: 14px; }
+.visit-row:first-of-type { margin-top: 0; }
+.visit-icon { flex: 0 0 auto; color: var(--g); margin-top: 1px; }
+.visit-label { color: var(--sub); font-size: 12px; }
+.visit-value { color: var(--ink); }
+.visit-value a { color: var(--ink); text-decoration: none; }
+.visit-value a:hover { color: var(--g); }
+
+.bio-footer { text-align: center; margin-top: 34px; font-size: 12px; color: var(--sub); }
+.bio-footer a { color: var(--g); text-decoration: none; }
+</style>
+
+<div class="bio">
+  <header class="bio-header">
+    <img class="bio-logo" src="/static/logo.png" alt="Tulsi Foods">
+    <div class="bio-name">Tulsi Foods</div>
+    <div class="bio-tag">Food that tastes just like home</div>
+    <div class="bio-social">
+      <a href="https://www.instagram.com/tulsi.foods_chennai/" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+      </a>
+      <a href="https://api.whatsapp.com/send?phone=919940062840" target="_blank" rel="noopener" aria-label="WhatsApp">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.14h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.26-8.24 2.21 0 4.28.86 5.84 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.55-3.7 8.25-8.25 8.25zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.97-.14.16-.29.18-.53.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.24-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.47-.01a.9.9 0 0 0-.65.31c-.23.24-.86.85-.86 2.06 0 1.22.88 2.4 1 2.56.12.16 1.73 2.64 4.19 3.7.59.25 1.04.4 1.4.52.59.19 1.12.16 1.54.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.08.14-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
+      </a>
+      <a href="https://www.facebook.com/tulsifoodservices" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V8c0-.9.25-1.5 1.55-1.5H16.7V3.7c-.28-.04-1.25-.12-2.38-.12-2.35 0-3.96 1.43-3.96 4.06V9.9H7.6V13h2.76v8h3.14z"/></svg>
+      </a>
+      <a href="tel:+919940621800" aria-label="Call">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </a>
+      <a href="mailto:tulsifoodsco@gmail.com" aria-label="Email">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+      </a>
+    </div>
+
+    <a class="bio-cta" href="https://api.whatsapp.com/send?phone=919940062840&text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank" rel="noopener">Order on WhatsApp</a>
+    <a class="bio-cta-ghost" href="/menu">See full menu</a>
+  </header>
+
+  <section class="bio-card">
+    <div class="bio-card-tag">Our story</div>
+    <h2>Run by Kavita Lath, since 2015</h2>
+    <p>Tulsi Foods started in Mylapore with a simple idea: cook the same food we'd make at home, and serve it to people tired of eating junk.</p>
+    <p>Every dish is 100% pure vegetarian, cooked fresh the same day. We're moving to direct ordering so customers avoid aggregator price hikes — and the kitchen keeps what it earns.</p>
+  </section>
+
+  <div class="rec-head">
+    <span class="bio-card-tag">Kavita's recommendations</span>
+    <h2>What to order first</h2>
+  </div>
+  <div class="rec-grid">
+    {% for d in recommendations %}
+    <div class="rec-card">
+      <div class="rec-photo">
+        {% if d.has_photo %}<img src="/static/img/dishes/{{ d.id }}.jpg" alt="{{ d.name }}" loading="lazy">{% endif %}
+        {% if d.tag %}<span class="rec-badge">{{ d.tag }}</span>{% endif %}
+      </div>
+      <div class="rec-body">
+        <div class="rec-name">{{ d.name }}</div>
+        <div class="rec-price">₹{{ d.price }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <section class="bio-card bio-ig">
+    <div class="bio-card-tag">Follow along</div>
+    <h2>@tulsi.foods_chennai</h2>
+    <div class="bio-ig-count">1k+ followers on Instagram</div>
+    <a class="bio-cta-ghost" href="https://www.instagram.com/tulsi.foods_chennai/" target="_blank" rel="noopener">Follow now</a>
+  </section>
+
+  <section class="bio-card">
+    <div class="bio-card-tag">Place your order</div>
+    <h2>Mention "DIRECT10" when you message us</h2>
+    <p>Ordering direct instead of through an aggregator means fresher food, faster replies, and no platform markup on your bill.</p>
+    <a class="bio-cta" href="https://api.whatsapp.com/send?phone=919940062840&text=Hi%2C%20I%27d%20like%20to%20place%20an%20order.%20(DIRECT10)" target="_blank" rel="noopener">Order on WhatsApp</a>
+  </section>
+
+  <section class="bio-card">
+    <div class="bio-card-tag">Visit us</div>
+    <div class="visit-row" style="margin-top:14px">
+      <span class="visit-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+      <div>
+        <div class="visit-label">Phone</div>
+        <div class="visit-value"><a href="tel:+919940621800">+91 99406 21800</a></div>
+      </div>
+    </div>
+    <div class="visit-row">
+      <span class="visit-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span>
+      <div>
+        <div class="visit-label">Email</div>
+        <div class="visit-value"><a href="mailto:tulsifoodsco@gmail.com">tulsifoodsco@gmail.com</a></div>
+      </div>
+    </div>
+    <div class="visit-row">
+      <span class="visit-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+      <div>
+        <div class="visit-label">Location</div>
+        <div class="visit-value"><a href="https://www.google.com/maps/search/?api=1&query=34%2C+Murrays+Gate+Road%2C+Alwarpet%2C+Chennai+600018" target="_blank" rel="noopener">34, Murrays Gate Road, Alwarpet, Chennai</a></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="bio-footer">
+    <a href="/">Tulsi Foods full site →</a>
+  </div>
+</div>
+{% endblock %}
