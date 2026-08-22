@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+{% block meta %}
+<meta name="description" content="Tulsi Foods is a pure vegetarian, home-style North Indian restaurant in Mylapore, Chennai, run by Kavita Lath since 2015. Order thalis, parathas, chaats and more direct on WhatsApp — delivery across Mylapore, Alwarpet and Teynampet.">
+<title>North Indian Vegetarian Restaurant in Mylapore, Chennai | Tulsi Foods</title>
+{% endblock %}
+{% block canonical %}<link rel="canonical" href="https://tulsifoods.app/">{% endblock %}
 {% block fonts %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -126,7 +131,7 @@ section[id] { scroll-margin-top: 76px; }
   <div>
     <div class="hero-badge">MYLAPORE · PURE VEG · SINCE 2015</div>
     <h1>Home food, ordered straight from us.</h1>
-    <p class="hero-sub">No app to install, no aggregator taking a third of the bill. Message us on WhatsApp and the same kitchen that cooks your thali takes the order.</p>
+    <p class="hero-sub">No app to install. Message us on WhatsApp and the same kitchen that cooks your thali takes the order.</p>
     <div class="hero-actions">
       <a class="btn-wa" href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank">Order on WhatsApp</a>
       <a class="btn-menu" href="/menu">See today's menu</a>
@@ -142,9 +147,9 @@ section[id] { scroll-margin-top: 76px; }
 
 <div class="features">
   <div class="feat-card reveal">
-    <div class="feat-num">₹0</div>
-    <div class="feat-title">Platform fee</div>
-    <p class="feat-desc">Aggregators take 27–32% of every order. Ordering direct keeps that with the kitchen and the prices honest.</p>
+    <div class="feat-num">100%</div>
+    <div class="feat-title">Pure veg, home-style</div>
+    <p class="feat-desc">Every dish is vegetarian, cooked fresh the same day — the way you'd get it at home, not a commercial kitchen.</p>
   </div>
   <div class="feat-card reveal">
     <div class="feat-num">140</div>
@@ -188,9 +193,9 @@ section[id] { scroll-margin-top: 76px; }
 <section class="story" id="story">
   <div class="story-body reveal">
     <div class="section-tag">Our story</div>
-    <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(24px,3vw,32px);margin-top:8px;">Run by Kavita Lath, from a home kitchen in Mylapore.</h2>
-    <p>Tulsi Foods started the way most good home food does — cooking for family, then for neighbours, then for whoever found their way to the door. It's still pure vegetarian, still cooked fresh each day, and still run by the same family.</p>
-    <p>Going direct on WhatsApp means the person who takes your order is connected to the same kitchen that cooks it — no call centre, no aggregator in between.</p>
+    <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(24px,3vw,32px);margin-top:8px;">Run by Kavita Lath, since 2015.</h2>
+    <p>Tulsi Foods started in Mylapore with a simple idea: cook the same food we'd make at home, and serve it to people tired of eating junk.</p>
+    <p>Every dish is 100% pure vegetarian, cooked fresh the same day to help you feel at peace. Message us directly on WhatsApp and you're talking straight to the kitchen — not a call centre.</p>
   </div>
   <div class="story-photo reveal">
     <img src="/static/img/story-photo.jpg" alt="A Tulsi Foods thali with roti, sabzi, dal and curd" loading="lazy">
@@ -206,9 +211,49 @@ section[id] { scroll-margin-top: 76px; }
 </div>
 
 <div class="footer">
-  <span>Tulsi Foods, Kutchery Road, Mylapore, Chennai 600004 · 11 AM – 10 PM</span>
+  <span>Tulsi Foods, 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
   <span><a href="/privacy-policy">Privacy policy</a> · <a href="/menu">Order now</a></span>
 </div>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Restaurant",
+  "name": "Tulsi Foods",
+  "url": "https://tulsifoods.app/",
+  "image": ["https://tulsifoods.app/static/img/landing-hero.jpg"],
+  "telephone": "+919940062840",
+  "priceRange": "₹₹",
+  "servesCuisine": ["North Indian", "Vegetarian"],
+  "menu": "https://tulsifoods.app/menu",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "34, Murrays Gate Road, Alwarpet",
+    "addressLocality": "Chennai",
+    "addressRegion": "Tamil Nadu",
+    "postalCode": "600018",
+    "addressCountry": "IN"
+  },
+  "openingHoursSpecification": [
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      "opens": "09:00",
+      "closes": "21:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Sunday"],
+      "opens": "11:00",
+      "closes": "21:00"
+    }
+  ],
+  "sameAs": [
+    "https://www.instagram.com/tulsi.foods_chennai/",
+    "https://www.facebook.com/tulsifoodservices"
+  ]
+}
+</script>
 
 <script>
 (() => {

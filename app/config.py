@@ -50,3 +50,6 @@ SHIPROCKET_API_PASSWORD = os.environ.get("SHIPROCKET_API_PASSWORD", "")
 
 # Mom's WhatsApp phone number — messages from this number trigger admin commands
 ADMIN_PHONE = os.environ.get("ADMIN_PHONE", "")
+
+# Google Business Profile "ask for review" short link
+GOOGLE_REVIEW_LINK = "https://g.page/r/CbCaykOYyQTPEAE/review"

@@ -2,13 +2,13 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from . import db, menu, orders
-from .config import ADMIN_TOKEN, DELIVERY_ZONES
+from .config import ADMIN_TOKEN, DELIVERY_ZONES, GOOGLE_REVIEW_LINK
 
 app = FastAPI(title="Tulsi Foods Direct Ordering", version="0.2.0")
 
@@ -75,6 +75,54 @@ def admin_page(request: Request):
 @app.get("/privacy-policy", response_class=HTMLResponse)
 def privacy_page(request: Request):
     return templates.TemplateResponse(request, "privacy.html", {})
+
+
+# ---- SEO: verification, robots, sitemap ----
+
+SITE_URL = "https://tulsifoods.app"
+
+
+@app.get("/googlee69732d81b8747c7.html", response_class=PlainTextResponse)
+def google_site_verification():
+    # Google Search Console domain ownership verification (HTML file method).
+    return PlainTextResponse("google-site-verification: googlee69732d81b8747c7.html")
+
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+def robots_txt():
+    lines = [
+        "User-agent: *",
+        "Disallow: /admin",
+        "Disallow: /api/",
+        "",
+        f"Sitemap: {SITE_URL}/sitemap.xml",
+    ]
+    return PlainTextResponse("\n".join(lines))
+
+
+@app.get("/sitemap.xml")
+def sitemap_xml():
+    template_dir = Path("app/templates")
+    pages = [
+        ("/", "landing.html"),
+        ("/menu", "menu.html"),
+        ("/bio", "bio.html"),
+        ("/privacy-policy", "privacy.html"),
+    ]
+    entries = []
+    for path, template_name in pages:
+        mtime = (template_dir / template_name).stat().st_mtime
+        lastmod = date.fromtimestamp(mtime).isoformat()
+        entries.append(
+            f"  <url>\n    <loc>{SITE_URL}{path}</loc>\n    <lastmod>{lastmod}</lastmod>\n  </url>"
+        )
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "\n".join(entries)
+        + "\n</urlset>"
+    )
+    return Response(content=body, media_type="application/xml")
 
 
 # ---- menu API ----
@@ -254,7 +302,10 @@ def _send_status_whatsapp(order: dict, status: str) -> None:
             else:
                 msg = f"Order #{oid} is ready! Dispatching shortly."
         elif status == "delivered":
-            msg = f"Order #{oid} delivered. Enjoy your meal 🙏 If anything wasn't right, reply here and we'll fix it."
+            msg = (
+                f"Order #{oid} delivered. Enjoy your meal 🙏 If anything wasn't right, reply here and we'll fix it.\n\n"
+                f"If you did enjoy it, an honest Google review helps our small kitchen a lot: {GOOGLE_REVIEW_LINK}"
+            )
         elif status == "cancelled":
             msg = f"Order #{oid} has been cancelled."
         else:
