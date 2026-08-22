@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -9,7 +10,7 @@ from pydantic import BaseModel, Field
 from . import db, menu, orders
 from .config import ADMIN_TOKEN, DELIVERY_ZONES
 
-app = FastAPI(title="Tulsi Foods Direct Ordering", version="0.1.0")
+app = FastAPI(title="Tulsi Foods Direct Ordering", version="0.2.0")
 
 from .webhooks import router as webhook_router
 
@@ -18,13 +19,28 @@ app.include_router(webhook_router)
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+DISH_PHOTO_DIR = Path("app/static/img/dishes")
+
+
+def dish_photo_ids() -> set[str]:
+    if not DISH_PHOTO_DIR.is_dir():
+        return set()
+    return {p.stem for p in DISH_PHOTO_DIR.glob("*.jpg")}
+
 
 # ---- pages ----
 
 @app.get("/", response_class=HTMLResponse)
-def index_page(request: Request):
+def landing_page(request: Request):
+    return templates.TemplateResponse(request, "landing.html", {})
+
+
+@app.get("/menu", response_class=HTMLResponse)
+def menu_page(request: Request):
     return templates.TemplateResponse(
-        request, "index.html", {"groups": menu.grouped(), "zones": DELIVERY_ZONES}
+        request,
+        "menu.html",
+        {"groups": menu.grouped(), "zones": DELIVERY_ZONES, "dish_photos": dish_photo_ids()},
     )
 
 
@@ -53,6 +69,23 @@ def api_delivery(km: float, subtotal: float = 0.0):
     if not q:
         return {"zone": "outside", "fee": None, "min_order": None}
     return {"zone": q["zone"], "fee": q["fee"], "min_order": q["min_order"]}
+
+
+@app.get("/api/delivery/check")
+def api_delivery_check(pincode: str):
+    """Check if a pincode is serviceable by Shiprocket Quick."""
+    result = orders.check_pincode_serviceable(pincode)
+    return result
+
+
+@app.get("/api/customer/{phone}")
+def api_customer_info(phone: str):
+    """Get saved address/pincode for a customer (for checkout pre-fill)."""
+    c = db.get_customer(phone)
+    if not c:
+        return {"exists": False, "address": None, "pincode": None, "name": None}
+    return {"exists": True, "address": c.get("address"), "pincode": c.get("pincode"),
+            "name": c.get("name")}
 
 
 # ---- availability (admin) ----
@@ -95,10 +128,119 @@ def admin_repeat_yesterday(x_admin_token: str | None = Header(None)):
     return {"ok": True, "copied_from": last, "copied_items": n}
 
 
+# ---- daily specials (admin) ----
+
+class SpecialIn(BaseModel):
+    item_name: str
+    price: float
+
+
+@app.get("/api/admin/special")
+def admin_get_special(day: str | None = None, x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    day = menu.today(day)
+    special = db.get_special(day)
+    return {"date": day, "special": special}
+
+
+@app.post("/api/admin/special")
+def admin_set_special(body: SpecialIn, day: str | None = None,
+                      x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    day = menu.today(day)
+    db.set_special(day, body.item_name, body.price)
+    return {"date": day, "ok": True, "special": body.model_dump()}
+
+
+@app.delete("/api/admin/special")
+def admin_clear_special(day: str | None = None, x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    day = menu.today(day)
+    db.clear_special(day)
+    return {"date": day, "ok": True}
+
+
 # ---- WhatsApp conversations (admin) ----
 
 class HumanIn(BaseModel):
     human: bool
+
+
+# ---- admin: order state machine ----
+
+class StatusIn(BaseModel):
+    status: str
+
+
+VALID_TRANSITIONS = {
+    "new": ["preparing", "cancelled"],
+    "preparing": ["ready", "cancelled"],
+    "ready": ["out_for_delivery", "delivered"],  # delivered for pickup
+    "out_for_delivery": ["delivered"],
+}
+
+
+@app.post("/api/admin/orders/{order_id}/status")
+def admin_update_order_status(order_id: int, body: StatusIn,
+                              x_admin_token: str | None = Header(None)):
+    """Advance order to next state. Sends WhatsApp notification to customer."""
+    _check_admin(x_admin_token)
+    o = db.get_order(order_id)
+    if not o:
+        raise HTTPException(404, "Order not found")
+    current = o["status"]
+    target = body.status
+    allowed = VALID_TRANSITIONS.get(current, [])
+    if target not in allowed:
+        raise HTTPException(400, f"Cannot move from '{current}' to '{target}'. Allowed: {allowed}")
+    db.update_order_status(order_id, target)
+    _send_status_whatsapp(o, target)
+    return {"ok": True, "order_id": order_id, "from": current, "to": target}
+
+
+def _send_status_whatsapp(order: dict, status: str) -> None:
+    """Send status update to customer. Uses template if available, falls back to text."""
+    try:
+        from .whatsapp import client
+        phone = order.get("customer_phone", "")
+        if not phone:
+            return
+        oid = order["id"]
+        # Map status → template name + params
+        templates = {
+            "preparing": ("order_preparing", [{"type": "text", "text": str(oid)}]),
+            "ready": (
+                ("order_out_for_delivery" if order["order_type"] == "delivery" else "order_preparing"),
+                [{"type": "text", "text": str(oid)},
+                 {"type": "text", "text": order.get("sr_courier") or "the restaurant"},
+                 {"type": "text", "text": ""}],
+            ),
+            "delivered": ("order_delivered", []),
+        }
+        if status in templates:
+            tpl_name, params = templates[status]
+            try:
+                client.send_template(phone, tpl_name, "en", params)
+                return
+            except Exception:
+                pass  # template not approved yet, fall back to text
+        # Fallback: plain text
+        if status == "preparing":
+            msg = f"Order #{oid} is being cooked now. We'll tell you when it leaves the kitchen."
+        elif status == "ready":
+            if order["order_type"] == "pickup":
+                msg = f"Order #{oid} is ready for pickup! Come and collect."
+            else:
+                msg = f"Order #{oid} is ready! Dispatching shortly."
+        elif status == "delivered":
+            msg = f"Order #{oid} delivered. Enjoy your meal 🙏 If anything wasn't right, reply here and we'll fix it."
+        elif status == "cancelled":
+            msg = f"Order #{oid} has been cancelled."
+        else:
+            return
+        client.send_text(phone, msg)
+    except Exception:
+        pass  # non-fatal
 
 
 @app.get("/api/admin/conversations")
@@ -130,6 +272,7 @@ class OrderIn(BaseModel):
     address: str | None = None
     order_type: str = "delivery"  # delivery | pickup
     km: float | None = None
+    pincode: str | None = None
     payment_method: str = "cod"   # cod | upi
     instructions: str | None = None
     items: list[OrderItemIn]
@@ -140,7 +283,7 @@ def create_order(order: OrderIn):
     try:
         result = orders.create_order(
             phone=order.phone, name=order.name, address=order.address,
-            order_type=order.order_type, km=order.km,
+            order_type=order.order_type, km=order.km, pincode=order.pincode,
             payment_method=order.payment_method, instructions=order.instructions,
             items=[{"item_id": it.item_id, "qty": it.qty} for it in order.items],
         )
@@ -160,6 +303,97 @@ def get_order(order_id: int):
 @app.get("/api/orders")
 def list_orders(limit: int = 20):
     return {"orders": db.recent_orders(limit)}
+
+
+# ---- admin: today's orders dashboard ----
+
+@app.get("/api/admin/today-orders")
+def admin_today_orders(x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    return {"orders": db.today_orders()}
+
+
+# ---- admin: dispatch (Food Ready) ----
+
+@app.post("/api/admin/orders/{order_id}/dispatch")
+def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)):
+    """Mom taps 'Food Ready' — triggers Shiprocket rider dispatch."""
+    _check_admin(x_admin_token)
+    o = db.get_order(order_id)
+    if not o:
+        raise HTTPException(404, "Order not found")
+    if o["order_type"] != "delivery":
+        raise HTTPException(400, "Cannot dispatch pickup orders")
+    if o["status"] not in ("new", "preparing"):
+        raise HTTPException(400, f"Order is already {o['status']}")
+    if not o.get("delivery_address") or not o.get("delivery_pincode"):
+        raise HTTPException(400, "Order missing delivery address or pincode")
+    try:
+        from .delivery.shiprocket import dispatch_order
+        result = dispatch_order(
+            order_id=order_id,
+            customer_name=o.get("customer_name") or "Customer",
+            customer_phone=o.get("customer_phone") or "",
+            delivery_address=o["delivery_address"],
+            delivery_pincode=o["delivery_pincode"],
+            items=o["items"],
+            total=o["total"],
+            payment_method=o["payment_method"],
+        )
+        db.update_order_dispatch(
+            order_id=order_id,
+            sr_order_id=result["sr_order_id"],
+            awb=result["awb_code"],
+            courier=result["courier_name"],
+            tracking_url=result["tracking_url"],
+        )
+        # Push WhatsApp notification to customer
+        _send_dispatch_whatsapp(o, result)
+        return {"ok": True, **result}
+    except Exception as e:
+        raise HTTPException(500, f"Dispatch failed: {e}")
+
+
+def _send_dispatch_whatsapp(order: dict, dispatch: dict) -> None:
+    """Send tracking notification to customer via WhatsApp."""
+    try:
+        from .whatsapp import client
+        phone = order.get("customer_phone", "")
+        if not phone:
+            return
+        msg = (
+            f"Your order #{order['id']} is on its way! 🛵\n"
+            f"Courier: {dispatch['courier_name']}\n"
+            f"Track: {dispatch['tracking_url']}\n"
+            f"We'll update you when it's delivered."
+        )
+        client.send_text(phone, msg)
+    except Exception:
+        pass  # non-fatal
+
+
+@app.get("/api/orders/{order_id}/track")
+def track_order(order_id: int):
+    """Get live tracking info for an order."""
+    o = db.get_order(order_id)
+    if not o:
+        raise HTTPException(404, "Order not found")
+    if not o.get("sr_awb"):
+        return {"tracking": None, "status": o["status"]}
+    try:
+        from .delivery.shiprocket import track_awb, track_order as sr_track_order
+        from .delivery.config import SHIPROCKET_CHANNEL_ID
+        # Prefer order-based tracking (richer response with track_url)
+        if o.get("sr_order_id"):
+            try:
+                tracking = sr_track_order(str(o["sr_order_id"]), SHIPROCKET_CHANNEL_ID)
+                return {"tracking": tracking, "status": o["status"]}
+            except Exception:
+                pass  # fall through to AWB-based
+        tracking = track_awb(o["sr_awb"])
+        return {"tracking": tracking, "status": o["status"]}
+    except Exception as e:
+        return {"tracking": None, "status": o["status"], "error": str(e)}
 
 
 @app.on_event("startup")

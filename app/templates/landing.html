@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+{% endblock %}
+{% block styles %}{% endblock %}
+{% block body %}
+<style>
+:root { --g: #0E7A45; --sf: #E08A1E; --bg: #FBF8F2; --card: #fff; --border: #E7E1D6; --ink: #171A14; --sub: #6F7468; --line2: #EFEBE3; }
+* { box-sizing: border-box; margin: 0; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+
+/* Nav */
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--line2); }
+.nav-brand { display: flex; align-items: center; gap: 12px; }
+.nav-brand img { width: 40px; height: 40px; object-fit: contain; }
+.nav-brand span { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: var(--ink); }
+.nav-links { display: flex; align-items: center; gap: 28px; font-size: 14px; color: #4A4F45; }
+.nav-links span { cursor: pointer; }
+.nav-cta { background: var(--g); color: #fff; border-radius: 999px; padding: 11px 20px; font-weight: 600; text-decoration: none; }
+.nav-cta:hover { opacity: .9; }
+
+/* Hero */
+.hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; padding: 56px 40px; align-items: center; max-width: 1200px; margin: 0 auto; }
+.hero-badge { font: 500 12px/1 'IBM Plex Mono', monospace; color: #8A5A12; background: #FBF0DE; border: 1px solid #EFDFC2; border-radius: 999px; padding: 8px 13px; display: inline-block; }
+.hero h1 { margin: 20px 0 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(36px, 5vw, 62px); line-height: 1.02; letter-spacing: -.025em; color: var(--ink); text-wrap: pretty; }
+.hero-sub { margin: 20px 0 0; font-size: 17px; line-height: 1.6; color: #4A4F45; max-width: 460px; }
+.hero-actions { display: flex; gap: 14px; margin-top: 32px; }
+.btn-wa { background: var(--g); color: #fff; border-radius: 12px; padding: 16px 28px; font-size: 16px; font-weight: 600; text-decoration: none; }
+.btn-menu { border: 1px solid #C9C4B8; border-radius: 12px; padding: 16px 28px; font-size: 16px; font-weight: 600; color: var(--ink); text-decoration: none; }
+.hero-info { display: flex; gap: 28px; margin-top: 34px; font-size: 13px; color: var(--sub); }
+.hero-photo { height: 420px; border-radius: 16px; background: repeating-linear-gradient(135deg, var(--line2) 0 12px, #E6E1D7 12px 24px); overflow: hidden; }
+.hero-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Features */
+.features { padding: 0 40px 56px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1200px; margin: 0 auto; }
+.feat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 26px; }
+.feat-num { font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; color: var(--g); }
+.feat-title { font-size: 15px; font-weight: 600; margin-top: 8px; }
+.feat-desc { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--sub); }
+
+/* CTA banner */
+.cta-banner { background: var(--g); color: #fff; padding: 48px 40px; display: flex; justify-content: space-between; align-items: center; gap: 40px; max-width: 1200px; margin: 0 auto; border-radius: 0; }
+.cta-text { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(22px, 3vw, 34px); line-height: 1.15; }
+.cta-sub { margin: 10px 0 0; font-size: 15px; opacity: .85; max-width: 520px; }
+.cta-btn { background: #fff; color: var(--g); border-radius: 12px; padding: 16px 30px; font-size: 16px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+
+/* Footer */
+.footer { padding: 26px 40px 34px; display: flex; justify-content: space-between; font-size: 13px; color: var(--sub); max-width: 1200px; margin: 0 auto; }
+.footer a { color: var(--g); text-decoration: none; }
+
+@media (max-width: 768px) {
+  .nav { padding: 16px 18px; }
+  .nav-links { display: none; }
+  .hero { grid-template-columns: 1fr; padding: 32px 18px; }
+  .hero-photo { height: 240px; }
+  .features { grid-template-columns: 1fr; padding: 0 18px 40px; }
+  .cta-banner { flex-direction: column; text-align: center; padding: 36px 18px; }
+  .footer { flex-direction: column; gap: 8px; padding: 20px 18px 30px; }
+}
+</style>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <img src="/static/logo.png" alt="Tulsi Foods">
+    <span>Tulsi Foods</span>
+  </div>
+  <div class="nav-links">
+    <span><a href="/menu" style="color:inherit;text-decoration:none">Menu</a></span>
+    <span>Delivery area</span>
+    <span>Our story</span>
+    <a href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank" class="nav-cta">Order on WhatsApp</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div>
+    <div class="hero-badge">MYLAPORE · PURE VEG · SINCE 2019</div>
+    <h1>Home food, ordered straight from us.</h1>
+    <p class="hero-sub">No app to install, no aggregator taking a third of the bill. Message us on WhatsApp and the same kitchen that cooks your thali takes the order.</p>
+    <div class="hero-actions">
+      <a class="btn-wa" href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank">Order on WhatsApp</a>
+      <a class="btn-menu" href="/menu">See today's menu</a>
+    </div>
+    <div class="hero-info">
+      <span>Delivery ₹30 within 3 km</span>
+      <span>Free above ₹700</span>
+      <span>Pickup in 20 min</span>
+    </div>
+  </div>
+  <div class="hero-photo"><img src="/static/img/landing-hero.jpg" alt="Pav bhaji, freshly made at Tulsi Foods" loading="lazy"></div>
+</section>
+
+<div class="features">
+  <div class="feat-card">
+    <div class="feat-num">₹0</div>
+    <div class="feat-title">Platform fee</div>
+    <p class="feat-desc">Aggregators take 27–32% of every order. Ordering direct keeps that with the kitchen and the prices honest.</p>
+  </div>
+  <div class="feat-card">
+    <div class="feat-num">140</div>
+    <div class="feat-title">Dishes, cooked to order</div>
+    <p class="feat-desc">Thalis, parathas, chaats, sabzi, rice bowls. What's off the menu today is marked off, not silently missing.</p>
+  </div>
+  <div class="feat-card">
+    <div class="feat-num">7 km</div>
+    <div class="feat-title">Delivery radius</div>
+    <p class="feat-desc">₹30 up to 3 km, ₹50 to 5 km, ₹70 to 7 km. Minimum order ₹250, ₹300, ₹350 by zone.</p>
+  </div>
+</div>
+
+<div class="cta-banner">
+  <div>
+    <div class="cta-text">Send us a "Hi". We'll take it from there.</div>
+    <p class="cta-sub">Today's menu, your last order, and payment all happen in the chat. Someone from the family is always on the other end.</p>
+  </div>
+  <a class="cta-btn" href="https://wa.me/919940062840?text=Hi%20Tulsi" target="_blank">wa.me/919940062840</a>
+</div>
+
+<div class="footer">
+  <span>Tulsi Foods, Kutchery Road, Mylapore, Chennai 600004 · 11 AM – 10 PM</span>
+  <span><a href="/privacy-policy">Privacy policy</a> · <a href="/menu">Order now</a></span>
+</div>
+{% endblock %}

@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+{% endblock %}
+{% block styles %}{% endblock %}
+{% block body %}
+<div id="menu-app">
+  <header class="mh">
+    <div class="mh-top">
+      <div class="mh-brand">
+        <img src="/static/logo.png" alt="" class="mh-logo">
+        <div>
+          <div class="mh-name">Tulsi Foods</div>
+          <div class="mh-sub">Mylapore · pure veg</div>
+        </div>
+      </div>
+      <span class="mh-badge">Lunch</span>
+    </div>
+    <div class="mh-search" id="search-box">
+      <span class="mh-search-icon">⌕</span>
+      <input type="text" id="search-input" placeholder="Search 140 dishes" autocomplete="off">
+    </div>
+  </header>
+
+  <nav class="group-nav" id="group-nav">
+    <a href="#" class="chip active" data-group="all">Popular</a>
+    {% for g in groups %}<a href="#g-{{ loop.index }}" class="chip" data-group="{{ loop.index }}">{{ g["group"] }}</a>{% endfor %}
+  </nav>
+
+  <main id="menu-main">
+    {% for g in groups %}
+    <section class="group" id="g-{{ loop.index }}">
+      <h2>{{ g["group"] }}</h2>
+      {% for it in g["items"] %}
+      <div class="menu-card{% if not it.available %} off{% endif %}" data-id="{{ it.id }}" data-name="{{ it.name|lower }}" data-popular="{{ 'true' if it.popular else 'false' }}">
+        <div class="card-photo" data-idx="{{ loop.index0 }}">
+          {% if it.id in dish_photos %}
+          <img src="/static/img/dishes/{{ it.id }}.jpg" alt="{{ it.name }}" loading="lazy">
+          {% else %}
+          <span class="photo-label">{{ it.name[:2] }}</span>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <div class="card-title">
+            <span class="card-name">{{ it.name }}</span>
+            {% if it.popular %}<span class="card-pop">popular</span>{% endif %}
+          </div>
+          <div class="card-bottom">
+            <span class="card-price">₹{{ it.price }}</span>
+            {% if it.available %}
+            <div class="card-stepper" data-id="{{ it.id }}">
+              <button data-act="dec" aria-label="decrease">−</button>
+              <span class="qty" data-role="qty">0</span>
+              <button data-act="inc" aria-label="increase">+</button>
+            </div>
+            {% else %}
+            <span class="card-sold-out">SOLD OUT</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </section>
+    {% endfor %}
+
+    <div id="no-results" class="no-results" hidden>
+      <div class="no-results-text">No dishes found</div>
+    </div>
+  </main>
+
+  <div id="cart-bar" class="cart-bar hidden">
+    <div class="cart-inner">
+      <div class="cart-info">
+        <div class="cart-count"><span id="cart-count">0</span> items · <span id="cart-subtotal">₹0</span></div>
+        <div class="cart-gap" id="cart-gap"></div>
+      </div>
+      <a href="#checkout" id="cart-checkout" class="cart-btn">Checkout →</a>
+    </div>
+    <div class="cart-wa">or <a href="https://wa.me/919840012345?text=Hi%20Tulsi%20Foods" target="_blank">continue on WhatsApp</a></div>
+  </div>
+</div>
+
+<style>
+:root {
+  --g: #0E7A45; --g2: #6FBF3F; --sf: #E08A1E;
+  --bg: #FBF8F2; --card: #fff; --border: #E7E1D6; --ink: #171A14;
+  --sub: #6F7468; --line2: #EFEBE3;
+}
+* { box-sizing: border-box; margin: 0; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+
+#menu-app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+
+/* Header */
+.mh { background: var(--g); color: #fff; padding: 16px 18px 18px; }
+.mh-top { display: flex; align-items: center; gap: 12px; }
+.mh-brand { display: flex; align-items: center; gap: 12px; flex: 1; }
+.mh-logo { width: 36px; height: 36px; background: #fff; border-radius: 50%; padding: 4px; object-fit: contain; }
+.mh-name { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; line-height: 1.1; }
+.mh-sub { font-size: 11px; opacity: .85; }
+.mh-badge { background: rgba(255,255,255,.16); border-radius: 999px; padding: 7px 12px; font-size: 12px; }
+.mh-search { margin-top: 14px; background: rgba(255,255,255,.14); border-radius: 12px; padding: 11px 14px; display: flex; align-items: center; gap: 8px; }
+.mh-search-icon { font-size: 14px; opacity: .6; }
+.mh-search input { background: none; border: none; outline: none; color: #fff; font-size: 13px; width: 100%; }
+.mh-search input::placeholder { color: rgba(255,255,255,.55); }
+
+/* Group nav */
+.group-nav { display: flex; gap: 8px; overflow-x: auto; padding: 12px 14px; background: var(--bg); border-bottom: 1px solid var(--line2); position: sticky; top: 0; z-index: 5; }
+.group-nav::-webkit-scrollbar { display: none; }
+.chip { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; text-decoration: none; color: var(--ink); white-space: nowrap; font-size: 13px; cursor: pointer; }
+.chip.active { background: var(--g); color: #fff; border-color: var(--g); }
+
+/* Menu main */
+main { flex: 1; padding: 14px; padding-bottom: 100px; }
+.group h2 { font-size: 16px; margin: 20px 0 10px; color: var(--ink); font-weight: 600; }
+.group:first-child h2 { margin-top: 0; }
+
+/* Item card */
+.menu-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 12px; display: flex; gap: 12px; margin-bottom: 12px; }
+.menu-card.off { opacity: .55; }
+.card-photo { width: 84px; height: 84px; flex: 0 0 auto; border-radius: 12px; background: repeating-linear-gradient(135deg, var(--line2) 0 8px, #E6E1D7 8px 16px); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-label { font: 500 9px/1.3 'IBM Plex Mono', monospace; color: var(--sub); text-align: center; }
+.card-body { flex: 1; display: flex; flex-direction: column; }
+.card-title { display: flex; align-items: center; gap: 7px; }
+.card-name { font-size: 15px; font-weight: 600; }
+.card-pop { background: #EDF6E2; color: #3F5B1F; font-size: 10px; padding: 2px 7px; border-radius: 999px; }
+.card-desc { font-size: 12px; color: var(--sub); margin-top: 3px; line-height: 1.45; }
+.card-bottom { margin-top: auto; display: flex; justify-content: space-between; align-items: center; padding-top: 6px; }
+.card-price { font-size: 16px; font-weight: 600; }
+.card-sold-out { font: 500 11px/1 'IBM Plex Mono', monospace; color: #B3261E; }
+.card-stepper { display: flex; align-items: center; gap: 12px; border: 1px solid var(--g); border-radius: 999px; padding: 5px 12px; }
+.card-stepper button { background: none; border: none; color: var(--g); font-size: 16px; cursor: pointer; padding: 0 4px; }
+.card-stepper .qty { font-weight: 600; font-size: 14px; min-width: 16px; text-align: center; }
+
+.no-results { text-align: center; padding: 40px 20px; color: var(--sub); }
+
+/* Cart bar */
+.cart-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #fff; border-top: 1px solid var(--border); padding: 14px; z-index: 20; }
+.cart-inner { background: var(--g); color: #fff; border-radius: 14px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
+.cart-count { font-size: 15px; font-weight: 600; }
+.cart-gap { font-size: 11px; opacity: .85; margin-top: 2px; }
+.cart-btn { color: #fff; text-decoration: none; font-size: 15px; font-weight: 600; white-space: nowrap; }
+.cart-wa { text-align: center; font-size: 12px; color: var(--sub); margin-top: 10px; }
+.cart-wa a { color: var(--g); text-decoration: underline; }
+
+/* Checkout overlay */
+.checkout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
+.checkout-panel { background: var(--bg); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; padding: 24px 18px 40px; }
+.checkout-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; margin-bottom: 16px; }
+.checkout-field { margin-bottom: 14px; }
+.checkout-field label { display: block; font-size: 13px; color: var(--sub); margin-bottom: 4px; }
+.checkout-field input, .checkout-field select, .checkout-field textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; background: #fff; }
+.checkout-field textarea { resize: vertical; }
+.checkout-summary { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 14px; }
+.checkout-row { display: flex; justify-content: space-between; padding: 4px 0; }
+.checkout-row.total { font-weight: 700; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; font-size: 16px; }
+.checkout-place { width: 100%; background: var(--g); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 600; cursor: pointer; }
+.checkout-place:disabled { opacity: .6; cursor: not-allowed; }
+.checkout-msg { font-size: 13px; margin-top: 8px; text-align: center; }
+.checkout-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--sub); }
+
+/* Responsive */
+@media (min-width: 600px) {
+  #menu-app { max-width: 720px; }
+  .menu-card { padding: 14px; }
+  .card-photo { width: 100px; height: 100px; }
+}
+</style>
+
+<script>
+(() => {
+  const cart = {};
+  const PRICES = {};
+  const NAMES = {};
+  const cartBar = document.getElementById("cart-bar");
+  const cartCount = document.getElementById("cart-count");
+  const cartSubtotal = document.getElementById("cart-subtotal");
+  const cartGap = document.getElementById("cart-gap");
+  const searchInput = document.getElementById("search-input");
+  const noResults = document.getElementById("no-results");
+  const MIN_ORDER = 250;
+
+  // Build price/name lookup
+  document.querySelectorAll(".menu-card").forEach(card => {
+    const id = card.dataset.id;
+    const priceEl = card.querySelector(".card-price");
+    if (priceEl) PRICES[id] = parseInt(priceEl.textContent.replace(/[₹,]/g, ""));
+    NAMES[id] = card.dataset.name;
+  });
+
+  // Stepper buttons
+  document.querySelectorAll(".card-stepper").forEach(stepper => {
+    const id = stepper.dataset.id;
+    const qtyEl = stepper.querySelector("[data-role=qty]");
+    stepper.querySelector("[data-act=inc]").addEventListener("click", () => {
+      cart[id] = (cart[id] || 0) + 1;
+      qtyEl.textContent = cart[id];
+      updateCart();
+    });
+    stepper.querySelector("[data-act=dec]").addEventListener("click", () => {
+      if (!cart[id]) return;
+      cart[id]--;
+      if (cart[id] <= 0) delete cart[id];
+      qtyEl.textContent = cart[id] || 0;
+      updateCart();
+    });
+  });
+
+  function updateCart() {
+    const ids = Object.keys(cart);
+    const count = ids.reduce((s, id) => s + cart[id], 0);
+    const subtotal = ids.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
+    cartCount.textContent = count;
+    cartSubtotal.textContent = "₹" + subtotal;
+    if (count > 0) {
+      cartBar.classList.remove("hidden");
+      if (subtotal < MIN_ORDER) {
+        cartGap.textContent = "₹" + (MIN_ORDER - subtotal) + " more for free delivery";
+      } else {
+        cartGap.textContent = "Free delivery ✓";
+      }
+    } else {
+      cartBar.classList.add("hidden");
+    }
+    // Update stepper displays
+    document.querySelectorAll(".card-stepper").forEach(s => {
+      const id = s.dataset.id;
+      s.querySelector("[data-role=qty]").textContent = cart[id] || 0;
+    });
+  }
+
+  // Group nav
+  document.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", (e) => {
+      e.preventDefault();
+      document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      const g = chip.dataset.group;
+      if (g === "all") {
+        // Popular: show only popular items across all groups
+        document.querySelectorAll(".group").forEach(sec => { sec.style.display = ""; });
+        document.querySelectorAll(".menu-card").forEach(card => {
+          card.style.display = card.dataset.popular === "true" ? "" : "none";
+        });
+      } else {
+        document.querySelectorAll(".group").forEach(sec => {
+          sec.style.display = sec.id === "g-" + g ? "" : "none";
+        });
+        document.querySelectorAll(".menu-card").forEach(card => { card.style.display = ""; });
+      }
+    });
+  });
+
+  // Search
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.toLowerCase().trim();
+    let found = 0;
+    document.querySelectorAll(".menu-card").forEach(card => {
+      const match = !q || card.dataset.name.includes(q);
+      card.style.display = match ? "" : "none";
+      if (match) found++;
+    });
+    document.querySelectorAll(".group").forEach(sec => {
+      if (q) sec.style.display = "";
+    });
+    noResults.hidden = found > 0;
+  });
+
+  // Checkout
+  document.getElementById("cart-checkout").addEventListener("click", (e) => {
+    e.preventDefault();
+    const ids = Object.keys(cart);
+    if (!ids.length) return;
+    const subtotal = ids.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
+    if (subtotal < MIN_ORDER) {
+      alert("Minimum order is ₹" + MIN_ORDER + ". Add ₹" + (MIN_ORDER - subtotal) + " more.");
+      return;
+    }
+    openCheckout();
+  });
+
+  function openCheckout() {
+    const overlay = document.createElement("div");
+    overlay.className = "checkout-overlay";
+    const ids = Object.keys(cart);
+    const subtotal = ids.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
+    const items = ids.map(id => `<div class="checkout-row"><span>${NAMES[id]} × ${cart[id]}</span><span>₹${(PRICES[id] || 0) * cart[id]}</span></div>`).join("");
+    overlay.innerHTML = `
+      <div class="checkout-panel" style="position:relative">
+        <button class="checkout-close" id="checkout-close">✕</button>
+        <div class="checkout-title">Checkout</div>
+        <div class="checkout-summary">
+          ${items}
+          <div class="checkout-row total"><span>Total</span><span>₹${subtotal}</span></div>
+        </div>
+        <form id="checkout-form">
+          <div class="checkout-field"><label>Name</label><input name="name" required placeholder="Your name"></div>
+          <div class="checkout-field"><label>Phone</label><input name="phone" required placeholder="10-digit number" pattern="[0-9]{10,}"></div>
+          <div class="checkout-field"><label>Order type</label><select name="order_type"><option value="delivery">Delivery</option><option value="pickup">Pickup</option></select></div>
+          <div class="checkout-field" id="addr-field"><label>Address</label><textarea name="address" rows="2" placeholder="Full address for delivery"></textarea></div>
+          <div class="checkout-field" id="pin-field"><label>Pincode</label><input name="pincode" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode"></div>
+          <div class="checkout-field"><label>Payment</label><select name="payment_method"><option value="cod">Cash on delivery</option><option value="upi">UPI</option></select></div>
+          <div class="checkout-field"><label>Note</label><input name="instructions" placeholder="e.g. no coriander"></div>
+          <button type="submit" class="checkout-place">Place order</button>
+          <div class="checkout-msg" id="checkout-msg"></div>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector("#checkout-close").addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const form = overlay.querySelector("#checkout-form");
+    const typeSelect = form.querySelector('[name=order_type]');
+    const addrField = overlay.querySelector("#addr-field");
+    const pinField = overlay.querySelector("#pin-field");
+    typeSelect.addEventListener("change", () => {
+      const isDelivery = typeSelect.value === "delivery";
+      addrField.style.display = isDelivery ? "" : "none";
+      pinField.style.display = isDelivery ? "" : "none";
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = overlay.querySelector("#checkout-msg");
+      const btn = form.querySelector(".checkout-place");
+      btn.disabled = true;
+      btn.textContent = "Placing…";
+      const fd = new FormData(form);
+      const payload = {
+        name: fd.get("name"),
+        phone: fd.get("phone"),
+        order_type: fd.get("order_type"),
+        address: fd.get("address") || null,
+        pincode: fd.get("pincode") || null,
+        payment_method: fd.get("payment_method"),
+        instructions: fd.get("instructions") || null,
+        items: ids.map(id => ({ item_id: id, qty: cart[id] })),
+      };
+      try {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Order failed");
+        msg.style.color = "#0E7A45";
+        msg.textContent = "Order #" + data.order_id + " placed! Total: ₹" + data.total;
+        btn.textContent = "Placed ✓";
+        Object.keys(cart).forEach(k => delete cart[k]);
+        updateCart();
+        document.querySelectorAll(".card-stepper .qty").forEach(el => el.textContent = "0");
+      } catch (err) {
+        msg.style.color = "#B3261E";
+        msg.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = "Place order";
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

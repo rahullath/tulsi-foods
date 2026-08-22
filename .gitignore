@@ -9,3 +9,6 @@ data/whatsapp.log
 *.xlsx
 *.bak
 session-*.md
+media/
+design/
+.claude/
