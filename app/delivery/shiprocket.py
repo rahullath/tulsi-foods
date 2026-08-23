@@ -340,19 +340,27 @@ def dispatch_order(
 ) -> dict:
     """Full dispatch flow: find hyperlocal courier → create order → assign AWB → schedule pickup.
 
-    Returns {sr_order_id, awb_code, courier_name, ...}.
+    Returns {sr_order_id, awb_code, courier_name, is_hyperlocal, ...}.
 
-    Raises if no hyperlocal (Quick) courier serves this pincode — refuses to
-    silently fall back to a standard multi-day courier for hot food.
+    Prefers a hyperlocal (Quick) courier when Shiprocket's serviceability
+    lookup finds one; otherwise logs a warning and lets Shiprocket
+    auto-assign (may be a standard courier) rather than blocking dispatch.
     """
-    couriers = check_serviceability(delivery_pincode, cod=(payment_method == "cod"))
-    hyperlocal = [c for c in couriers if c.get("is_hyperlocal")]
-    if not hyperlocal:
-        raise RuntimeError(
-            f"No hyperlocal (Quick) courier available for pincode {delivery_pincode} — "
-            "refusing to auto-assign a standard courier for hot food"
-        )
-    courier_id = hyperlocal[0]["courier_company_id"]
+    courier_id = None
+    is_hyperlocal = False
+    try:
+        couriers = check_serviceability(delivery_pincode, cod=(payment_method == "cod"))
+        hyperlocal = [c for c in couriers if c.get("is_hyperlocal")]
+        if hyperlocal:
+            courier_id = hyperlocal[0]["courier_company_id"]
+            is_hyperlocal = True
+        else:
+            log.warning(
+                "No hyperlocal courier found for pincode %s via serviceability check "
+                "— falling back to Shiprocket auto-assign", delivery_pincode,
+            )
+    except Exception as e:
+        log.warning("Serviceability check failed (non-fatal): %s", e)
 
     sr = create_order(
         order_id=order_id,
@@ -381,4 +389,5 @@ def dispatch_order(
         "awb_code": awb["awb_code"],
         "courier_name": awb["courier_name"],
         "tracking_url": f"https://shiprocket.in/tracking/{awb['awb_code']}",
+        "is_hyperlocal": is_hyperlocal,
     }
