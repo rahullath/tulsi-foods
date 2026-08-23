@@ -25,6 +25,15 @@ from .config import (
 
 log = logging.getLogger("shiprocket")
 
+
+def _raise_for_status(r: httpx.Response) -> None:
+    """Like r.raise_for_status(), but includes Shiprocket's response body in the error."""
+    try:
+        r.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        raise httpx.HTTPStatusError(f"{e}: {r.text}", request=e.request, response=e.response) from None
+
+
 _TOKEN_TABLE = """
 CREATE TABLE IF NOT EXISTS shiprocket_tokens (
     id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -85,7 +94,7 @@ def get_token() -> str:
             f"{SHIPROCKET_BASE_URL}/auth/login",
             json={"email": SHIPROCKET_API_EMAIL, "password": SHIPROCKET_API_PASSWORD},
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         data = r.json()
     token = data.get("token")
     if not token:
@@ -118,7 +127,7 @@ def check_serviceability(delivery_pincode: str, weight_kg: float = DEFAULT_WEIGH
                 "only_local": 1,
             },
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         data = r.json()
 
     couriers = data.get("data", {}).get("available_courier_companies", [])
@@ -188,7 +197,7 @@ def create_order(
             headers=_headers(),
             json=payload,
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         data = r.json()
 
     log.info("Shiprocket order created: %s", data.get("order_id"))
@@ -209,7 +218,7 @@ def assign_awb(sr_order_id: int) -> dict:
             headers=_headers(),
             json={"order_id": sr_order_id},
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         data = r.json()
 
     response = data.get("response", {})
@@ -232,7 +241,7 @@ def schedule_pickup(sr_order_id: int) -> dict:
             headers=_headers(),
             json={"order_id": sr_order_id},
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         data = r.json()
 
     log.info("Pickup scheduled for order %s: %s", sr_order_id, data)
@@ -249,7 +258,7 @@ def track_awb(awb_code: str) -> dict:
             f"{SHIPROCKET_BASE_URL}/courier/track/awb/{awb_code}",
             headers=_headers(),
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         data = r.json()
 
     scans = data.get("scans", [])
@@ -280,7 +289,7 @@ def track_order(order_id: str, channel_id: int | None = None) -> dict:
             headers=_headers(),
             params=params,
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         data = r.json()
 
     tracking = data[0].get("tracking_data", {}) if isinstance(data, list) and data else {}
@@ -306,7 +315,7 @@ def get_pickup_addresses() -> list[dict]:
             f"{SHIPROCKET_BASE_URL}/settings/company/pickup",
             headers=_headers(),
         )
-        r.raise_for_status()
+        _raise_for_status(r)
         data = r.json()
     return data.get("data", {}).get("recent_addresses", [])
 
