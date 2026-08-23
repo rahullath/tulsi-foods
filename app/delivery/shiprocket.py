@@ -208,8 +208,8 @@ def create_order(
     }
 
 
-def assign_awb(sr_order_id: int) -> dict:
-    """Assign AWB (courier tracking number) to a Shiprocket order.
+def assign_awb(shipment_id: int) -> dict:
+    """Assign AWB (courier tracking number) to a Shiprocket shipment.
 
     Returns {awb_code, courier_name, courier_company_id}.
     """
@@ -217,7 +217,7 @@ def assign_awb(sr_order_id: int) -> dict:
         r = c.post(
             f"{SHIPROCKET_BASE_URL}/courier/assign/awb",
             headers=_headers(),
-            json={"order_id": sr_order_id},
+            json={"shipment_id": shipment_id},
         )
         _raise_for_status(r)
         data = r.json()
@@ -347,7 +347,7 @@ def dispatch_order(
         cod_amount=total if payment_method == "cod" else 0,
     )
 
-    awb = assign_awb(sr["sr_order_id"])
+    awb = assign_awb(sr["shipment_id"])
 
     # Attempt pickup scheduling (may fail if courier needs manual pickup time)
     try:
