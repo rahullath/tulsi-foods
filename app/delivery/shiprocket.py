@@ -163,7 +163,7 @@ def create_order(
     payload = {
         "order_id": str(order_id),
         "order_date": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
-        "pickup_location": "Tulsi Foods",
+        "pickup_location": "Shop",
         "billing_customer_name": customer_name[:40],
         "billing_address": delivery_address[:200],
         "billing_pincode": delivery_pincode,
