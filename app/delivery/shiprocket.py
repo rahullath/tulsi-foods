@@ -108,23 +108,36 @@ def _headers() -> dict:
     return {"Authorization": f"Bearer {get_token()}"}
 
 
-def check_serviceability(delivery_pincode: str, weight_kg: float = DEFAULT_WEIGHT_KG, cod: bool = False) -> list[dict]:
-    """Check which hyperlocal couriers serve pickup→delivery pincode.
+def check_serviceability(
+    delivery_pincode: str,
+    delivery_lat: str | None = None,
+    delivery_lng: str | None = None,
+    weight_kg: float = DEFAULT_WEIGHT_KG,
+) -> list[dict]:
+    """Check which hyperlocal (Quick) couriers serve pickup→delivery.
+
+    Hyperlocal serviceability requires lat/long on both ends — pass them if
+    already known, otherwise this geocodes the delivery pincode itself.
 
     Returns list of courier dicts with: courier_name, courier_company_id,
     estimated_delivery_days, freight_charge, rating, etc.
-    Only returns local/hyperlocal couriers.
     """
+    if not delivery_lat or not delivery_lng:
+        delivery_lat, delivery_lng = geocode_address("", delivery_pincode)
+
     with httpx.Client(timeout=20) as c:
         r = c.get(
-            f"{SHIPROCKET_BASE_URL}/courier/serviceability/",
+            f"{SHIPROCKET_BASE_URL}/courier/serviceability",
             headers=_headers(),
             params={
                 "pickup_postcode": PICKUP_PINCODE,
                 "delivery_postcode": delivery_pincode,
                 "weight": str(weight_kg),
-                "cod": 1 if cod else 0,
-                "only_local": 1,
+                "lat_from": PICKUP_LAT,
+                "long_from": PICKUP_LNG,
+                "lat_to": delivery_lat,
+                "long_to": delivery_lng,
+                "is_new_hyperlocal": 1,
             },
         )
         _raise_for_status(r)
@@ -242,18 +255,21 @@ def create_order(
     }
 
 
-def assign_awb(shipment_id: int, courier_id: int | None = None) -> dict:
-    """Assign AWB (courier tracking number) to a Shiprocket shipment.
+def assign_awb(shipment_id: int, vehicle_type: str = "2") -> dict:
+    """Assign a hyperlocal rider (AWB) to a Shiprocket shipment.
 
-    If courier_id is omitted, Shiprocket auto-picks any serviceable courier
-    (which may be a standard multi-day courier, not hyperlocal Quick) — pass
-    courier_id explicitly to force a specific (e.g. hyperlocal) courier.
+    Hyperlocal assignment requires future_pickup_scheduled and vehicle_type
+    ("2" = 2-wheeler, "3" = 3-wheeler) — do not pass courier_id, Shiprocket
+    picks the courier automatically per the account's courier rules.
 
     Returns {awb_code, courier_name, courier_company_id}.
     """
-    payload = {"shipment_id": shipment_id}
-    if courier_id:
-        payload["courier_id"] = courier_id
+    pickup_time = (datetime.utcnow() + timedelta(hours=5, minutes=40)).strftime("%Y-%m-%d %H:%M:%S")
+    payload = {
+        "shipment_id": shipment_id,
+        "future_pickup_scheduled": pickup_time,
+        "vehicle_type": vehicle_type,
+    }
     with httpx.Client(timeout=20) as c:
         r = c.post(
             f"{SHIPROCKET_BASE_URL}/courier/assign/awb",
