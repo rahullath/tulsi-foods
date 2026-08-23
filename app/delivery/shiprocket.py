@@ -192,6 +192,7 @@ def create_order(
             "sku": it.get("sku", it["name"][:20]),
             "units": it.get("qty", 1),
             "selling_price": it["price"],
+            "category_name": "Food",
         })
 
     lat, lng = geocode_address(delivery_address, delivery_pincode)
@@ -201,7 +202,6 @@ def create_order(
         "order_date": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
         "pickup_location": "Shop",
         "shipping_method": "HL",  # hyperlocal (Shiprocket Quick)
-        "category": "Food",
         "billing_customer_name": customer_name[:40],
         "billing_last_name": "",
         "billing_address": delivery_address[:200],
