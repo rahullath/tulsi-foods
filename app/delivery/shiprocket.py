@@ -108,7 +108,7 @@ def _headers() -> dict:
     return {"Authorization": f"Bearer {get_token()}"}
 
 
-def check_serviceability(delivery_pincode: str, weight_kg: float = DEFAULT_WEIGHT_KG) -> list[dict]:
+def check_serviceability(delivery_pincode: str, weight_kg: float = DEFAULT_WEIGHT_KG, cod: bool = False) -> list[dict]:
     """Check which hyperlocal couriers serve pickup→delivery pincode.
 
     Returns list of courier dicts with: courier_name, courier_company_id,
@@ -123,7 +123,7 @@ def check_serviceability(delivery_pincode: str, weight_kg: float = DEFAULT_WEIGH
                 "pickup_postcode": PICKUP_PINCODE,
                 "delivery_postcode": delivery_pincode,
                 "weight": str(weight_kg),
-                "cod": 0,
+                "cod": 1 if cod else 0,
                 "only_local": 1,
             },
         )
@@ -208,16 +208,23 @@ def create_order(
     }
 
 
-def assign_awb(shipment_id: int) -> dict:
+def assign_awb(shipment_id: int, courier_id: int | None = None) -> dict:
     """Assign AWB (courier tracking number) to a Shiprocket shipment.
+
+    If courier_id is omitted, Shiprocket auto-picks any serviceable courier
+    (which may be a standard multi-day courier, not hyperlocal Quick) — pass
+    courier_id explicitly to force a specific (e.g. hyperlocal) courier.
 
     Returns {awb_code, courier_name, courier_company_id}.
     """
+    payload = {"shipment_id": shipment_id}
+    if courier_id:
+        payload["courier_id"] = courier_id
     with httpx.Client(timeout=20) as c:
         r = c.post(
             f"{SHIPROCKET_BASE_URL}/courier/assign/awb",
             headers=_headers(),
-            json={"shipment_id": shipment_id},
+            json=payload,
         )
         _raise_for_status(r)
         data = r.json()
@@ -331,10 +338,22 @@ def dispatch_order(
     total: float,
     payment_method: str,
 ) -> dict:
-    """Full dispatch flow: create order → assign AWB → schedule pickup.
+    """Full dispatch flow: find hyperlocal courier → create order → assign AWB → schedule pickup.
 
     Returns {sr_order_id, awb_code, courier_name, ...}.
+
+    Raises if no hyperlocal (Quick) courier serves this pincode — refuses to
+    silently fall back to a standard multi-day courier for hot food.
     """
+    couriers = check_serviceability(delivery_pincode, cod=(payment_method == "cod"))
+    hyperlocal = [c for c in couriers if c.get("is_hyperlocal")]
+    if not hyperlocal:
+        raise RuntimeError(
+            f"No hyperlocal (Quick) courier available for pincode {delivery_pincode} — "
+            "refusing to auto-assign a standard courier for hot food"
+        )
+    courier_id = hyperlocal[0]["courier_company_id"]
+
     sr = create_order(
         order_id=order_id,
         customer_name=customer_name,
@@ -347,7 +366,7 @@ def dispatch_order(
         cod_amount=total if payment_method == "cod" else 0,
     )
 
-    awb = assign_awb(sr["shipment_id"])
+    awb = assign_awb(sr["shipment_id"], courier_id=courier_id)
 
     # Attempt pickup scheduling (may fail if courier needs manual pickup time)
     try:
