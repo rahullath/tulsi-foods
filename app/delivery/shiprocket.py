@@ -145,6 +145,31 @@ def check_serviceability(delivery_pincode: str, weight_kg: float = DEFAULT_WEIGH
     ]
 
 
+def geocode_address(address: str, pincode: str) -> tuple[str, str] | tuple[None, None]:
+    """Best-effort geocode of a delivery address to (lat, lng) strings via OSM Nominatim.
+
+    Falls back to geocoding just the pincode if the full address isn't found.
+    Returns (None, None) if geocoding fails entirely — caller must handle that.
+    """
+    headers = {"User-Agent": "tulsi-foods-ordering/1.0"}
+    queries = [f"{address}, {pincode}, Chennai, Tamil Nadu, India", f"{pincode}, Chennai, Tamil Nadu, India"]
+    with httpx.Client(timeout=10) as c:
+        for q in queries:
+            try:
+                r = c.get(
+                    "https://nominatim.openstreetmap.org/search",
+                    params={"q": q, "format": "json", "countrycodes": "in", "limit": 1},
+                    headers=headers,
+                )
+                r.raise_for_status()
+                results = r.json()
+                if results:
+                    return results[0]["lat"], results[0]["lon"]
+            except Exception as e:
+                log.warning("Geocoding failed for %r: %s", q, e)
+    return None, None
+
+
 def create_order(
     order_id: int,
     customer_name: str,
@@ -156,7 +181,7 @@ def create_order(
     payment_method: str = "cod",
     cod_amount: float = 0,
 ) -> dict:
-    """Create an order on Shiprocket. Returns {sr_order_id, shipment_id}.
+    """Create a hyperlocal (Shiprocket Quick) order. Returns {sr_order_id, shipment_id}.
 
     Items: [{"name": str, "sku": str, "units": int, "selling_price": float}]
     """
@@ -169,10 +194,13 @@ def create_order(
             "selling_price": it["price"],
         })
 
+    lat, lng = geocode_address(delivery_address, delivery_pincode)
+
     payload = {
         "order_id": str(order_id),
         "order_date": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
         "pickup_location": "Shop",
+        "shipping_method": "HL",  # hyperlocal (Shiprocket Quick)
         "billing_customer_name": customer_name[:40],
         "billing_last_name": "",
         "billing_address": delivery_address[:200],
@@ -191,6 +219,11 @@ def create_order(
         "height": 10,
         "weight": DEFAULT_WEIGHT_KG,
     }
+    if lat and lng:
+        payload["latitude"] = lat
+        payload["longitude"] = lng
+    else:
+        log.warning("Could not geocode delivery address for order %s; sending without lat/long", order_id)
 
     with httpx.Client(timeout=20) as c:
         r = c.post(
@@ -338,30 +371,15 @@ def dispatch_order(
     total: float,
     payment_method: str,
 ) -> dict:
-    """Full dispatch flow: find hyperlocal courier → create order → assign AWB → schedule pickup.
+    """Full dispatch flow: create hyperlocal order → assign AWB → schedule pickup.
 
-    Returns {sr_order_id, awb_code, courier_name, is_hyperlocal, ...}.
+    Returns {sr_order_id, awb_code, courier_name, ...}.
 
-    Prefers a hyperlocal (Quick) courier when Shiprocket's serviceability
-    lookup finds one; otherwise logs a warning and lets Shiprocket
-    auto-assign (may be a standard courier) rather than blocking dispatch.
+    create_order() marks the order shipping_method="HL" so Shiprocket treats
+    it as hyperlocal; AWB assignment is left to Shiprocket's auto-assign
+    (manually passing courier_id triggers a "Try Assigning Courier via
+    Shiprocket Quick" error on hyperlocal shipments).
     """
-    courier_id = None
-    is_hyperlocal = False
-    try:
-        couriers = check_serviceability(delivery_pincode, cod=(payment_method == "cod"))
-        hyperlocal = [c for c in couriers if c.get("is_hyperlocal")]
-        if hyperlocal:
-            courier_id = hyperlocal[0]["courier_company_id"]
-            is_hyperlocal = True
-        else:
-            log.warning(
-                "No hyperlocal courier found for pincode %s via serviceability check "
-                "— falling back to Shiprocket auto-assign", delivery_pincode,
-            )
-    except Exception as e:
-        log.warning("Serviceability check failed (non-fatal): %s", e)
-
     sr = create_order(
         order_id=order_id,
         customer_name=customer_name,
@@ -374,7 +392,7 @@ def dispatch_order(
         cod_amount=total if payment_method == "cod" else 0,
     )
 
-    awb = assign_awb(sr["shipment_id"], courier_id=courier_id)
+    awb = assign_awb(sr["shipment_id"])
 
     # Attempt pickup scheduling (may fail if courier needs manual pickup time)
     try:
@@ -389,5 +407,4 @@ def dispatch_order(
         "awb_code": awb["awb_code"],
         "courier_name": awb["courier_name"],
         "tracking_url": f"https://shiprocket.in/tracking/{awb['awb_code']}",
-        "is_hyperlocal": is_hyperlocal,
     }

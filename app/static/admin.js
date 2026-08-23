@@ -150,8 +150,7 @@
     btn.style.pointerEvents = "none";
     try {
       const d = await api(`/api/admin/orders/${orderId}/dispatch`, { method: "POST" });
-      const kind = d.is_hyperlocal ? "Quick rider" : "STANDARD courier (not Quick)";
-      toast(`Order #${orderId} → ${kind} booked: ${d.courier_name || "courier"}`);
+      toast(`Order #${orderId} → rider booked (${d.courier_name || "courier"})`);
       loadOrders();
     } catch (e) {
       toast(`Booking failed: ${e.message}`);
