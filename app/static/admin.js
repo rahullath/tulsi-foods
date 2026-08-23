@@ -140,6 +140,23 @@
     list.querySelectorAll(".action-primary").forEach(btn => {
       btn.addEventListener("click", () => advanceOrder(btn.dataset.id, btn.dataset.next, btn));
     });
+    list.querySelectorAll(".dispatch-action").forEach(btn => {
+      btn.addEventListener("click", () => dispatchOrder(btn.dataset.id, btn));
+    });
+  }
+
+  async function dispatchOrder(orderId, btn) {
+    btn.textContent = "Booking…";
+    btn.style.pointerEvents = "none";
+    try {
+      const d = await api(`/api/admin/orders/${orderId}/dispatch`, { method: "POST" });
+      toast(`Order #${orderId} → rider booked (${d.courier_name || "courier"})`);
+      loadOrders();
+    } catch (e) {
+      toast(`Booking failed: ${e.message}`);
+      btn.textContent = "Book";
+      btn.style.pointerEvents = "";
+    }
   }
 
   async function loadOrders() {

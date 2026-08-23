@@ -396,8 +396,8 @@ def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)
         raise HTTPException(404, "Order not found")
     if o["order_type"] != "delivery":
         raise HTTPException(400, "Cannot dispatch pickup orders")
-    if o["status"] not in ("new", "preparing"):
-        raise HTTPException(400, f"Order is already {o['status']}")
+    if o["status"] != "ready":
+        raise HTTPException(400, f"Order must be ready before booking a rider (currently {o['status']})")
     if not o.get("delivery_address") or not o.get("delivery_pincode"):
         raise HTTPException(400, "Order missing delivery address or pincode")
     try:
