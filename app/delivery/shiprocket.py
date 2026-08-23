@@ -174,6 +174,7 @@ def create_order(
         "order_date": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
         "pickup_location": "Shop",
         "billing_customer_name": customer_name[:40],
+        "billing_last_name": "",
         "billing_address": delivery_address[:200],
         "billing_pincode": delivery_pincode,
         "billing_city": "Chennai",
