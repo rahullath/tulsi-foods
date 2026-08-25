@@ -66,10 +66,12 @@ def calculate_order(
             "contact_person": {"phone": "", "name": "Customer"},
             "latitude": str(delivery_lat) if delivery_lat else None,
             "longitude": str(delivery_lng) if delivery_lng else None,
-            "taking_amount": f"{cod_amount:.2f}" if cod_amount else "0.00",
             "note": note,
         },
     ]
+
+    if cod_amount > 0:
+        points[1]["taking_amount"] = f"{cod_amount:.2f}"
 
     payload = {
         "matter": matter,
@@ -124,13 +126,14 @@ def create_order(
             "client_order_id": str(order_id),
             "latitude": str(delivery_lat) if delivery_lat else None,
             "longitude": str(delivery_lng) if delivery_lng else None,
-            "taking_amount": f"{cod_amount:.2f}" if cod_amount else "0.00",
-            "note": note,
             "is_order_payment_here": False,
         },
     ]
 
-    # Determine payment: if cod_amount is set, courier collects cash (backpayment)
+    # Only include taking_amount if there's actual COD to collect
+    if cod_amount > 0:
+        points[1]["taking_amount"] = f"{cod_amount:.2f}"
+
     payment = "balance"  # pay from Borzo wallet balance (prepaid)
 
     payload = {
