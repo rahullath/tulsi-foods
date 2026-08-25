@@ -26,6 +26,16 @@ from .config import (
 log = logging.getLogger("shiprocket")
 
 
+class DispatchError(Exception):
+    """Raised when a Shiprocket API call fails. Carries full request/response for debugging."""
+
+    def __init__(self, step: str, payload: dict, response: dict):
+        self.step = step
+        self.payload = payload
+        self.response = response
+        super().__init__(f"{step} failed: {response}")
+
+
 def _raise_for_status(r: httpx.Response) -> None:
     """Like r.raise_for_status(), but includes Shiprocket's response body in the error."""
     try:
@@ -247,20 +257,25 @@ def create_order(
     else:
         log.warning("Could not geocode delivery address for order %s; sending without lat/long", order_id)
 
-    log.info("create/adhoc payload: %s", json.dumps(payload, indent=2, default=str))
     with httpx.Client(timeout=20) as c:
         r = c.post(
             f"{SHIPROCKET_BASE_URL}/orders/create/adhoc",
             headers=_headers(),
             json=payload,
         )
-        _raise_for_status(r)
+        if r.status_code >= 400:
+            raise DispatchError(
+                "create/adhoc",
+                payload=payload,
+                response={"status": r.status_code, "body": r.text},
+            )
         data = r.json()
 
-    log.info("create/adhoc response: %s", json.dumps(data, indent=2, default=str))
     return {
         "sr_order_id": data.get("order_id"),
         "shipment_id": data.get("shipment_id"),
+        "_payload": payload,
+        "_response": data,
     }
 
 
@@ -279,16 +294,19 @@ def assign_awb(shipment_id: int, vehicle_type: str = "2") -> dict:
         "future_pickup_scheduled": pickup_time,
         "vehicle_type": vehicle_type,
     }
-    log.info("assign/awb payload: %s", json.dumps(payload, indent=2, default=str))
     with httpx.Client(timeout=20) as c:
         r = c.post(
             f"{SHIPROCKET_BASE_URL}/courier/assign/awb",
             headers=_headers(),
             json=payload,
         )
-        _raise_for_status(r)
+        if r.status_code >= 400:
+            raise DispatchError(
+                "assign/awb",
+                payload=payload,
+                response={"status": r.status_code, "body": r.text},
+            )
         data = r.json()
-    log.info("assign/awb response: %s", json.dumps(data, indent=2, default=str))
 
     response = data.get("response", {})
     if response.get("data", {}).get("awb_code"):
@@ -424,7 +442,14 @@ def dispatch_order(
         delivery_lng=delivery_lng,
     )
 
-    awb = assign_awb(sr["shipment_id"])
+    try:
+        awb = assign_awb(sr["shipment_id"])
+    except DispatchError as e:
+        raise DispatchError(
+            "assign/awb",
+            payload={**e.payload, "create_response": sr.get("_response")},
+            response=e.response,
+        ) from None
 
     # Attempt pickup scheduling (may fail if courier needs manual pickup time)
     try:

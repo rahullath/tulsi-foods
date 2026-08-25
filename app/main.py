@@ -404,7 +404,7 @@ def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)
     if not o.get("delivery_address") or not o.get("delivery_pincode"):
         raise HTTPException(400, "Order missing delivery address or pincode")
     try:
-        from .delivery.shiprocket import dispatch_order
+        from .delivery.shiprocket import dispatch_order, DispatchError
         result = dispatch_order(
             order_id=order_id,
             customer_name=o.get("customer_name") or "Customer",
@@ -427,6 +427,13 @@ def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)
         # Push WhatsApp notification to customer
         _send_dispatch_whatsapp(o, result)
         return {"ok": True, **result}
+    except DispatchError as e:
+        raise HTTPException(500, detail={
+            "error": str(e),
+            "step": e.step,
+            "payload": e.payload,
+            "shiprocket_response": e.response,
+        })
     except Exception as e:
         raise HTTPException(500, f"Dispatch failed: {e}")
 
