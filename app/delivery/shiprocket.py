@@ -148,6 +148,7 @@ def check_serviceability(
                 "lat_to": delivery_lat,
                 "long_to": delivery_lng,
                 "is_new_hyperlocal": 1,
+                "only_local": 1,  # filter to hyperlocal couriers only
             },
         )
         _raise_for_status(r)
