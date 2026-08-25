@@ -205,6 +205,7 @@ def create_order(
             "sku": it.get("sku", it["name"][:20]),
             "units": it.get("qty", 1),
             "selling_price": it["price"],
+            "hsn": "2106",  # food preparations n.e.s.
             "category_name": "Food",
         })
 
@@ -225,7 +226,7 @@ def create_order(
         "billing_phone": customer_phone,
         "shipping_is_billing": True,
         "order_items": order_items,
-        "payment_method": 0 if payment_method == "prepaid" else 1,  # 0=prepaid, 1=COD
+        "payment_method": "Prepaid" if payment_method == "prepaid" else "COD",
         "cod_amount": cod_amount if payment_method == "cod" else 0,
         "sub_total": total,
         "length": 25,   # cm — food parcel defaults
