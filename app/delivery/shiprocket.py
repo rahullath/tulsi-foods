@@ -279,21 +279,19 @@ def create_order(
     }
 
 
-def assign_awb(shipment_id: int, vehicle_type: str = "2") -> dict:
-    """Assign a hyperlocal rider (AWB) to a Shiprocket shipment.
+def assign_awb(shipment_id: int, courier_id: int | None = None) -> dict:
+    """Assign a courier (AWB) to a Shiprocket shipment.
 
-    Hyperlocal assignment requires future_pickup_scheduled and vehicle_type
-    ("2" = 2-wheeler, "3" = 3-wheeler) — do not pass courier_id, Shiprocket
-    picks the courier automatically per the account's courier rules.
+    Uses the standard documented assign/awb API params only:
+      - shipment_id (required)
+      - courier_id (optional) — if omitted Shiprocket auto-assigns
 
     Returns {awb_code, courier_name, courier_company_id}.
     """
-    pickup_time = (datetime.utcnow() + timedelta(hours=5, minutes=40)).strftime("%Y-%m-%d %H:%M:%S")
-    payload = {
-        "shipment_id": shipment_id,
-        "future_pickup_scheduled": pickup_time,
-        "vehicle_type": vehicle_type,
-    }
+    payload: dict = {"shipment_id": shipment_id}
+    if courier_id is not None:
+        payload["courier_id"] = courier_id
+
     with httpx.Client(timeout=20) as c:
         r = c.post(
             f"{SHIPROCKET_BASE_URL}/courier/assign/awb",
@@ -307,6 +305,17 @@ def assign_awb(shipment_id: int, vehicle_type: str = "2") -> dict:
                 response={"status": r.status_code, "body": r.text},
             )
         data = r.json()
+
+    # Async response — Shiprocket returns {"success": true, "message": "We are processing your request"}
+    if data.get("success") and not data.get("response"):
+        log.info("AWB assignment accepted (async): %s", data)
+        return {
+            "awb_code": None,
+            "courier_name": "",
+            "courier_company_id": None,
+            "_async": True,
+            "_raw": data,
+        }
 
     response = data.get("response", {})
     if response.get("data", {}).get("awb_code"):
