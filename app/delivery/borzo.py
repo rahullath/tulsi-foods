@@ -70,9 +70,6 @@ def calculate_order(
         },
     ]
 
-    if cod_amount > 0:
-        points[1]["taking_amount"] = f"{cod_amount:.2f}"
-
     payload = {
         "matter": matter,
         "vehicle_type_id": 8,  # motorbike
@@ -112,6 +109,11 @@ def create_order(
 
     delivery_phone = customer_phone if customer_phone.startswith("91") else f"91{customer_phone}"
 
+    # Ensure address is Google-geocodable — append city/state/pincode if missing
+    addr = delivery_address
+    if "chennai" not in addr.lower():
+        addr = f"{addr}, Chennai, Tamil Nadu, India"
+
     points = [
         {
             "address": PICKUP_ADDRESS,
@@ -121,7 +123,7 @@ def create_order(
             "note": "Pick up from restaurant counter",
         },
         {
-            "address": delivery_address,
+            "address": addr,
             "contact_person": {"phone": delivery_phone, "name": customer_name},
             "client_order_id": str(order_id),
             "latitude": str(delivery_lat) if delivery_lat else None,
@@ -129,10 +131,6 @@ def create_order(
             "is_order_payment_here": False,
         },
     ]
-
-    # Only include taking_amount if there's actual COD to collect
-    if cod_amount > 0:
-        points[1]["taking_amount"] = f"{cod_amount:.2f}"
 
     payment = "balance"  # pay from Borzo wallet balance (prepaid)
 
