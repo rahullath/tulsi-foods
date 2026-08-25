@@ -1,7 +1,8 @@
-"""WhatsApp Cloud API webhook endpoints.
+"""WhatsApp Cloud API + Borzo delivery webhook endpoints.
 
 GET  /webhook/whatsapp  — Meta's verification handshake.
 POST /webhook/whatsapp  — inbound messages + status events.
+POST /webhook/borzo     — Borzo delivery status updates.
 """
 import hashlib
 import hmac
@@ -125,3 +126,127 @@ async def inbound(request: Request, x_hub_signature_256: str | None = Header(Non
         except Exception:
             log.exception("failed to process message from %s", msg["wa_id"])
     return {"status": "ok"}
+
+
+# ---- Borzo delivery status webhook ----
+
+@router.post("/borzo")
+async def borzo_webhook(request: Request, x_dv_signature: str | None = Header(None)):
+    """Borzo sends status updates when orders/deliveries change."""
+    raw = await request.body()
+    try:
+        body = json.loads(raw or b"{}")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    # Verify signature if callback token is set
+    from .delivery.config import BORZO_CALLBACK_TOKEN
+    if BORZO_CALLBACK_TOKEN and x_dv_signature:
+        expected = hmac.new(BORZO_CALLBACK_TOKEN.encode(), raw, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, x_dv_signature):
+            log.warning("Borzo webhook: invalid signature")
+            raise HTTPException(status_code=403, detail="Invalid signature")
+
+    event_type = body.get("event_type", "")
+    log.info("Borzo webhook: %s", event_type)
+
+    # Handle delivery status changes
+    if event_type in ("delivery_changed", "delivery_created"):
+        delivery = body.get("delivery", {})
+        status = delivery.get("status", "")
+        order_id = delivery.get("client_order_id")  # our internal order ID
+        if order_id:
+            _handle_borzo_delivery_status(int(order_id), status, delivery)
+
+    # Handle order status changes
+    elif event_type in ("order_changed", "order_created"):
+        order = body.get("order", {})
+        status = order.get("status", "")
+        # Find our order ID from the points
+        for point in order.get("points", []):
+            cid = point.get("client_order_id")
+            if cid:
+                _handle_borzo_order_status(int(cid), status, order)
+                break
+
+    return {"status": "ok"}
+
+
+# Borzo delivery status → our order status
+_BORZO_DELIVERY_STATUS_MAP = {
+    "courier_assigned": "out_for_delivery",
+    "courier_departed": "out_for_delivery",
+    "courier_at_pickup": "out_for_delivery",
+    "parcel_picked_up": "out_for_delivery",
+    "courier_arrived": "out_for_delivery",
+    "finished": "delivered",
+    "canceled": "cancelled",
+    "return_planned": "cancelled",
+    "return_finished": "cancelled",
+}
+
+_BORZO_ORDER_STATUS_MAP = {
+    "new": "ready",
+    "available": "ready",
+    "active": "out_for_delivery",
+    "completed": "delivered",
+    "canceled": "cancelled",
+}
+
+
+def _handle_borzo_delivery_status(order_id: int, status: str, delivery: dict) -> None:
+    """Update order status based on Borzo delivery webhook."""
+    from . import db
+    mapped = _BORZO_DELIVERY_STATUS_MAP.get(status)
+    if not mapped:
+        log.info("Borzo delivery status '%s' for order %s — no action", status, order_id)
+        return
+    o = db.get_order(order_id)
+    if not o:
+        log.warning("Borzo webhook: order %s not found", order_id)
+        return
+    # Only advance, never regress
+    current = o["status"]
+    if current == "delivered" or current == "cancelled":
+        return
+    db.update_order_status(order_id, mapped)
+    log.info("Order %s: %s → %s (Borzo delivery: %s)", order_id, current, mapped, status)
+    _send_status_whatsapp_if_needed(o, mapped)
+
+
+def _handle_borzo_order_status(order_id: int, status: str, order: dict) -> None:
+    """Update order status based on Borzo order webhook."""
+    from . import db
+    mapped = _BORZO_ORDER_STATUS_MAP.get(status)
+    if not mapped:
+        return
+    o = db.get_order(order_id)
+    if not o:
+        return
+    current = o["status"]
+    if current == "delivered" or current == "cancelled":
+        return
+    db.update_order_status(order_id, mapped)
+    log.info("Order %s: %s → %s (Borzo order: %s)", order_id, current, mapped, status)
+    _send_status_whatsapp_if_needed(o, mapped)
+
+
+def _send_status_whatsapp_if_needed(order: dict, status: str) -> None:
+    """Send WhatsApp notification on delivery status change (non-fatal)."""
+    try:
+        phone = order.get("customer_phone", "")
+        if not phone:
+            return
+        oid = order["id"]
+        if status == "delivered":
+            msg = (
+                f"Order #{oid} delivered! Enjoy your meal 🙏 If anything wasn't right, reply here and we'll fix it.\n\n"
+                f"If you did enjoy it, an honest Google review helps our small kitchen a lot."
+            )
+        elif status == "cancelled":
+            msg = f"Order #{oid} has been cancelled."
+        else:
+            return  # don't spam for intermediate statuses
+        client.send_text(phone, msg)
+    except Exception:
+        pass  # non-fatal
