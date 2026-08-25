@@ -247,6 +247,7 @@ def create_order(
     else:
         log.warning("Could not geocode delivery address for order %s; sending without lat/long", order_id)
 
+    log.info("create/adhoc payload: %s", json.dumps(payload, indent=2, default=str))
     with httpx.Client(timeout=20) as c:
         r = c.post(
             f"{SHIPROCKET_BASE_URL}/orders/create/adhoc",
@@ -256,7 +257,7 @@ def create_order(
         _raise_for_status(r)
         data = r.json()
 
-    log.info("Shiprocket order created: %s", data.get("order_id"))
+    log.info("create/adhoc response: %s", json.dumps(data, indent=2, default=str))
     return {
         "sr_order_id": data.get("order_id"),
         "shipment_id": data.get("shipment_id"),
@@ -278,6 +279,7 @@ def assign_awb(shipment_id: int, vehicle_type: str = "2") -> dict:
         "future_pickup_scheduled": pickup_time,
         "vehicle_type": vehicle_type,
     }
+    log.info("assign/awb payload: %s", json.dumps(payload, indent=2, default=str))
     with httpx.Client(timeout=20) as c:
         r = c.post(
             f"{SHIPROCKET_BASE_URL}/courier/assign/awb",
@@ -286,6 +288,7 @@ def assign_awb(shipment_id: int, vehicle_type: str = "2") -> dict:
         )
         _raise_for_status(r)
         data = r.json()
+    log.info("assign/awb response: %s", json.dumps(data, indent=2, default=str))
 
     response = data.get("response", {})
     if response.get("data", {}).get("awb_code"):
