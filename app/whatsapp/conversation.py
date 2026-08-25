@@ -451,10 +451,15 @@ def _summary(sess: dict) -> list[dict]:
 
 # ---------------------------------------------------------------- entry point
 
-def handle(wa_id: str, incoming: str, profile_name: str | None = None) -> list[dict]:
+def handle(wa_id: str, incoming: str, profile_name: str | None = None,
+           lat: str | None = None, lng: str | None = None) -> list[dict]:
     sess = sessions.load(wa_id)
     if profile_name and not sess["ctx"].get("profile_name"):
         sess["ctx"]["profile_name"] = profile_name
+    # Store GPS coords if provided (from WhatsApp location message)
+    if lat and lng:
+        sess["ctx"]["lat"] = lat
+        sess["ctx"]["lng"] = lng
 
     out = _route(sess, incoming or "")
     sessions.save(sess)
@@ -487,7 +492,7 @@ def _route(sess: dict, incoming: str) -> list[dict]:
         if sess["state"] in ("checkout_confirm",):
             return [text("Order not placed. Reply CART or MENU to continue.")]
         if sess["state"] == "checkout_address":
-            return [text("Please send your full delivery address (street, area, landmark).")]
+            return [text("Please send your full delivery address (street, area, landmark).\nOr tap 📎 → Location to share your live location for precise delivery.")]
         if sess["state"] == "checkout_pincode":
             return [text("What's your 6-digit pincode? (e.g. 600018)")]
         return _show_cart(sess)
@@ -600,7 +605,11 @@ def _route(sess: dict, incoming: str) -> list[dict]:
             return _checkout_resume(sess)
         return [text("Reply D for delivery or P for pickup.")]
     if state == "checkout_address":
-        sess["ctx"]["address"] = raw[:200]
+        # Accept location message as address (coords stored in ctx by handle())
+        if raw.startswith("[Location:"):
+            sess["ctx"]["address"] = sess["ctx"].get("address") or raw[:200]
+        else:
+            sess["ctx"]["address"] = raw[:200]
         sess["state"] = "checkout_pincode"
         return _checkout_resume(sess)
     if state == "checkout_pincode":
@@ -716,6 +725,8 @@ def _place_order(sess: dict) -> list[dict]:
             instructions=None,
             scheduled_at=ctx.get("scheduled_at"),
             items=items,
+            lat=ctx.get("lat"),
+            lng=ctx.get("lng"),
         )
     except orders.OrderError as e:
         return [text(e.message + "\nSend MENU to restart.")]

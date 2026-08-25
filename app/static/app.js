@@ -180,6 +180,34 @@
 
   const form = document.getElementById("checkout");
   const msg = document.getElementById("order-msg");
+
+  // GPS location capture
+  const gpsBtn = document.getElementById("gps-btn");
+  const gpsStatus = document.getElementById("gps-status");
+  const inputLat = document.getElementById("input-lat");
+  const inputLng = document.getElementById("input-lng");
+  if (gpsBtn) {
+    gpsBtn.addEventListener("click", () => {
+      if (!navigator.geolocation) { gpsStatus.textContent = "Not supported"; return; }
+      gpsBtn.disabled = true;
+      gpsStatus.textContent = "Getting location...";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          inputLat.value = pos.coords.latitude.toFixed(6);
+          inputLng.value = pos.coords.longitude.toFixed(6);
+          gpsStatus.textContent = "✓ Location captured";
+          gpsStatus.style.color = "#16a34a";
+          gpsBtn.textContent = "📍 Location saved";
+        },
+        (err) => {
+          gpsStatus.textContent = err.code === 1 ? "Permission denied" : "Could not get location";
+          gpsStatus.style.color = "#B3261E";
+          gpsBtn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+  }
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const items = Object.entries(cart).filter(([, q]) => q > 0).map(([id, qty]) => ({ item_id: id, qty }));
@@ -190,6 +218,8 @@
       payment_method: fd.get("payment_method"), instructions: fd.get("instructions"),
       address: fd.get("address") || null,
       pincode: fd.get("order_type") === "delivery" ? fd.get("pincode") : null,
+      lat: fd.get("lat") || null,
+      lng: fd.get("lng") || null,
       items,
     };
     msg.textContent = "Placing order…";

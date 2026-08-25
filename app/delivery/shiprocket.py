@@ -193,6 +193,8 @@ def create_order(
     total: float,
     payment_method: str = "cod",
     cod_amount: float = 0,
+    delivery_lat: str | None = None,
+    delivery_lng: str | None = None,
 ) -> dict:
     """Create a hyperlocal (Shiprocket Quick) order. Returns {sr_order_id, shipment_id}.
 
@@ -209,7 +211,10 @@ def create_order(
             "category_name": "Food",
         })
 
-    lat, lng = geocode_address(delivery_address, delivery_pincode)
+    # Use customer-provided GPS coords if available, otherwise geocode
+    lat, lng = delivery_lat, delivery_lng
+    if not lat or not lng:
+        lat, lng = geocode_address(delivery_address, delivery_pincode)
 
     payload = {
         "order_id": str(order_id),
@@ -226,7 +231,9 @@ def create_order(
         "billing_phone": customer_phone,
         "shipping_is_billing": True,
         "order_items": order_items,
-        "payment_method": "Prepaid" if payment_method == "prepaid" else "COD",
+        # Always prepaid — shipping fee is paid from the restaurant's wallet.
+        # The customer's actual payment method (cod/upi) is handled via cod_amount.
+        "payment_method": "Prepaid",
         "cod_amount": cod_amount if payment_method == "cod" else 0,
         "sub_total": total,
         "length": 25,   # cm — food parcel defaults
@@ -388,6 +395,8 @@ def dispatch_order(
     items: list[dict],
     total: float,
     payment_method: str,
+    delivery_lat: str | None = None,
+    delivery_lng: str | None = None,
 ) -> dict:
     """Full dispatch flow: create hyperlocal order → assign AWB → schedule pickup.
 
@@ -408,6 +417,8 @@ def dispatch_order(
         total=total,
         payment_method=payment_method,
         cod_amount=total if payment_method == "cod" else 0,
+        delivery_lat=delivery_lat,
+        delivery_lng=delivery_lng,
     )
 
     awb = assign_awb(sr["shipment_id"])

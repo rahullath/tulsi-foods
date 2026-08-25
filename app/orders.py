@@ -77,7 +77,8 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                  address: str | None = None, km: float | None = None,
                  pincode: str | None = None,
                  payment_method: str = "cod", instructions: str | None = None,
-                 scheduled_at: str | None = None) -> dict:
+                 scheduled_at: str | None = None,
+                 lat: str | None = None, lng: str | None = None) -> dict:
     if order_type not in ("delivery", "pickup"):
         raise OrderError("Invalid order_type", 400)
 
@@ -100,7 +101,8 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
     cid = db.upsert_customer(phone, name, address, pincode)
     oid = db.create_order(cid, order_type, subtotal, delivery_fee, total,
                           payment_method, instructions, lines,
-                          delivery_address=address, delivery_pincode=pincode)
+                          delivery_address=address, delivery_pincode=pincode,
+                          delivery_lat=lat, delivery_lng=lng)
     return {"order_id": oid, "status": "new", "subtotal": round(subtotal, 2),
             "delivery_fee": delivery_fee, "total": round(total, 2)}
 

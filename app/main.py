@@ -345,6 +345,8 @@ class OrderIn(BaseModel):
     order_type: str = "delivery"  # delivery | pickup
     km: float | None = None
     pincode: str | None = None
+    lat: str | None = None
+    lng: str | None = None
     payment_method: str = "cod"   # cod | upi
     instructions: str | None = None
     items: list[OrderItemIn]
@@ -356,6 +358,7 @@ def create_order(order: OrderIn):
         result = orders.create_order(
             phone=order.phone, name=order.name, address=order.address,
             order_type=order.order_type, km=order.km, pincode=order.pincode,
+            lat=order.lat, lng=order.lng,
             payment_method=order.payment_method, instructions=order.instructions,
             items=[{"item_id": it.item_id, "qty": it.qty} for it in order.items],
         )
@@ -411,6 +414,8 @@ def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)
             items=o["items"],
             total=o["total"],
             payment_method=o["payment_method"],
+            delivery_lat=o.get("delivery_lat"),
+            delivery_lng=o.get("delivery_lng"),
         )
         db.update_order_dispatch(
             order_id=order_id,

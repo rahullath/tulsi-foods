@@ -44,12 +44,19 @@ def _extract_messages(body: dict) -> list[dict]:
                 if msg.get("from") == WHATSAPP_PHONE_ID:
                     continue  # echo of a message WE sent / mom's app reply — never self-reply
                 m = msg.get("text", {}).get("body")
+                lat = None
+                lng = None
                 if msg.get("type") == "interactive":
                     intr = msg.get("interactive", {})
                     if intr.get("type") == "button_reply":
                         m = intr.get("button_reply", {}).get("id")
                     elif intr.get("type") == "list_reply":
                         m = intr.get("list_reply", {}).get("id")
+                elif msg.get("type") == "location":
+                    loc = msg.get("location", {})
+                    lat = str(loc.get("latitude", ""))
+                    lng = str(loc.get("longitude", ""))
+                    m = f"[Location: {lat}, {lng}]"
                 if m is None:
                     continue
                 profile_name = ""
@@ -59,6 +66,8 @@ def _extract_messages(body: dict) -> list[dict]:
                     "wa_id": msg.get("from", ""),
                     "text": str(m),
                     "profile_name": profile_name,
+                    "lat": lat,
+                    "lng": lng,
                 })
     return out
 
@@ -109,7 +118,8 @@ async def inbound(request: Request, x_hub_signature_256: str | None = Header(Non
                 log.info("admin command from %s: %s → %s", msg["wa_id"], msg["text"], reply_text)
                 continue
         try:
-            replies = conversation.handle(msg["wa_id"], msg["text"], msg["profile_name"])
+            replies = conversation.handle(msg["wa_id"], msg["text"], msg["profile_name"],
+                                            lat=msg.get("lat"), lng=msg.get("lng"))
             for reply in replies:
                 client.send_outbound(msg["wa_id"], reply)
         except Exception:

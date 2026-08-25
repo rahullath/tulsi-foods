@@ -359,7 +359,12 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           <div class="checkout-field"><label>Name</label><input name="name" required placeholder="Your name"></div>
           <div class="checkout-field"><label>Phone</label><input name="phone" required placeholder="10-digit number" pattern="[0-9]{10,}"></div>
           <div class="checkout-field"><label>Order type</label><select name="order_type"><option value="delivery">Delivery</option><option value="pickup">Pickup</option></select></div>
-          <div class="checkout-field" id="addr-field"><label>Address</label><textarea name="address" rows="2" placeholder="Full address for delivery"></textarea></div>
+          <div class="checkout-field" id="addr-field"><label>Address</label><textarea name="address" rows="2" placeholder="Full address for delivery"></textarea>
+            <button type="button" id="gps-btn" style="margin-top:6px;font-size:12px;padding:5px 10px;border:1px solid #C9C4B8;border-radius:8px;background:#fff;cursor:pointer;color:#4A4F45;">📍 Use my location</button>
+            <span id="gps-status" style="font-size:11px;color:#888;margin-left:6px;"></span>
+            <input type="hidden" name="lat" id="input-lat">
+            <input type="hidden" name="lng" id="input-lng">
+          </div>
           <div class="checkout-field" id="pin-field"><label>Pincode</label><input name="pincode" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode"></div>
           <div class="checkout-field"><label>Payment</label><select name="payment_method"><option value="cod">Cash on delivery</option><option value="upi">UPI</option></select></div>
           <div class="checkout-field"><label>Note</label><input name="instructions" placeholder="e.g. no coriander"></div>
@@ -383,6 +388,32 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       pinField.style.display = isDelivery ? "" : "none";
     });
 
+    // GPS location capture
+    const gpsBtn = overlay.querySelector("#gps-btn");
+    const gpsStatus = overlay.querySelector("#gps-status");
+    const inputLat = overlay.querySelector("#input-lat");
+    const inputLng = overlay.querySelector("#input-lng");
+    gpsBtn.addEventListener("click", () => {
+      if (!navigator.geolocation) { gpsStatus.textContent = "Not supported"; return; }
+      gpsBtn.disabled = true;
+      gpsStatus.textContent = "Getting location...";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          inputLat.value = pos.coords.latitude.toFixed(6);
+          inputLng.value = pos.coords.longitude.toFixed(6);
+          gpsStatus.textContent = "✓ Location captured";
+          gpsStatus.style.color = "#16a34a";
+          gpsBtn.textContent = "📍 Location saved";
+        },
+        (err) => {
+          gpsStatus.textContent = err.code === 1 ? "Permission denied" : "Could not get location";
+          gpsStatus.style.color = "#B3261E";
+          gpsBtn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const msg = overlay.querySelector("#checkout-msg");
@@ -396,6 +427,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         order_type: fd.get("order_type"),
         address: fd.get("address") || null,
         pincode: fd.get("pincode") || null,
+        lat: fd.get("lat") || null,
+        lng: fd.get("lng") || null,
         payment_method: fd.get("payment_method"),
         instructions: fd.get("instructions") || null,
         items: ids.map(id => ({ item_id: id, qty: cart[id] })),

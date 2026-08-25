@@ -1,0 +1,231 @@
+2026-07-10 22:51:13 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-07-10 22:52:03 [info] [VM] Loading vmClient (TypeScript) module...
+2026-07-10 22:52:03 [info] [VM] Module loaded successfully
+2026-07-10 22:52:20 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-07-10 22:52:20 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/10 22:52:20.379746 starting (pid=7844, socket=/run/user/1000/claude-cowork-vm.sock)
+2026-07-10 22:52:20 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/10 22:52:20.380091 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-07-11 00:00:06 [warn] [startVM] VM not supported (linux/x64), skipping
+2026-07-11 22:35:18 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-07-11 22:35:18 [info] [VM] Loading vmClient (TypeScript) module...
+2026-07-11 22:35:18 [info] [VM] Module loaded successfully
+2026-07-11 22:35:19 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-07-11 22:35:19 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/11 22:35:19.384439 starting (pid=7804, socket=/run/user/1000/claude-cowork-vm.sock)
+2026-07-11 22:35:19 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/11 22:35:19.385516 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-07-14 20:59:22 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-07-14 20:59:22 [info] [VM] Loading vmClient (TypeScript) module...
+2026-07-14 20:59:22 [info] [VM] Module loaded successfully
+2026-07-14 20:59:23 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-07-14 20:59:23 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/14 20:59:23.832290 starting (pid=9358, socket=/run/user/1000/claude-cowork-vm.sock)
+2026-07-14 20:59:23 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/14 20:59:23.833280 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-07-14 22:37:55 [info] [VM] Loading vmClient (TypeScript) module...
+2026-07-14 22:37:55 [info] [VM] Module loaded successfully
+2026-07-14 22:37:55 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-07-14 22:37:55 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/14 22:37:55.094827 starting (pid=4181, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/07/14 22:37:55.095890 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-07-14 22:37:55 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-07-15 20:19:26 [info] [VM] Loading vmClient (TypeScript) module...
+2026-07-15 20:19:26 [info] [VM] Module loaded successfully
+2026-07-15 20:19:26 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-07-15 20:19:26 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/15 20:19:26.709704 starting (pid=5923, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/07/15 20:19:26.711181 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-07-15 20:19:26 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-07-16 20:43:38 [info] [VM] Loading vmClient (TypeScript) module...
+2026-07-16 20:43:38 [info] [VM] Module loaded successfully
+2026-07-16 20:43:38 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-07-16 20:43:38 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/16 20:43:38.054569 starting (pid=7032, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/07/16 20:43:38.055615 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-07-16 20:43:38 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-07-24 16:39:22 [info] [VM] Loading vmClient (TypeScript) module...
+2026-07-24 16:39:22 [info] [VM] Module loaded successfully
+2026-07-24 16:39:22 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-07-24 16:39:23 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-07-24 16:39:23 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/24 16:39:23.691694 starting (pid=4391, socket=/run/user/1000/claude-cowork-vm.sock)
+2026-07-24 16:39:23 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/24 16:39:23.692824 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-07-24 16:41:43 [warn] [startVM] VM not supported (linux/x64), skipping
+2026-07-24 16:42:00 [warn] [startVM] VM not supported (linux/x64), skipping
+2026-07-24 16:52:52 [warn] [startVM] VM not supported (linux/x64), skipping
+2026-07-24 16:53:38 [warn] [startVM] VM not supported (linux/x64), skipping
+2026-07-24 16:56:14 [warn] [startVM] VM not supported (linux/x64), skipping
+2026-07-24 17:21:28 [warn] [startVM] VM not supported (linux/x64), skipping
+2026-07-28 17:10:31 [info] [VM] Loading vmClient (TypeScript) module...
+2026-07-28 17:10:31 [info] [VM] Module loaded successfully
+2026-07-28 17:10:31 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-07-28 17:10:32 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-07-28 17:10:32 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/28 17:10:32.546306 starting (pid=7244, socket=/run/user/1000/claude-cowork-vm.sock)
+2026-07-28 17:10:32 [info] [linux-vm-helper] [cowork-linux-helper] 2026/07/28 17:10:32.547488 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-01 00:08:36 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-01 00:08:36 [info] [VM] Module loaded successfully
+2026-08-01 00:08:36 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-01 00:08:36 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-01 00:08:36 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/01 00:08:36.914013 starting (pid=10807, socket=/run/user/1000/claude-cowork-vm.sock)
+2026-08-01 00:08:36 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/01 00:08:36.915178 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-01 22:53:14 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-01 22:53:14 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-01 22:53:14 [info] [VM] Module loaded successfully
+2026-08-01 22:53:15 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-01 22:53:15 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/01 22:53:15.342079 starting (pid=8683, socket=/run/user/1000/claude-cowork-vm.sock)
+2026-08-01 22:53:15 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/01 22:53:15.343523 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-02 23:37:56 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-02 23:37:56 [info] [VM] Module loaded successfully
+2026-08-02 23:37:56 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-02 23:37:56 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/02 23:37:56.843970 starting (pid=7540, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/02 23:37:56.845439 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-02 23:37:57 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-11 11:35:58 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-11 11:35:58 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-11 11:35:58 [info] [VM] Module loaded successfully
+2026-08-11 11:35:58 [info] [Bundle:status] rootfs.img missing
+2026-08-11 11:35:58 [info] [Bundle:status] rootfs.img missing
+2026-08-11 11:35:59 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-11 11:35:59 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/11 11:35:59.311922 starting (pid=15563, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/11 11:35:59.313409 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-11 11:36:17 [info] [Bundle:status] rootfs.img missing
+2026-08-11 11:36:17 [warn] [startVM] VM not supported (linux/x64), skipping
+2026-08-12 23:49:07 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-12 23:49:07 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-12 23:49:07 [info] [VM] Module loaded successfully
+2026-08-12 23:49:07 [info] [Bundle:status] rootfs.img missing
+2026-08-12 23:49:07 [info] [Bundle:status] rootfs.img missing
+2026-08-12 23:49:08 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-12 23:49:08 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/12 23:49:08.279770 starting (pid=35712, socket=/run/user/1000/claude-cowork-vm.sock)
+2026-08-12 23:49:08 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/12 23:49:08.281108 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-13 01:10:46 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-13 01:10:46 [info] [VM] Module loaded successfully
+2026-08-13 01:10:46 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-13 01:10:46 [info] [Bundle:status] rootfs.img missing
+2026-08-13 01:10:46 [info] [Bundle:status] rootfs.img missing
+2026-08-13 01:10:46 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/13 01:10:46.232245 starting (pid=51639, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/13 01:10:46.232533 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-13 01:10:46 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-13 12:29:36 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-13 12:29:36 [info] [VM] Module loaded successfully
+2026-08-13 12:29:36 [info] [Bundle:status] rootfs.img missing
+2026-08-13 12:29:36 [info] [Bundle:status] rootfs.img missing
+2026-08-13 12:29:36 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-13 12:29:36 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/13 12:29:36.860195 starting (pid=7615, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/13 12:29:36.861366 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-13 12:29:37 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-13 12:31:24 [info] [Bundle:status] rootfs.img missing
+2026-08-13 12:31:24 [warn] [startVM] VM not supported (linux/x64), skipping
+2026-08-15 20:26:06 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-15 20:26:06 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-15 20:26:06 [info] [VM] Module loaded successfully
+2026-08-15 20:26:06 [info] [Bundle:status] rootfs.img missing
+2026-08-15 20:26:06 [info] [Bundle:status] rootfs.img missing
+2026-08-15 20:26:06 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-15 20:26:06 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/15 20:26:06.532088 starting (pid=14189, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/15 20:26:06.533279 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-16 16:33:03 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-16 16:33:03 [info] [VM] Module loaded successfully
+2026-08-16 16:33:03 [info] [Bundle:status] rootfs.img missing
+2026-08-16 16:33:03 [info] [Bundle:status] rootfs.img missing
+2026-08-16 16:33:03 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-16 16:33:03 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/16 16:33:03.643890 starting (pid=4648, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/16 16:33:03.645006 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-16 16:33:03 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-16 19:43:53 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-16 19:43:53 [info] [VM] Module loaded successfully
+2026-08-16 19:43:53 [info] [Bundle:status] rootfs.img missing
+2026-08-16 19:43:53 [info] [Bundle:status] rootfs.img missing
+2026-08-16 19:43:53 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-16 19:43:53 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/16 19:43:53.649351 starting (pid=16550, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/16 19:43:53.650855 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-16 19:43:53 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-16 19:44:14 [info] [Bundle:status] rootfs.img missing
+2026-08-16 19:44:14 [warn] [startVM] VM not supported (linux/x64), skipping
+2026-08-18 00:13:05 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-18 00:13:05 [info] [VM] Module loaded successfully
+2026-08-18 00:13:05 [info] [Bundle:status] rootfs.img missing
+2026-08-18 00:13:05 [info] [Bundle:status] rootfs.img missing
+2026-08-18 00:13:05 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-18 00:13:05 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/18 00:13:05.261527 starting (pid=7661, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/18 00:13:05.262635 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-18 00:13:05 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-18 20:23:59 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-18 20:23:59 [info] [VM] Module loaded successfully
+2026-08-18 20:23:59 [info] [Bundle:status] rootfs.img missing
+2026-08-18 20:23:59 [info] [Bundle:status] rootfs.img missing
+2026-08-18 20:23:59 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-18 20:23:59 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/18 20:23:59.748301 starting (pid=4211, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/18 20:23:59.749896 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-18 20:23:59 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-19 19:49:04 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-19 19:49:04 [info] [VM] Module loaded successfully
+2026-08-19 19:49:04 [info] [Bundle:status] rootfs.img missing
+2026-08-19 19:49:04 [info] [Bundle:status] rootfs.img missing
+2026-08-19 19:49:04 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-19 19:49:04 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/19 19:49:04.368779 starting (pid=3918, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/19 19:49:04.369918 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-19 19:49:04 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-20 11:35:50 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-20 11:35:50 [info] [VM] Module loaded successfully
+2026-08-20 11:35:50 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-20 11:35:50 [info] [Bundle:status] rootfs.img missing
+2026-08-20 11:35:50 [info] [Bundle:status] rootfs.img missing
+2026-08-20 11:35:50 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/20 11:35:50.270693 starting (pid=14053, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/20 11:35:50.272162 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-20 11:35:50 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-20 17:23:12 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-20 17:23:12 [info] [VM] Module loaded successfully
+2026-08-20 17:23:12 [info] [Bundle:status] rootfs.img missing
+2026-08-20 17:23:12 [info] [Bundle:status] rootfs.img missing
+2026-08-20 17:23:12 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-20 17:23:12 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/20 17:23:12.921006 starting (pid=4626, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/20 17:23:12.922227 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-20 17:23:13 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-20 22:08:14 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-20 22:08:14 [info] [VM] Module loaded successfully
+2026-08-20 22:08:14 [info] [Bundle:status] rootfs.img missing
+2026-08-20 22:08:14 [info] [Bundle:status] rootfs.img missing
+2026-08-20 22:08:14 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-20 22:08:14 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/20 22:08:14.182969 starting (pid=8250, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/20 22:08:14.184282 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-20 22:08:14 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-22 10:07:29 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-22 10:07:29 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-22 10:07:29 [info] [VM] Module loaded successfully
+2026-08-22 10:07:29 [info] [Bundle:status] rootfs.img missing
+2026-08-22 10:07:29 [info] [Bundle:status] rootfs.img missing
+2026-08-22 10:07:30 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-22 10:07:30 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/22 10:07:30.154559 starting (pid=16537, socket=/run/user/1000/claude-cowork-vm.sock)
+2026-08-22 10:07:30 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/22 10:07:30.156776 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-22 17:25:23 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-22 17:25:23 [info] [VM] Module loaded successfully
+2026-08-22 17:25:23 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-22 17:25:23 [info] [Bundle:status] rootfs.img missing
+2026-08-22 17:25:23 [info] [Bundle:status] rootfs.img missing
+2026-08-22 17:25:23 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/22 17:25:23.181851 starting (pid=8736, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/22 17:25:23.183530 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-22 17:25:23 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-23 13:35:08 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-23 13:35:08 [info] [VM] Module loaded successfully
+2026-08-23 13:35:08 [info] [Bundle:status] rootfs.img missing
+2026-08-23 13:35:08 [info] [Bundle:status] rootfs.img missing
+2026-08-23 13:35:08 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-23 13:35:08 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/23 13:35:08.466127 starting (pid=7319, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/23 13:35:08.467530 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-23 13:35:08 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-24 14:38:51 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-24 14:38:51 [info] [VM] Module loaded successfully
+2026-08-24 14:38:51 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-24 14:38:51 [info] [Bundle:status] rootfs.img missing
+2026-08-24 14:38:51 [info] [Bundle:status] rootfs.img missing
+2026-08-24 14:38:51 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/24 14:38:51.354163 starting (pid=4078, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/24 14:38:51.355636 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-24 14:38:51 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-24 23:01:17 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-24 23:01:17 [info] [VM] Module loaded successfully
+2026-08-24 23:01:17 [info] [Bundle:status] rootfs.img missing
+2026-08-24 23:01:17 [info] [Bundle:status] rootfs.img missing
+2026-08-24 23:01:17 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-24 23:01:17 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/24 23:01:17.872471 starting (pid=5124, socket=/run/user/1000/claude-cowork-vm.sock)
+[cowork-linux-helper] 2026/08/24 23:01:17.874124 [server] listening on /run/user/1000/claude-cowork-vm.sock
+2026-08-24 23:01:18 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-25 18:31:16 [info] [VM] Loading vmClient (TypeScript) module...
+2026-08-25 18:31:16 [info] [VM] Module loaded successfully
+2026-08-25 18:31:16 [info] [Bundle:status] rootfs.img missing
+2026-08-25 18:31:16 [info] [Bundle:status] rootfs.img missing
+2026-08-25 18:31:16 [info] [cleanupVMBundleIfUnsupported] yukonSilver not supported (status=unsupported), checking for stale bundle...
+2026-08-25 18:31:16 [info] [linux-vm] Spawning helper: /usr/lib/claude-desktop/resources/cowork-linux-helper
+2026-08-25 18:31:16 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/25 18:31:16.810042 starting (pid=5539, socket=/run/user/1000/claude-cowork-vm.sock)
+2026-08-25 18:31:16 [info] [linux-vm-helper] [cowork-linux-helper] 2026/08/25 18:31:16.811338 [server] listening on /run/user/1000/claude-cowork-vm.sock

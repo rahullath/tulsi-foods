@@ -82,6 +82,12 @@
         </select>
       </label>
       <label>Address <textarea name="address" rows="2" placeholder="Full address for delivery (street, area, landmark)"></textarea></label>
+      <div style="margin-bottom:8px">
+        <button type="button" id="gps-btn" style="font-size:12px;padding:5px 10px;border:1px solid #C9C4B8;border-radius:8px;background:#fff;cursor:pointer;color:#4A4F45;">📍 Use my location</button>
+        <span id="gps-status" style="font-size:11px;color:#888;margin-left:6px;"></span>
+        <input type="hidden" name="lat" id="input-lat">
+        <input type="hidden" name="lng" id="input-lng">
+      </div>
       <label id="pincode-wrap">Pincode
         <input name="pincode" type="text" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode">
       </label>

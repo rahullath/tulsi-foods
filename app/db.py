@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS orders (
     scheduled_at    TEXT,
     delivery_address TEXT,
     delivery_pincode TEXT,
+    delivery_lat    TEXT,
+    delivery_lng    TEXT,
     sr_order_id     INTEGER,
     sr_awb          TEXT,
     sr_courier      TEXT,
@@ -99,6 +101,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE orders ADD COLUMN sr_tracking_url TEXT")
     if not _has_col("orders", "dispatched_at"):
         conn.execute("ALTER TABLE orders ADD COLUMN dispatched_at TEXT")
+    if not _has_col("orders", "delivery_lat"):
+        conn.execute("ALTER TABLE orders ADD COLUMN delivery_lat TEXT")
+    if not _has_col("orders", "delivery_lng"):
+        conn.execute("ALTER TABLE orders ADD COLUMN delivery_lng TEXT")
     # daily_specials table (may not exist in older databases)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS daily_specials ("
@@ -197,14 +203,18 @@ def create_order(customer_id: int, order_type: str, subtotal: float,
                  delivery_fee: float, total: float, payment_method: str,
                  instructions: str | None, items: list[dict],
                  delivery_address: str | None = None,
-                 delivery_pincode: str | None = None) -> int:
+                 delivery_pincode: str | None = None,
+                 delivery_lat: str | None = None,
+                 delivery_lng: str | None = None) -> int:
     conn = get_conn()
     cur = conn.execute(
         "INSERT INTO orders(customer_id, status, order_type, subtotal, delivery_fee, "
-        "total, payment_method, instructions, delivery_address, delivery_pincode) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?)",
+        "total, payment_method, instructions, delivery_address, delivery_pincode, "
+        "delivery_lat, delivery_lng) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
         (customer_id, "new", order_type, subtotal, delivery_fee, total,
-         payment_method, instructions, delivery_address, delivery_pincode),
+         payment_method, instructions, delivery_address, delivery_pincode,
+         delivery_lat, delivery_lng),
     )
     oid = cur.lastrowid
     conn.executemany(
