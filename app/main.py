@@ -3,6 +3,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -153,7 +154,8 @@ def llms_txt():
         "Run by Kavita Lath since 2015. Thalis, parathas, sabzi, dal and chaat, cooked "
         "to order and delivered direct — no aggregator, no platform fees.",
         "",
-        "- Cuisine: North Indian, pure vegetarian (no eggs; Jain / no-onion-garlic on request)",
+        "- Cuisine: North Indian, pure vegetarian (Jain / no-onion-garlic on request)",
+        "- Also known as: Tulasi Foods, Thulasi Restaurant (common misspellings/mishearings of the same restaurant)",
         "- Location: 34 Murrays Gate Road, Alwarpet, Chennai 600018, Tamil Nadu, India",
         "- Hours: Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM",
         "- Delivery: Mylapore, Alwarpet, Teynampet and nearby areas within ~7 km",
@@ -165,30 +167,52 @@ def llms_txt():
         f"- [Home]({SITE_URL}/): overview, story, how ordering works",
         f"- [Menu]({SITE_URL}/menu): today's dishes, prices and availability, order online",
         f"- [Delivery]({SITE_URL}/delivery): delivery areas, fees and timing",
-        f"- [About]({SITE_URL}/about): the kitchen's story",
+        f"- [About]({SITE_URL}/about): the kitchen's story, reviews, and frequently asked questions",
         f"- [Privacy policy]({SITE_URL}/privacy-policy)",
     ]
     return PlainTextResponse("\n".join(lines))
 
 
+# Paths that render HTML but shouldn't be in the public sitemap.
+SITEMAP_EXCLUDE = {"/admin"}
+
+# Optional path -> template file, just to attach a real <lastmod>. A page
+# missing here still appears in the sitemap (via route auto-discovery below),
+# just without a lastmod — so a new page can never silently fall out of the
+# sitemap for want of an entry here.
+SITEMAP_TEMPLATES = {
+    "/": "landing.html",
+    "/menu": "menu.html",
+    "/delivery": "delivery.html",
+    "/about": "about.html",
+    "/bio": "bio.html",
+    "/privacy-policy": "privacy.html",
+}
+
+
 @app.get("/sitemap.xml")
 def sitemap_xml():
+    """Every GET page route that renders HTML, auto-discovered from FastAPI's
+    route table — adding a new @app.get(..., response_class=HTMLResponse)
+    page is enough for it to show up here, no separate list to remember."""
     template_dir = Path("app/templates")
-    pages = [
-        ("/", "landing.html"),
-        ("/menu", "menu.html"),
-        ("/delivery", "delivery.html"),
-        ("/about", "about.html"),
-        ("/bio", "bio.html"),
-        ("/privacy-policy", "privacy.html"),
-    ]
+    paths = sorted({
+        route.path
+        for route in app.routes
+        if isinstance(route, APIRoute)
+        and route.response_class is HTMLResponse
+        and "GET" in route.methods
+        and "{" not in route.path
+        and route.path not in SITEMAP_EXCLUDE
+    })
     entries = []
-    for path, template_name in pages:
-        mtime = (template_dir / template_name).stat().st_mtime
-        lastmod = date.fromtimestamp(mtime).isoformat()
-        entries.append(
-            f"  <url>\n    <loc>{SITE_URL}{path}</loc>\n    <lastmod>{lastmod}</lastmod>\n  </url>"
-        )
+    for path in paths:
+        lastmod_tag = ""
+        template_name = SITEMAP_TEMPLATES.get(path)
+        if template_name:
+            mtime = (template_dir / template_name).stat().st_mtime
+            lastmod_tag = f"\n    <lastmod>{date.fromtimestamp(mtime).isoformat()}</lastmod>"
+        entries.append(f"  <url>\n    <loc>{SITE_URL}{path}</loc>{lastmod_tag}\n  </url>")
     body = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
