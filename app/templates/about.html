@@ -50,6 +50,13 @@ section[id] { scroll-margin-top: 76px; }
 .review-quote-text { font-size: 14px; line-height: 1.65; color: #43483F; }
 .review-quote-meta { margin-top: 10px; font-size: 12px; color: var(--sub); }
 
+.faq { max-width: 1000px; margin: 40px auto 0; padding: 0 40px; }
+.faq-list { margin-top: 20px; display: flex; flex-direction: column; gap: 16px; }
+.faq-item { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; }
+.faq-q { font-size: 15px; font-weight: 600; }
+.faq-a { margin-top: 8px; font-size: 14px; line-height: 1.65; color: #43483F; }
+.faq-a a { color: var(--g); }
+
 .contact { max-width: 1000px; margin: 40px auto 0; padding: 0 40px 64px; }
 .contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
 .contact-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
@@ -69,6 +76,7 @@ section[id] { scroll-margin-top: 76px; }
   .reviews { padding: 0 18px; }
   .reviews-grid { grid-template-columns: 1fr; }
   .stat-item, .stat-badge { flex: 1; min-width: 0; }
+  .faq { padding: 0 18px; }
   .contact { padding: 0 18px 48px; }
   .contact-grid { grid-template-columns: 1fr; }
   .footer { flex-direction: column; gap: 8px; padding: 20px 18px 30px; }
@@ -150,6 +158,37 @@ section[id] { scroll-margin-top: 76px; }
   {% endif %}
 </section>
 
+<section class="faq" id="faq">
+  <div class="page-tag">Questions</div>
+  <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; margin-top:10px;">Common questions</h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q">Is Tulsi Foods pure vegetarian?</div>
+      <p class="faq-a">Yes — the whole kitchen is 100% pure vegetarian, no eggs. It's one of the reasons regulars in Alwarpet and Mylapore order from us for family meals and office lunches.</p>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Do you have Jain or no-onion-garlic food?</div>
+      <p class="faq-a">Yes. Say so when you order — Jain and no-onion-garlic dishes are cooked separately, not just left out.</p>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Where is Tulsi Foods located?</div>
+      <p class="faq-a">34 Murrays Gate Road, Alwarpet, Chennai 600018 — on the Alwarpet/Teynampet border, a short walk from Mylapore.</p>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What areas do you deliver to?</div>
+      <p class="faq-a">Mylapore, Alwarpet and Teynampet fastest, with delivery out to Adyar and T. Nagar. Full breakdown on the <a href="/delivery">delivery page</a>.</p>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is Tulsi Foods the same as "Tulasi Foods" or "Thulasi Restaurant"?</div>
+      <p class="faq-a">Yes — same kitchen, same address. Tulasi Foods and Thulasi Restaurant are just how the name gets typed or heard.</p>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Can I order directly instead of through Swiggy or Zomato?</div>
+      <p class="faq-a">Yes, and it's how we keep prices fair — <a href="/menu">order on the website</a> or message us on <a href="https://wa.me/919940062840" target="_blank" rel="noopener">WhatsApp</a> directly.</p>
+    </div>
+  </div>
+</section>
+
 <section class="contact" id="contact">
   <div class="page-tag">Contact</div>
   <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; margin-top:10px;">Reach the kitchen directly</h2>
@@ -173,4 +212,61 @@ section[id] { scroll-margin-top: 76px; }
   <span>Tulsi Foods · 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
   <span><a href="/menu">Menu</a> · <a href="/delivery">Delivery areas</a> · <a href="/privacy-policy">Privacy</a></span>
 </div>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Tulsi Foods pure vegetarian?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — the whole kitchen is 100% pure vegetarian, no eggs. It's one of the reasons regulars in Alwarpet and Mylapore order from us for family meals and office lunches."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you have Jain or no-onion-garlic food?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Say so when you order — Jain and no-onion-garlic dishes are cooked separately, not just left out."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where is Tulsi Foods located?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "34 Murrays Gate Road, Alwarpet, Chennai 600018 — on the Alwarpet/Teynampet border, a short walk from Mylapore."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What areas do you deliver to?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Mylapore, Alwarpet and Teynampet fastest, with delivery out to Adyar and T. Nagar."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Tulsi Foods the same as \"Tulasi Foods\" or \"Thulasi Restaurant\"?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — same kitchen, same address. Tulasi Foods and Thulasi Restaurant are just how the name gets typed or heard."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I order directly instead of through Swiggy or Zomato?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, and it's how we keep prices fair — order on the website or message us on WhatsApp directly."
+      }
+    }
+  ]
+}
+</script>
 {% endblock %}

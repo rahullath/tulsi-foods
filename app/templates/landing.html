@@ -115,8 +115,10 @@ section[id] { scroll-margin-top: 76px; }
 .cta-btn:hover { transform: translateY(-1px); }
 
 /* Footer */
-.footer { padding: 26px 40px 34px; display: flex; justify-content: space-between; font-size: 13px; color: var(--sub); max-width: 1200px; margin: 0 auto; }
+.footer { padding: 26px 40px 34px; max-width: 1200px; margin: 0 auto; font-size: 13px; color: var(--sub); }
 .footer a { color: var(--g); text-decoration: none; }
+.footer-main { display: flex; justify-content: space-between; }
+.footer-aka { margin-top: 10px; font-size: 12px; }
 
 @media (max-width: 768px) {
   .nav { padding: 16px 18px; }
@@ -134,7 +136,8 @@ section[id] { scroll-margin-top: 76px; }
   .story { grid-template-columns: 1fr; padding: 8px 18px 40px; gap: 24px; }
   .story-photo { height: 220px; order: -1; }
   .cta-banner { flex-direction: column; text-align: center; padding: 36px 18px; }
-  .footer { flex-direction: column; gap: 8px; padding: 20px 18px 30px; }
+  .footer { padding: 20px 18px 30px; }
+  .footer-main { flex-direction: column; gap: 8px; }
 }
 </style>
 
@@ -284,8 +287,17 @@ section[id] { scroll-margin-top: 76px; }
 </div>
 
 <div class="footer">
-  <span>Tulsi Foods · 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
-  <span><a href="/menu">Menu</a> · <a href="/delivery">Delivery areas</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/privacy-policy">Privacy</a></span>
+  <div class="footer-main">
+    <span>Tulsi Foods · 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
+    <span><a href="/menu">Menu</a> · <a href="/delivery">Delivery areas</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/privacy-policy">Privacy</a></span>
+  </div>
+  <div class="footer-aka">
+    Also known as Tulasi Foods, Thulasi Restaurant · Also on
+    <a href="https://maps.app.goo.gl/uub3icJY2pRwZAgN6" target="_blank" rel="noopener">Google Maps</a> ·
+    <a href="https://www.swiggy.com/city/chennai/tulsi-foods-alwarpet-teynampet-rest28173" target="_blank" rel="noopener">Swiggy</a> ·
+    <a href="http://zoma.to/r/18469730" target="_blank" rel="noopener">Zomato</a> ·
+    <a href="https://jsdl.in/DT-20UYMUME6EY" target="_blank" rel="noopener">JustDial</a>
+  </div>
 </div>
 
 <script type="application/ld+json">
@@ -293,6 +305,7 @@ section[id] { scroll-margin-top: 76px; }
   "@context": "https://schema.org",
   "@type": "Restaurant",
   "name": "Tulsi Foods",
+  "alternateName": ["Tulasi Foods", "Thulasi Restaurant", "Tulsi Restaurant Chennai"],
   "url": "https://tulsifoods.app/",
   "image": ["https://tulsifoods.app/static/img/landing-hero.jpg"],
   "telephone": "+919940062840",
@@ -323,7 +336,12 @@ section[id] { scroll-margin-top: 76px; }
   ],
   "sameAs": [
     "https://www.instagram.com/tulsi.foods_chennai/",
-    "https://www.facebook.com/tulsifoodservices"
+    "https://www.facebook.com/tulsifoodservices",
+    "https://maps.app.goo.gl/uub3icJY2pRwZAgN6",
+    "https://www.swiggy.com/restaurants/chennai/teynampet/tulsi-foods-28173/dineout",
+    "https://www.swiggy.com/city/chennai/tulsi-foods-alwarpet-teynampet-rest28173",
+    "http://zoma.to/r/18469730",
+    "https://jsdl.in/DT-20UYMUME6EY"
   ]
 }
 </script>
