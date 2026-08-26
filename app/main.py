@@ -123,7 +123,7 @@ def about_page(request: Request):
         {
             "featured_reviews": reviews.list_featured_reviews(),
             "platform_stats": reviews.get_platform_stats(),
-            "order_count": db.lifetime_order_count(),
+            "order_count": reviews.get_order_count_display(),
             "google_review_link": GOOGLE_REVIEW_LINK,
         },
     )
@@ -429,6 +429,26 @@ def admin_set_platform_stats(body: PlatformStatsIn, x_admin_token: str | None = 
     _check_admin(x_admin_token)
     try:
         reviews.set_platform_stats(body.platform, body.rating, body.review_count)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"ok": True}
+
+
+class OrderCountIn(BaseModel):
+    count: int
+
+
+@app.get("/api/admin/order-count")
+def admin_get_order_count(x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    return {"count": db.get_order_count_estimate()}
+
+
+@app.post("/api/admin/order-count")
+def admin_set_order_count(body: OrderCountIn, x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    try:
+        reviews.set_order_count_estimate(body.count)
     except ValueError as e:
         raise HTTPException(400, str(e))
     return {"ok": True}

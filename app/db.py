@@ -91,6 +91,11 @@ CREATE TABLE IF NOT EXISTS platform_stats (
     review_count INTEGER,
     updated_at   TEXT
 );
+CREATE TABLE IF NOT EXISTS site_stats (
+    id          INTEGER PRIMARY KEY CHECK (id = 1),
+    order_count INTEGER,
+    updated_at  TEXT
+);
 """
 
 
@@ -516,6 +521,29 @@ def set_platform_stats(platform: str, rating: float | None, review_count: int | 
         "ON CONFLICT(platform) DO UPDATE SET rating=excluded.rating, "
         "review_count=excluded.review_count, updated_at=excluded.updated_at",
         (platform, rating, review_count),
+    )
+    conn.commit()
+    conn.close()
+
+
+# ---- site-wide order count estimate (marketing number, not a live tally —
+# real order history spans 11 years across Swiggy/Zomato/walk-in/phone, none
+# of which this app has ever recorded, so there's no honest way to compute
+# it — an admin-set approximate figure beats a misleadingly tiny real count) ----
+
+def get_order_count_estimate() -> int | None:
+    conn = get_conn()
+    row = conn.execute("SELECT order_count FROM site_stats WHERE id=1").fetchone()
+    conn.close()
+    return row["order_count"] if row else None
+
+
+def set_order_count_estimate(count: int) -> None:
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO site_stats(id, order_count, updated_at) VALUES(1, ?, datetime('now')) "
+        "ON CONFLICT(id) DO UPDATE SET order_count=excluded.order_count, updated_at=excluded.updated_at",
+        (count,),
     )
     conn.commit()
     conn.close()

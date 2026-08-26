@@ -30,6 +30,29 @@ SOURCE_LABELS = {
 }
 
 
+def format_count(n: int) -> str:
+    """1100 -> '1.1k+', 2000 -> '2k+', 240 -> '240+'."""
+    if n < 1000:
+        return f"{n}+"
+    value = n / 1000
+    text = f"{value:.1f}".rstrip("0").rstrip(".")
+    return f"{text}k+"
+
+
+def get_order_count_display() -> str | None:
+    """The admin-set order count estimate, formatted — or None if unset,
+    so the caller can just omit the stat rather than show a fabricated
+    default or the (misleadingly tiny) count of web-only orders."""
+    n = db.get_order_count_estimate()
+    return format_count(n) if n else None
+
+
+def set_order_count_estimate(count: int) -> None:
+    if count < 0:
+        raise ValueError("Order count can't be negative")
+    db.set_order_count_estimate(count)
+
+
 def list_reviews() -> list[dict]:
     return db.list_reviews()
 

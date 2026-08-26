@@ -481,6 +481,26 @@
     } catch (e) { toast("Failed: " + e.message); }
   });
 
+  async function loadOrderCount() {
+    try {
+      const d = await api("/api/admin/order-count");
+      if (d.count) document.querySelector('#order-count-form [name=order_count]').value = d.count;
+    } catch (e) { /* non-fatal — form just stays blank */ }
+  }
+
+  document.getElementById("order-count-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const count = new FormData(e.target).get("order_count");
+    if (!count) return;
+    try {
+      await api("/api/admin/order-count", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ count: Number(count) }),
+      });
+      toast("Order count saved ✓");
+    } catch (e) { toast("Failed: " + e.message); }
+  });
+
   // ---- Init ----
   loadOrders();
   loadMenu().catch(() => {});
@@ -488,5 +508,6 @@
   loadDayStats().catch(() => {});
   loadReviews().catch(() => {});
   loadPlatformStats().catch(() => {});
+  loadOrderCount().catch(() => {});
   setInterval(loadOrders, 30000);
 })();

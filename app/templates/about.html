@@ -113,10 +113,12 @@ section[id] { scroll-margin-top: 76px; }
 
 <section class="reviews" id="reviews">
   <div class="stats-row">
+    {% if order_count %}
     <div class="stat-item">
-      <span class="stat-num">{{ order_count }}+</span>
+      <span class="stat-num">{{ order_count }}</span>
       <span class="stat-label">orders and counting</span>
     </div>
+    {% endif %}
     <div class="stat-item">
       <span class="stat-num">2015</span>
       <span class="stat-label">cooking since</span>
