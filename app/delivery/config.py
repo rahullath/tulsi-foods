@@ -17,8 +17,8 @@ SHIPROCKET_BASE_URL = "https://apiv2.shiprocket.in/v1/external"
 # Pickup location — Tulsi Foods, Alwarpet
 PICKUP_ADDRESS = "34, Murrays Gate Road, Alwarpet, Chennai, 600018, Tamil Nadu, India"
 PICKUP_PINCODE = "600018"
-PICKUP_LAT = 13.0340   # approximate — update if needed
-PICKUP_LNG = 80.2574
+PICKUP_LAT = 13.038909  # resolved from the Google Maps listing itself
+PICKUP_LNG = 80.256394
 PICKUP_PHONE = "9940062840"  # restaurant contact for rider
 
 # Default food parcel weight (kg) — used for serviceability & rate lookups
