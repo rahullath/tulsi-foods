@@ -9,12 +9,15 @@ from pydantic import BaseModel, Field
 
 from . import db, menu, orders
 from .config import ADMIN_TOKEN, DELIVERY_ZONES, GOOGLE_REVIEW_LINK
+from .delivery.config import PICKUP_LAT, PICKUP_LNG
 
 app = FastAPI(title="Tulsi Foods Direct Ordering", version="0.2.0")
 
 from .webhooks import router as webhook_router
+from .qr import router as qr_router, init_qr
 
 app.include_router(webhook_router)
+app.include_router(qr_router)
 
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -30,9 +33,29 @@ def dish_photo_ids() -> set[str]:
 
 # ---- pages ----
 
+# (item_id, tag, short description) — curated, shown on the home page "on the
+# stove right now" strip. Falls back to the next entry if one is sold out.
+TODAYS_PICKS = [
+    ("north-indian-thali", "Today's thali", "Sabzi, dal tadka, phulka, rice and a sweet"),
+    ("aloo-paratha", None, "Off the tawa, with curd and pickle"),
+    ("paneer-butter-masala", None, "Fresh paneer in tomato and cashew gravy"),
+    ("papdi-chat-6pcs", None, "Made when you order so it stays crisp"),
+    ("chola-bhatura", None, "Fluffy bhatura with spiced chole"),
+    ("dal-makhani", None, "Slow-cooked overnight, finished with cream"),
+]
+
+
 @app.get("/", response_class=HTMLResponse)
 def landing_page(request: Request):
-    return templates.TemplateResponse(request, "landing.html", {})
+    photos = dish_photo_ids()
+    picks = []
+    for item_id, tag, desc in TODAYS_PICKS:
+        item = menu.get_item(item_id)
+        if item and menu.is_available(item_id):
+            picks.append({**item, "tag": tag, "desc": desc, "has_photo": item_id in photos})
+        if len(picks) == 4:
+            break
+    return templates.TemplateResponse(request, "landing.html", {"picks": picks})
 
 
 @app.get("/menu", response_class=HTMLResponse)
@@ -40,8 +63,19 @@ def menu_page(request: Request):
     return templates.TemplateResponse(
         request,
         "menu.html",
-        {"groups": menu.grouped(), "zones": DELIVERY_ZONES, "dish_photos": dish_photo_ids()},
+        {"groups": menu.grouped(), "zones": DELIVERY_ZONES, "dish_photos": dish_photo_ids(),
+         "pickup_lat": PICKUP_LAT, "pickup_lng": PICKUP_LNG},
     )
+
+
+@app.get("/delivery", response_class=HTMLResponse)
+def delivery_page(request: Request):
+    return templates.TemplateResponse(request, "delivery.html", {"zones": DELIVERY_ZONES})
+
+
+@app.get("/about", response_class=HTMLResponse)
+def about_page(request: Request):
+    return templates.TemplateResponse(request, "about.html", {})
 
 
 RECOMMENDED_DISHES = [
@@ -94,8 +128,36 @@ def robots_txt():
         "User-agent: *",
         "Disallow: /admin",
         "Disallow: /api/",
+        "Disallow: /f",
         "",
         f"Sitemap: {SITE_URL}/sitemap.xml",
+    ]
+    return PlainTextResponse("\n".join(lines))
+
+
+@app.get("/llms.txt", response_class=PlainTextResponse)
+def llms_txt():
+    lines = [
+        "# Tulsi Foods",
+        "",
+        "> Pure vegetarian, home-style North Indian restaurant in Mylapore, Chennai. "
+        "Run by Kavita Lath since 2015. Thalis, parathas, sabzi, dal and chaat, cooked "
+        "to order and delivered direct — no aggregator, no platform fees.",
+        "",
+        "- Cuisine: North Indian, pure vegetarian (no eggs; Jain / no-onion-garlic on request)",
+        "- Location: 34 Murrays Gate Road, Alwarpet, Chennai 600018, Tamil Nadu, India",
+        "- Hours: Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM",
+        "- Delivery: Mylapore, Alwarpet, Teynampet and nearby areas within ~7 km",
+        "- Order: WhatsApp at +91 99400 62840, or the website menu below",
+        "- Phone: +91 99406 21800",
+        "",
+        "## Pages",
+        "",
+        f"- [Home]({SITE_URL}/): overview, story, how ordering works",
+        f"- [Menu]({SITE_URL}/menu): today's dishes, prices and availability, order online",
+        f"- [Delivery]({SITE_URL}/delivery): delivery areas, fees and timing",
+        f"- [About]({SITE_URL}/about): the kitchen's story",
+        f"- [Privacy policy]({SITE_URL}/privacy-policy)",
     ]
     return PlainTextResponse("\n".join(lines))
 
@@ -106,6 +168,8 @@ def sitemap_xml():
     pages = [
         ("/", "landing.html"),
         ("/menu", "menu.html"),
+        ("/delivery", "delivery.html"),
+        ("/about", "about.html"),
         ("/bio", "bio.html"),
         ("/privacy-policy", "privacy.html"),
     ]
@@ -149,12 +213,12 @@ def api_delivery_check(pincode: str):
 
 @app.get("/api/customer/{phone}")
 def api_customer_info(phone: str):
-    """Get saved address/pincode for a customer (for checkout pre-fill)."""
+    """Get saved address(es) for a customer (for checkout pre-fill)."""
     c = db.get_customer(phone)
     if not c:
-        return {"exists": False, "address": None, "pincode": None, "name": None}
+        return {"exists": False, "address": None, "pincode": None, "name": None, "addresses": []}
     return {"exists": True, "address": c.get("address"), "pincode": c.get("pincode"),
-            "name": c.get("name")}
+            "name": c.get("name"), "addresses": db.list_customer_addresses(c["id"])}
 
 
 # ---- availability (admin) ----
@@ -349,6 +413,7 @@ class OrderIn(BaseModel):
     lng: str | None = None
     payment_method: str = "cod"   # cod | upi
     instructions: str | None = None
+    scheduled_at: str | None = None
     items: list[OrderItemIn]
 
 
@@ -360,6 +425,7 @@ def create_order(order: OrderIn):
             order_type=order.order_type, km=order.km, pincode=order.pincode,
             lat=order.lat, lng=order.lng,
             payment_method=order.payment_method, instructions=order.instructions,
+            scheduled_at=order.scheduled_at,
             items=[{"item_id": it.item_id, "qty": it.qty} for it in order.items],
         )
         return result
@@ -373,6 +439,23 @@ def get_order(order_id: int):
     if not o:
         raise HTTPException(404, "Order not found")
     return o
+
+
+class OrderAddressIn(BaseModel):
+    address: str
+    pincode: str | None = None
+    lat: str | None = None
+    lng: str | None = None
+
+
+@app.post("/api/orders/{order_id}/address")
+def edit_order_address(order_id: int, body: OrderAddressIn):
+    """Self-service address fix within a few minutes of placing the order."""
+    try:
+        return orders.edit_address(order_id, body.address, pincode=body.pincode,
+                                   lat=body.lat, lng=body.lng)
+    except orders.OrderError as e:
+        raise HTTPException(e.status, e.message)
 
 
 @app.get("/api/orders")
@@ -513,5 +596,6 @@ def track_order(order_id: int):
 def on_startup():
     db.init_db()
     db.seeded()
+    init_qr()
     from .whatsapp import sessions as wa_sessions
     wa_sessions.init_sessions()

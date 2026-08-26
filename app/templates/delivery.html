@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block meta %}
+<meta name="description" content="Where Tulsi Foods delivers in Chennai — Mylapore, Alwarpet, Teynampet, Adyar, T. Nagar and nearby — and what delivery costs. Pure vegetarian North Indian food, cooked to order.">
+<title>Delivery Areas &amp; Charges | Tulsi Foods, Mylapore</title>
+{% endblock %}
+{% block canonical %}<link rel="canonical" href="https://tulsifoods.app/delivery">{% endblock %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+{% endblock %}
+{% block styles %}{% endblock %}
+{% block body %}
+<style>
+:root { --g: #0E7A45; --sf: #E08A1E; --bg: #FBF8F2; --card: #fff; --border: #E7E1D6; --ink: #171A14; --sub: #6F7468; --line2: #EFEBE3; }
+* { box-sizing: border-box; margin: 0; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--line2); position: sticky; top: 0; z-index: 30; background: var(--bg); }
+.nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.nav-brand img { width: 40px; height: 40px; object-fit: contain; }
+.nav-brand span { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: var(--ink); }
+.nav-links { display: flex; align-items: center; gap: 28px; font-size: 14px; }
+.nav-links a { color: #4A4F45; text-decoration: none; }
+.nav-links a:hover { color: var(--ink); }
+.nav-links a.current { color: var(--ink); font-weight: 600; }
+.nav-cta { background: var(--g); color: #fff; border-radius: 999px; padding: 11px 20px; font-weight: 600; text-decoration: none; }
+
+.page { max-width: 880px; margin: 0 auto; padding: 48px 40px 64px; }
+.page-tag { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--g); letter-spacing: .05em; text-transform: uppercase; }
+.page h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(30px, 4vw, 42px); margin: 12px 0 0; line-height: 1.08; }
+.page-sub { margin: 16px 0 0; font-size: 16px; line-height: 1.65; color: #43483F; max-width: 620px; }
+
+.zone-table { margin-top: 30px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.zone-head { display: grid; grid-template-columns: 1.4fr 1fr 1fr; padding: 13px 18px; background: #F5F1E8; font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--sub); letter-spacing: .05em; }
+.zone-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr; padding: 15px 18px; border-top: 1px solid #F3F0EA; font-size: 15px; align-items: center; }
+.zone-row .zone-dist, .zone-row .zone-time { color: var(--sub); }
+.zone-note { padding: 14px 18px; border-top: 1px solid #F3F0EA; background: #EDF6E2; font-size: 14px; color: #2C5A1E; line-height: 1.6; }
+
+.faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.faq-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+.faq-title { font-size: 16px; font-weight: 600; }
+.faq-desc { margin: 8px 0 0; font-size: 14px; line-height: 1.65; color: #43483F; }
+
+.page-cta { margin-top: 40px; background: var(--g); color: #fff; border-radius: 16px; padding: 32px 34px; display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+.page-cta-text { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; }
+.page-cta a { background: #fff; color: var(--g); border-radius: 12px; padding: 14px 24px; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+
+.footer { padding: 26px 40px 34px; display: flex; justify-content: space-between; font-size: 13px; color: var(--sub); max-width: 1200px; margin: 0 auto; }
+.footer a { color: var(--g); text-decoration: none; }
+
+@media (max-width: 768px) {
+  .nav { padding: 16px 18px; }
+  .nav-links { display: none; }
+  .page { padding: 32px 18px 48px; }
+  .zone-head, .zone-row { grid-template-columns: 1fr; gap: 2px; }
+  .zone-head span:not(:first-child), .zone-row span:not(:first-child) { display: none; }
+  .faq-grid { grid-template-columns: 1fr; }
+  .page-cta { flex-direction: column; text-align: center; }
+  .footer { flex-direction: column; gap: 8px; padding: 20px 18px 30px; }
+}
+</style>
+
+<nav class="nav">
+  <a class="nav-brand" href="/">
+    <img src="/static/logo.png" alt="Tulsi Foods">
+    <span>Tulsi Foods</span>
+  </a>
+  <div class="nav-links">
+    <a href="/menu">Menu</a>
+    <a href="/delivery" class="current">Delivery</a>
+    <a href="/about">Our story</a>
+    <a href="/about#contact">Contact</a>
+    <a href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank" class="nav-cta">Order on WhatsApp</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-tag">Delivery</div>
+  <h1>Where we deliver, and what it costs</h1>
+  <p class="page-sub">We deliver from the kitchen on Murrays Gate Road, Alwarpet. Riders are ours or from Borzo, so the food goes straight to you and does not sit at a hub.</p>
+
+  <div class="zone-table">
+    <div class="zone-head"><span>AREA</span><span>DISTANCE</span><span>TYPICAL DELIVERY</span></div>
+    <div class="zone-row"><span>Mylapore, Alwarpet, Royapettah</span><span class="zone-dist">Up to 3 km</span><span class="zone-time">15–25 min ride</span></div>
+    <div class="zone-row"><span>Teynampet, Nandanam, R.A. Puram</span><span class="zone-dist">3 to 5 km</span><span class="zone-time">20–30 min ride</span></div>
+    <div class="zone-row"><span>Adyar, T. Nagar, Egmore</span><span class="zone-dist">5 to 7 km</span><span class="zone-time">30–40 min ride</span></div>
+    <div class="zone-note">Delivery is charged at whatever the rider costs for your distance — we do not add anything on top, and you see the exact figure before you pay. There is no minimum order.</div>
+  </div>
+
+  <div class="faq-grid">
+    <div class="faq-card">
+      <div class="faq-title">How long it takes</div>
+      <p class="faq-desc">Thirty to sixty minutes, depending on the dish and how busy the kitchen is. Thalis and parathas are cooked after you order, not held.</p>
+    </div>
+    <div class="faq-card">
+      <div class="faq-title">Ordering ahead</div>
+      <p class="faq-desc">Tell us a time and the food leaves the kitchen for it. Lunch and dinner get busy, so an hour's notice means it reaches you hot.</p>
+    </div>
+    <div class="faq-card">
+      <div class="faq-title">Outside 7 km</div>
+      <p class="faq-desc">We cannot deliver that far and keep the food hot. Pickup from Alwarpet works, and catering orders travel further by arrangement.</p>
+    </div>
+    <div class="faq-card">
+      <div class="faq-title">Paying</div>
+      <p class="faq-desc">UPI when you order, or cash to the rider. The total includes the delivery charge, so nothing is added at the door.</p>
+    </div>
+  </div>
+
+  <div class="page-cta">
+    <div class="page-cta-text">Check what's cooking today</div>
+    <a href="/menu">See today's menu &rarr;</a>
+  </div>
+</div>
+
+<div class="footer">
+  <span>Tulsi Foods · 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
+  <span><a href="/menu">Menu</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/privacy-policy">Privacy</a></span>
+</div>
+{% endblock %}

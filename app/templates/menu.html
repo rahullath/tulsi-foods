@@ -25,7 +25,7 @@
     </div>
     <div class="mh-search" id="search-box">
       <span class="mh-search-icon">⌕</span>
-      <input type="text" id="search-input" placeholder="Search 140 dishes" autocomplete="off">
+      <input type="text" id="search-input" placeholder="Search for a dish" autocomplete="off">
     </div>
   </header>
 
@@ -40,13 +40,11 @@
       <h2>{{ g["group"] }}</h2>
       {% for it in g["items"] %}
       <div class="menu-card{% if not it.available %} off{% endif %}" data-id="{{ it.id }}" data-name="{{ it.name|lower }}" data-popular="{{ 'true' if it.popular else 'false' }}">
-        <div class="card-photo" data-idx="{{ loop.index0 }}">
-          {% if it.id in dish_photos %}
+        {% if it.id in dish_photos %}
+        <div class="card-photo">
           <img src="/static/img/dishes/{{ it.id }}.jpg" alt="{{ it.name }}" loading="lazy">
-          {% else %}
-          <span class="photo-label">{{ it.name[:2] }}</span>
-          {% endif %}
         </div>
+        {% endif %}
         <div class="card-body">
           <div class="card-title">
             <span class="card-name">{{ it.name }}</span>
@@ -61,7 +59,7 @@
               <button data-act="inc" aria-label="increase">+</button>
             </div>
             {% else %}
-            <span class="card-sold-out">SOLD OUT</span>
+            <span class="card-sold-out">Finished for today</span>
             {% endif %}
           </div>
         </div>
@@ -79,11 +77,10 @@
     <div class="cart-inner">
       <div class="cart-info">
         <div class="cart-count"><span id="cart-count">0</span> items · <span id="cart-subtotal">₹0</span></div>
-        <div class="cart-gap" id="cart-gap"></div>
+        <div class="cart-gap">plus delivery, shown before you pay</div>
       </div>
       <a href="#checkout" id="cart-checkout" class="cart-btn">Checkout →</a>
     </div>
-    <div class="cart-warn" id="cart-warn" hidden></div>
     <div class="cart-wa">or <a href="https://wa.me/919940062840?text=Hi%20Tulsi%20Foods" target="_blank">continue on WhatsApp</a></div>
   </div>
 
@@ -134,9 +131,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .menu-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 12px; display: flex; gap: 12px; margin-bottom: 12px; transition: box-shadow .15s ease, transform .15s ease; }
 .menu-card:hover { box-shadow: 0 4px 16px rgba(23,26,20,.08); transform: translateY(-1px); }
 .menu-card.off { opacity: .55; }
-.card-photo { width: 84px; height: 84px; flex: 0 0 auto; border-radius: 12px; background: repeating-linear-gradient(135deg, var(--line2) 0 8px, #E6E1D7 8px 16px); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.card-photo { width: 84px; height: 84px; flex: 0 0 auto; border-radius: 12px; overflow: hidden; }
 .card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.photo-label { font: 500 9px/1.3 'IBM Plex Mono', monospace; color: var(--sub); text-align: center; }
 .card-body { flex: 1; display: flex; flex-direction: column; }
 .card-title { display: flex; align-items: center; gap: 7px; }
 .card-name { font-size: 15px; font-weight: 600; }
@@ -159,7 +155,6 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .cart-btn { color: #fff; text-decoration: none; font-size: 15px; font-weight: 600; white-space: nowrap; }
 .cart-wa { text-align: center; font-size: 12px; color: var(--sub); margin-top: 10px; }
 .cart-wa a { color: var(--g); text-decoration: underline; }
-.cart-warn { text-align: center; font-size: 12px; color: #B3261E; margin-top: 8px; }
 
 /* Footer */
 .mf { padding: 18px 14px 32px; text-align: center; font-size: 12px; color: var(--sub); }
@@ -174,6 +169,21 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .checkout-field { margin-bottom: 14px; }
 .checkout-field label { display: block; font-size: 13px; color: var(--sub); margin-bottom: 4px; }
 .checkout-field input, .checkout-field select, .checkout-field textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; background: #fff; }
+.time-pills { display: flex; gap: 7px; }
+.time-pill { flex: 1; text-align: center; background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px; font-size: 13px; cursor: pointer; color: var(--ink); }
+.time-pill.active { background: var(--g); color: #fff; border-color: var(--g); font-weight: 600; }
+.saved-addr-list { display: flex; flex-direction: column; gap: 8px; }
+.saved-addr-card { text-align: left; background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.5; cursor: pointer; color: var(--ink); }
+.saved-addr-card.selected { border-color: var(--g); border-width: 2px; }
+.saved-addr-label { font-weight: 600; }
+.saved-addr-text { color: var(--sub); margin-top: 2px; }
+.edit-window { margin-top: 16px; background: #FBF0DE; border: 1px solid #EFDFC2; border-radius: 12px; padding: 13px 14px; text-align: left; }
+.edit-window-text { font-size: 13px; font-weight: 600; color: #8A5A12; }
+.edit-window-btn { margin-top: 10px; background: #fff; border: 1px solid #EFDFC2; border-radius: 9px; padding: 9px 12px; font-size: 13px; font-weight: 600; color: #8A5A12; cursor: pointer; }
+.edit-window-btn.link { background: none; border: none; padding: 0; text-decoration: underline; }
+.edit-window-form textarea, .edit-window-form input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; margin-top: 8px; background: #fff; }
+.map-pin { height: 180px; border-radius: 10px; overflow: hidden; margin-top: 8px; border: 1px solid var(--border); background: #E9E4D8; }
+.map-address-preview { font-size: 12px; color: #4A4F45; margin-top: 6px; line-height: 1.4; min-height: 1.4em; }
 .checkout-field textarea { resize: vertical; }
 .checkout-summary { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 14px; }
 .checkout-row { display: flex; justify-content: space-between; padding: 4px 0; }
@@ -197,6 +207,28 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 
 <script>
 (() => {
+  const PICKUP_LAT = {{ pickup_lat }};
+  const PICKUP_LNG = {{ pickup_lng }};
+
+  // Lazy-load Leaflet + OpenStreetMap tiles only when checkout actually opens.
+  let leafletPromise = null;
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve(window.L);
+    if (leafletPromise) return leafletPromise;
+    leafletPromise = new Promise((resolve, reject) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(css);
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      script.onload = () => resolve(window.L);
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+    return leafletPromise;
+  }
+
   const CART_KEY = "tulsi_menu_cart";
   const cart = {};
   const PRICES = {};
@@ -204,12 +236,9 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   const cartBar = document.getElementById("cart-bar");
   const cartCount = document.getElementById("cart-count");
   const cartSubtotal = document.getElementById("cart-subtotal");
-  const cartGap = document.getElementById("cart-gap");
-  const cartWarn = document.getElementById("cart-warn");
   const searchInput = document.getElementById("search-input");
   const noResults = document.getElementById("no-results");
   const menuMain = document.getElementById("menu-main");
-  const MIN_ORDER = 250;
 
   let activeCategory = "all";
 
@@ -253,22 +282,12 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 
   function updateCart() {
     saveCart();
-    cartWarn.hidden = true;
     const ids = Object.keys(cart);
     const count = ids.reduce((s, id) => s + cart[id], 0);
     const subtotal = ids.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
     cartCount.textContent = count;
     cartSubtotal.textContent = "₹" + subtotal;
-    if (count > 0) {
-      cartBar.classList.remove("hidden");
-      if (subtotal < MIN_ORDER) {
-        cartGap.textContent = "₹" + (MIN_ORDER - subtotal) + " more for free delivery";
-      } else {
-        cartGap.textContent = "Free delivery ✓";
-      }
-    } else {
-      cartBar.classList.add("hidden");
-    }
+    cartBar.classList.toggle("hidden", count === 0);
   }
 
   // Apply saved cart quantities to the stepper UI on load
@@ -330,14 +349,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   // Checkout
   document.getElementById("cart-checkout").addEventListener("click", (e) => {
     e.preventDefault();
-    const ids = Object.keys(cart);
-    if (!ids.length) return;
-    const subtotal = ids.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
-    if (subtotal < MIN_ORDER) {
-      cartWarn.textContent = "₹" + (MIN_ORDER - subtotal) + " more to reach the ₹" + MIN_ORDER + " minimum";
-      cartWarn.hidden = false;
-      return;
-    }
+    if (!Object.keys(cart).length) return;
     openCheckout();
   });
 
@@ -359,11 +371,29 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           <div class="checkout-field"><label>Name</label><input name="name" required placeholder="Your name"></div>
           <div class="checkout-field"><label>Phone</label><input name="phone" required placeholder="10-digit number" pattern="[0-9]{10,}"></div>
           <div class="checkout-field"><label>Order type</label><select name="order_type"><option value="delivery">Delivery</option><option value="pickup">Pickup</option></select></div>
-          <div class="checkout-field" id="addr-field"><label>Address</label><textarea name="address" rows="2" placeholder="Full address for delivery"></textarea>
-            <button type="button" id="gps-btn" style="margin-top:6px;font-size:12px;padding:5px 10px;border:1px solid #C9C4B8;border-radius:8px;background:#fff;cursor:pointer;color:#4A4F45;">📍 Use my location</button>
+          <div class="checkout-field">
+            <label>When do you want it?</label>
+            <div class="time-pills" id="time-pills">
+              <button type="button" class="time-pill active" data-preset="asap">As soon as possible</button>
+              <button type="button" class="time-pill" data-preset="lunch">Lunch, 12:30</button>
+              <button type="button" class="time-pill" data-preset="dinner">Dinner, 8:00</button>
+            </div>
+            <input type="hidden" name="scheduled_at" id="input-scheduled">
+          </div>
+          <div class="checkout-field" id="saved-addr-field" hidden>
+            <label>You have ordered here before</label>
+            <div class="saved-addr-list" id="saved-addr-list"></div>
+          </div>
+          <div class="checkout-field" id="addr-field"><label>Address</label><textarea name="address" rows="2" placeholder="Flat/house number, building, street" required></textarea>
+            <div id="map-pin" class="map-pin"></div>
+            <div id="map-address-preview" class="map-address-preview"></div>
+            <button type="button" id="gps-btn" style="margin-top:6px;font-size:12px;padding:5px 10px;border:1px solid #C9C4B8;border-radius:8px;background:#fff;cursor:pointer;color:#4A4F45;">📍 Centre on my location</button>
             <span id="gps-status" style="font-size:11px;color:#888;margin-left:6px;"></span>
             <input type="hidden" name="lat" id="input-lat">
             <input type="hidden" name="lng" id="input-lng">
+          </div>
+          <div class="checkout-field" id="landmark-field"><label>Nearest landmark</label><input name="landmark" placeholder="e.g. opposite the park gate" required>
+            <div style="font-size:11px;color:#6F7468;margin-top:4px;">This is the one thing riders actually ask for.</div>
           </div>
           <div class="checkout-field" id="pin-field"><label>Pincode</label><input name="pincode" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode"></div>
           <div class="checkout-field"><label>Payment</label><select name="payment_method"><option value="cod">Cash on delivery</option><option value="upi">UPI</option></select></div>
@@ -379,28 +409,133 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
 
     const form = overlay.querySelector("#checkout-form");
+    const inputLat = overlay.querySelector("#input-lat");
+    const inputLng = overlay.querySelector("#input-lng");
+    let leafletMap = null, leafletMarker = null;
+
+    async function reverseGeocode(lat, lng) {
+      const preview = overlay.querySelector("#map-address-preview");
+      if (!preview) return;
+      preview.textContent = "Looking up address…";
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+        const data = await res.json();
+        preview.textContent = data.display_name ? "📍 " + data.display_name : "";
+      } catch (_) {
+        preview.textContent = "";
+      }
+    }
+
+    function applyPin(lat, lng, geocode = true) {
+      inputLat.value = Number(lat).toFixed(6);
+      inputLng.value = Number(lng).toFixed(6);
+      if (geocode) reverseGeocode(lat, lng);
+    }
+
+    function movePin(lat, lng, geocode = true) {
+      applyPin(lat, lng, geocode);
+      if (leafletMap && leafletMarker) {
+        leafletMap.setView([lat, lng], 16);
+        leafletMarker.setLatLng([lat, lng]);
+      }
+    }
+
+    async function ensureMap() {
+      if (leafletMap) return;
+      const mapEl = overlay.querySelector("#map-pin");
+      if (!mapEl) return;
+      const L = await loadLeaflet();
+      leafletMap = L.map(mapEl, { attributionControl: false }).setView([PICKUP_LAT, PICKUP_LNG], 15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(leafletMap);
+      leafletMarker = L.marker([PICKUP_LAT, PICKUP_LNG], { draggable: true }).addTo(leafletMap);
+      leafletMarker.on("dragend", () => {
+        const pos = leafletMarker.getLatLng();
+        applyPin(pos.lat, pos.lng);
+      });
+      applyPin(PICKUP_LAT, PICKUP_LNG, false);
+    }
+
     const typeSelect = form.querySelector('[name=order_type]');
     const addrField = overlay.querySelector("#addr-field");
+    const landmarkField = overlay.querySelector("#landmark-field");
     const pinField = overlay.querySelector("#pin-field");
     typeSelect.addEventListener("change", () => {
       const isDelivery = typeSelect.value === "delivery";
       addrField.style.display = isDelivery ? "" : "none";
+      landmarkField.style.display = isDelivery ? "" : "none";
       pinField.style.display = isDelivery ? "" : "none";
+      form.querySelector('[name=address]').required = isDelivery;
+      form.querySelector('[name=landmark]').required = isDelivery;
+      if (isDelivery) ensureMap();
+    });
+    if (typeSelect.value === "delivery") ensureMap();
+
+    // Saved addresses: once a 10-digit phone is typed, look up past addresses
+    // for that number and offer them as one-tap picks above the free-text field.
+    const savedAddrField = overlay.querySelector("#saved-addr-field");
+    const savedAddrList = overlay.querySelector("#saved-addr-list");
+    let phoneLookupTimer = null;
+    form.querySelector('[name=phone]').addEventListener("input", (e) => {
+      clearTimeout(phoneLookupTimer);
+      const phone = e.target.value.trim();
+      if (!/^[0-9]{10,}$/.test(phone)) { savedAddrField.hidden = true; return; }
+      phoneLookupTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/customer/${encodeURIComponent(phone)}`);
+          const data = await res.json();
+          const addresses = data.addresses || [];
+          if (!addresses.length) { savedAddrField.hidden = true; return; }
+          savedAddrList.innerHTML = addresses.map((a, i) => `
+            <button type="button" class="saved-addr-card" data-idx="${i}">
+              <div class="saved-addr-label">${a.label || (a.is_default ? "Usual address" : "Saved address")}</div>
+              <div class="saved-addr-text">${a.address}${a.landmark ? " · " + a.landmark : ""}</div>
+            </button>
+          `).join("");
+          savedAddrList.querySelectorAll(".saved-addr-card").forEach(card => {
+            card.addEventListener("click", () => {
+              const a = addresses[card.dataset.idx];
+              form.querySelector('[name=address]').value = a.address;
+              form.querySelector('[name=landmark]').value = a.landmark || "";
+              if (a.lat && a.lng) movePin(a.lat, a.lng, false);
+              savedAddrList.querySelectorAll(".saved-addr-card").forEach(c => c.classList.remove("selected"));
+              card.classList.add("selected");
+            });
+          });
+          savedAddrField.hidden = false;
+        } catch (_) { savedAddrField.hidden = true; }
+      }, 400);
     });
 
-    // GPS location capture
+    // Time pills: ASAP sends no scheduled_at; Lunch/Dinner compute the next
+    // occurrence of that time (today, or tomorrow if it's already passed).
+    function presetTime(hour, minute) {
+      const d = new Date();
+      d.setHours(hour, minute, 0, 0);
+      if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+      return d.toISOString();
+    }
+    const scheduledInput = overlay.querySelector("#input-scheduled");
+    overlay.querySelectorAll(".time-pill").forEach(pill => {
+      pill.addEventListener("click", () => {
+        overlay.querySelectorAll(".time-pill").forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        const preset = pill.dataset.preset;
+        scheduledInput.value = preset === "lunch" ? presetTime(12, 30)
+          : preset === "dinner" ? presetTime(20, 0)
+          : "";
+      });
+    });
+
+    // GPS location capture — centres the map and moves the pin there
     const gpsBtn = overlay.querySelector("#gps-btn");
     const gpsStatus = overlay.querySelector("#gps-status");
-    const inputLat = overlay.querySelector("#input-lat");
-    const inputLng = overlay.querySelector("#input-lng");
     gpsBtn.addEventListener("click", () => {
       if (!navigator.geolocation) { gpsStatus.textContent = "Not supported"; return; }
       gpsBtn.disabled = true;
       gpsStatus.textContent = "Getting location...";
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          inputLat.value = pos.coords.latitude.toFixed(6);
-          inputLng.value = pos.coords.longitude.toFixed(6);
+          movePin(pos.coords.latitude, pos.coords.longitude);
           gpsStatus.textContent = "✓ Location captured";
           gpsStatus.style.color = "#16a34a";
           gpsBtn.textContent = "📍 Location saved";
@@ -421,16 +556,21 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       btn.disabled = true;
       btn.textContent = "Placing…";
       const fd = new FormData(form);
+      const landmark = fd.get("landmark");
+      const address = fd.get("address")
+        ? fd.get("address") + (landmark ? ` (Landmark: ${landmark})` : "")
+        : null;
       const payload = {
         name: fd.get("name"),
         phone: fd.get("phone"),
         order_type: fd.get("order_type"),
-        address: fd.get("address") || null,
+        address: address,
         pincode: fd.get("pincode") || null,
         lat: fd.get("lat") || null,
         lng: fd.get("lng") || null,
         payment_method: fd.get("payment_method"),
         instructions: fd.get("instructions") || null,
+        scheduled_at: fd.get("scheduled_at") || null,
         items: ids.map(id => ({ item_id: id, qty: cart[id] })),
       };
       try {
@@ -444,6 +584,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         Object.keys(cart).forEach(k => delete cart[k]);
         updateCart();
         document.querySelectorAll(".card-stepper .qty").forEach(el => el.textContent = "0");
+        const isDelivery = payload.order_type === "delivery" && payload.address;
         overlay.querySelector(".checkout-panel").innerHTML = `
           <button class="checkout-close" id="checkout-close-2">✕</button>
           <div class="checkout-success">
@@ -451,11 +592,65 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             <div class="checkout-title">Order placed!</div>
             <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}<br>We'll message you on WhatsApp with updates.</p>
             <button class="checkout-place" id="checkout-continue">Continue browsing</button>
+            ${isDelivery ? `<div class="edit-window" id="edit-window">
+              <div class="edit-window-text">Wrong address? You have <span id="edit-countdown">3:00</span> to fix it.</div>
+              <button type="button" class="edit-window-btn" id="edit-address-btn">Change the address</button>
+            </div>` : ""}
           </div>
         `;
         const closeAndReset = () => overlay.remove();
         overlay.querySelector("#checkout-close-2").addEventListener("click", closeAndReset);
         overlay.querySelector("#checkout-continue").addEventListener("click", closeAndReset);
+
+        if (isDelivery) {
+          const editWindow = overlay.querySelector("#edit-window");
+          const countdownEl = overlay.querySelector("#edit-countdown");
+          let secondsLeft = 180;
+          const tick = () => {
+            secondsLeft--;
+            if (secondsLeft <= 0) {
+              clearInterval(timer);
+              editWindow.innerHTML = `<div class="edit-window-text">Kavita has started cooking. Need to fix the address?</div>
+                <a class="edit-window-btn" href="https://wa.me/919940062840?text=${encodeURIComponent("Hi, I need to fix the delivery address for order #" + data.order_id)}" target="_blank">Message us on WhatsApp</a>`;
+              return;
+            }
+            countdownEl.textContent = Math.floor(secondsLeft / 60) + ":" + String(secondsLeft % 60).padStart(2, "0");
+          };
+          const timer = setInterval(tick, 1000);
+
+          overlay.querySelector("#edit-address-btn").addEventListener("click", () => {
+            editWindow.innerHTML = `
+              <div class="edit-window-text">New address</div>
+              <form class="edit-window-form" id="edit-address-form">
+                <textarea name="address" rows="2" required>${payload.address.replace(/ \(Landmark:.*\)$/, "")}</textarea>
+                <input name="landmark" placeholder="Nearest landmark" value="${landmark || ""}">
+                <button type="submit" class="edit-window-btn">Save new address</button>
+                <div class="checkout-msg" id="edit-address-msg"></div>
+              </form>
+            `;
+            overlay.querySelector("#edit-address-form").addEventListener("submit", async (ev) => {
+              ev.preventDefault();
+              const efd = new FormData(ev.target);
+              const newLandmark = efd.get("landmark");
+              const newAddress = efd.get("address") + (newLandmark ? ` (Landmark: ${newLandmark})` : "");
+              const emsg = overlay.querySelector("#edit-address-msg");
+              try {
+                const eres = await fetch(`/api/orders/${data.order_id}/address`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ address: newAddress, pincode: payload.pincode, lat: null, lng: null }),
+                });
+                const edata = await eres.json();
+                if (!eres.ok) throw new Error(edata.detail || "Could not update address");
+                clearInterval(timer);
+                editWindow.innerHTML = `<div class="edit-window-text">✓ Address updated.</div>`;
+              } catch (err) {
+                emsg.style.color = "#B3261E";
+                emsg.textContent = err.message;
+              }
+            });
+          });
+        }
       } catch (err) {
         msg.style.color = "#B3261E";
         msg.textContent = err.message;

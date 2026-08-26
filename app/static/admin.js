@@ -26,6 +26,10 @@
     setTimeout(() => el.remove(), 2500);
   }
 
+  function formatScheduled(dateStr) {
+    return "FOR " + new Date(dateStr).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }).toUpperCase();
+  }
+
   function timeSince(dateStr) {
     if (!dateStr) return "";
     const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
@@ -96,6 +100,30 @@
       dispatchHTML = `<div class="order-dispatch"><span class="dispatch-label">Book a rider</span><span class="dispatch-action" data-id="${o.id}">Book</span></div>`;
     }
 
+    let flagHTML = "";
+    if (o.address_flagged && !isDone) {
+      const waLink = phone ? `https://wa.me/${phone.replace(/\D/g, "")}` : null;
+      flagHTML = `<div class="order-flag">
+        <div class="order-flag-title">Address needs checking</div>
+        <div class="order-flag-reason">${o.address_flag_reason || ""}</div>
+        ${waLink ? `<a class="order-flag-action" href="${waLink}" target="_blank" rel="noopener">Ask on WhatsApp</a>` : ""}
+      </div>`;
+    }
+
+    let quickHTML = "";
+    if (o.order_type === "delivery" && !isDone) {
+      const waLink = phone ? `https://wa.me/${phone.replace(/\D/g, "")}` : null;
+      const mapsQuery = (o.delivery_lat && o.delivery_lng)
+        ? `${o.delivery_lat},${o.delivery_lng}`
+        : encodeURIComponent(addr || "");
+      const mapsLink = mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${mapsQuery}` : null;
+      quickHTML = `<div class="order-quick">
+        ${phone ? `<a class="quick-btn" href="tel:${phone}">Call</a>` : ""}
+        ${waLink ? `<a class="quick-btn" href="${waLink}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
+        ${mapsLink ? `<a class="quick-btn quick-btn-muted" href="${mapsLink}" target="_blank" rel="noopener">Open in Maps</a>` : ""}
+      </div>`;
+    }
+
     let actionsHTML = "";
     if (meta.action) {
       actionsHTML = `<div class="order-actions">
@@ -114,9 +142,11 @@
           <div class="order-name">#${o.id} · ${o.customer_name || "Customer"}</div>
           <div class="order-meta">${typeLabel}${o.created_at ? " · " + timeSince(o.created_at) : ""}</div>
         </div>
-        <span class="order-badge ${meta.badge}">${meta.label}${!isDone && o.created_at ? " · " + timeSince(o.created_at) : ""}</span>
+        <span class="order-badge ${meta.badge}">${meta.label}${!isDone && o.scheduled_at ? " · " + formatScheduled(o.scheduled_at) : (!isDone && o.created_at ? " · " + timeSince(o.created_at) : "")}</span>
       </div>
       <div class="order-items">${items}${o.notes ? `<br><span class="order-notes">"${o.notes}"</span>` : ""}</div>
+      ${flagHTML}
+      ${quickHTML}
       ${progressHTML}
       ${dispatchHTML}
       ${actionsHTML}
@@ -131,7 +161,7 @@
     const filtered = allOrders.filter(o => {
       if (activeFilter === "all") return true;
       if (activeFilter === "live") return ["new", "preparing", "ready", "out_for_delivery"].includes(o.status);
-      if (activeFilter === "scheduled") return false;
+      if (activeFilter === "scheduled") return !!o.scheduled_at && !["delivered", "cancelled"].includes(o.status);
       if (activeFilter === "done") return ["delivered", "cancelled"].includes(o.status);
       return true;
     });
@@ -165,10 +195,13 @@
       allOrders = d.orders;
       const live = allOrders.filter(o => ["new", "preparing", "ready", "out_for_delivery"].includes(o.status));
       const done = allOrders.filter(o => ["delivered", "cancelled"].includes(o.status));
+      const scheduled = allOrders.filter(o => o.scheduled_at && !["delivered", "cancelled"].includes(o.status));
       const total = allOrders.reduce((s, o) => s + (o.total || 0), 0);
       const chipLive = document.querySelector('[data-filter="live"]');
+      const chipScheduled = document.querySelector('[data-filter="scheduled"]');
       const chipDone = document.querySelector('[data-filter="done"]');
       if (chipLive) chipLive.textContent = `Live · ${live.length}`;
+      if (chipScheduled) chipScheduled.textContent = `Scheduled · ${scheduled.length}`;
       if (chipDone) chipDone.textContent = `Done · ${done.length}`;
       document.getElementById("day-summary").textContent = `${allOrders.length} orders · ${money(total)}`;
       renderFilteredOrders();

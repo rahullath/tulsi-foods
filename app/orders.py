@@ -1,6 +1,23 @@
 """Shared order service used by both the web API and the WhatsApp bot."""
+import math
+import re
+from datetime import datetime, timedelta
+
 from . import db, menu
 from .config import DELIVERY_ZONES, FREE_DELIVERY_ABOVE
+
+ADDRESS_EDIT_WINDOW = timedelta(minutes=3)
+
+_LANDMARK_RE = re.compile(r"\s*\(Landmark:\s*(.*?)\)\s*$", re.IGNORECASE)
+
+
+def _split_landmark(address: str) -> tuple[str, str | None]:
+    """Split the web checkout's "<address> (Landmark: <text>)" format back
+    into its parts, for storing address book entries cleanly."""
+    m = _LANDMARK_RE.search(address)
+    if not m:
+        return address, None
+    return _LANDMARK_RE.sub("", address), m.group(1)
 
 
 class OrderError(Exception):
@@ -73,6 +90,42 @@ def build_lines(items: list[dict]) -> tuple[list[dict], float]:
     return lines, subtotal
 
 
+def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    r = 6371000
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def check_address(address: str | None, pincode: str | None,
+                  lat: str | None, lng: str | None) -> tuple[bool, str | None]:
+    """Best-effort heuristic: does this delivery address need a human look
+    before booking a rider? Never raises — a geocoding failure just skips
+    the distance check rather than blocking the order.
+
+    The web checkout folds the landmark into `address` as "(Landmark: ...)"
+    (see menu.html) — that's the deterministic marker checked for below.
+    """
+    if not address:
+        return False, None
+    if "(landmark:" not in address.lower():
+        return True, "No landmark given — riders ask for one."
+    if not lat or not lng:
+        return True, "No GPS pin — only a typed address."
+    try:
+        from .delivery.shiprocket import geocode_address
+        g_lat, g_lng = geocode_address(address, pincode or "")
+        if g_lat and g_lng:
+            dist = _haversine_m(float(lat), float(lng), float(g_lat), float(g_lng))
+            if dist > 300:
+                return True, f"Typed address and GPS pin are {int(dist)}m apart."
+    except Exception:
+        pass
+    return False, None
+
+
 def create_order(phone: str, name: str, order_type: str, items: list[dict],
                  address: str | None = None, km: float | None = None,
                  pincode: str | None = None,
@@ -98,13 +151,43 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
             raise OrderError("Delivery distance or pincode is required", 400)
 
     total = subtotal + delivery_fee
+    flagged, flag_reason = check_address(address, pincode, lat, lng)
     cid = db.upsert_customer(phone, name, address, pincode)
     oid = db.create_order(cid, order_type, subtotal, delivery_fee, total,
                           payment_method, instructions, lines,
                           delivery_address=address, delivery_pincode=pincode,
-                          delivery_lat=lat, delivery_lng=lng)
+                          delivery_lat=lat, delivery_lng=lng,
+                          scheduled_at=scheduled_at,
+                          address_flagged=flagged, address_flag_reason=flag_reason)
+    if order_type == "delivery" and address:
+        base_address, landmark = _split_landmark(address)
+        try:
+            db.add_customer_address(cid, base_address, landmark=landmark, lat=lat, lng=lng)
+        except Exception:
+            pass  # address book is a convenience, never block order creation
     return {"order_id": oid, "status": "new", "subtotal": round(subtotal, 2),
             "delivery_fee": delivery_fee, "total": round(total, 2)}
+
+
+def edit_address(order_id: int, address: str, pincode: str | None = None,
+                 lat: str | None = None, lng: str | None = None) -> dict:
+    """Let a customer fix their delivery address within a short window after
+    ordering — before the kitchen has started and before a rider is booked."""
+    o = db.get_order(order_id)
+    if not o:
+        raise OrderError("Order not found", 404)
+    if o["order_type"] != "delivery":
+        raise OrderError("Only delivery orders have an address to change", 400)
+    if o["status"] != "new":
+        raise OrderError("Too late — the kitchen has already started on this order", 400)
+    created = datetime.strptime(o["created_at"], "%Y-%m-%d %H:%M:%S")
+    if datetime.utcnow() - created > ADDRESS_EDIT_WINDOW:
+        raise OrderError("The 3-minute window to change the address has passed", 400)
+
+    flagged, flag_reason = check_address(address, pincode or o.get("delivery_pincode"), lat, lng)
+    db.update_order_address(order_id, address, lat, lng, address_flagged=flagged,
+                            address_flag_reason=flag_reason)
+    return {"ok": True, "order_id": order_id, "address": address}
 
 
 def delivery_fee_from_pincode(pincode: str, subtotal: float) -> float:

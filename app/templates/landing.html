@@ -53,34 +53,53 @@ section[id] { scroll-margin-top: 76px; }
 .btn-wa:hover { opacity: .9; transform: translateY(-1px); }
 .btn-menu { border: 1px solid #C9C4B8; border-radius: 12px; padding: 16px 28px; font-size: 16px; font-weight: 600; color: var(--ink); text-decoration: none; display: inline-block; transition: border-color .15s ease, transform .15s ease; }
 .btn-menu:hover { border-color: var(--ink); transform: translateY(-1px); }
-.hero-info { display: flex; gap: 28px; margin-top: 34px; font-size: 13px; color: var(--sub); }
+.hero-info { display: flex; flex-direction: column; gap: 9px; margin-top: 32px; font-size: 14px; color: var(--sub); }
+.hero-info span { display: flex; gap: 9px; align-items: baseline; }
+.hero-info span::before { content: "·"; color: var(--g); font-weight: 700; }
 .hero-photo { height: 420px; border-radius: 16px; background: repeating-linear-gradient(135deg, var(--line2) 0 12px, #E6E1D7 12px 24px); overflow: hidden; }
 .hero-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* Features */
-.features { padding: 0 40px 56px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1200px; margin: 0 auto; }
-.feat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 26px; transition: box-shadow .2s ease, transform .2s ease; }
-.feat-card:hover { box-shadow: 0 8px 24px rgba(23,26,20,.08); transform: translateY(-2px); }
-.feat-num { font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; color: var(--g); }
-.feat-title { font-size: 15px; font-weight: 600; margin-top: 8px; }
-.feat-desc { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--sub); }
-
-/* Delivery area */
-.delivery { padding: 8px 40px 56px; max-width: 1200px; margin: 0 auto; }
+/* Shared section heads */
 .section-head { max-width: 560px; margin-bottom: 28px; }
 .section-tag { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--g); text-transform: uppercase; letter-spacing: .04em; }
-.section-head h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(24px, 3vw, 32px); margin: 8px 0 0; }
-.zone-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.zone-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
-.zone-name { font-weight: 600; font-size: 15px; }
-.zone-areas { font-size: 13px; color: var(--sub); margin-top: 4px; }
-.zone-fee { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; color: var(--g); margin-top: 14px; }
-.zone-min { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.section-head h2, .stove-head h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(24px, 3vw, 32px); margin: 8px 0 0; }
+
+/* On the stove right now */
+.stove { padding: 0 40px 56px; max-width: 1200px; margin: 0 auto; }
+.stove-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 24px; }
+.stove-link { font-size: 14px; font-weight: 600; color: var(--g); text-decoration: none; white-space: nowrap; }
+.stove-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.stove-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: box-shadow .2s ease, transform .2s ease; }
+.stove-card:hover { box-shadow: 0 8px 24px rgba(23,26,20,.08); transform: translateY(-2px); }
+.stove-photo { aspect-ratio: 4/3; position: relative; background: repeating-linear-gradient(135deg, var(--line2) 0 10px, #E6E1D7 10px 20px); }
+.stove-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.stove-tag { position: absolute; top: 9px; left: 9px; background: rgba(255,255,255,.95); color: var(--g); font: 600 9px/1 'IBM Plex Mono', monospace; letter-spacing: .04em; padding: 5px 8px; border-radius: 999px; }
+.stove-body { padding: 12px 13px 14px; }
+.stove-name { font-size: 15px; font-weight: 600; }
+.stove-desc { font-size: 13px; color: var(--sub); margin-top: 3px; line-height: 1.45; }
+.stove-price { font-size: 15px; font-weight: 600; margin-top: 9px; }
+
+/* Ordering process */
+.process { padding: 8px 40px 56px; max-width: 1200px; margin: 0 auto; }
+.process-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 24px; }
+.process-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+.process-num { font-family: 'Bricolage Grotesque', sans-serif; font-size: 15px; color: #fff; background: var(--g); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.process-title { font-size: 16px; font-weight: 600; margin-top: 14px; }
+.process-desc { margin: 7px 0 0; font-size: 14px; line-height: 1.6; color: var(--sub); }
+.process-note { margin: 22px 0 0; font-size: 14px; color: var(--sub); }
+
+/* Known for */
+.known { padding: 8px 40px 56px; max-width: 1200px; margin: 0 auto; }
+.known-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 22px; }
+.known-item { border-left: 2px solid var(--g); padding-left: 16px; }
+.known-title { font-size: 16px; font-weight: 600; }
+.known-desc { margin: 6px 0 0; font-size: 14px; line-height: 1.6; color: var(--sub); }
 
 /* Our story */
 .story { padding: 8px 40px 56px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
 .story-body p { font-size: 15px; line-height: 1.7; color: #4A4F45; margin-top: 14px; }
 .story-body p:first-of-type { margin-top: 8px; }
+.story-link { display: inline-block; margin-top: 22px; font-size: 15px; font-weight: 600; color: var(--g); text-decoration: none; }
 .story-photo { border-radius: 16px; overflow: hidden; height: 320px; }
 .story-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
@@ -100,9 +119,13 @@ section[id] { scroll-margin-top: 76px; }
   .nav-links { display: none; }
   .hero { grid-template-columns: 1fr; padding: 32px 18px; }
   .hero-photo { height: 240px; }
-  .features { grid-template-columns: 1fr; padding: 0 18px 40px; }
-  .delivery { padding: 8px 18px 40px; }
-  .zone-grid { grid-template-columns: 1fr; }
+  .stove { padding: 0 18px 40px; }
+  .stove-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .stove-grid { grid-template-columns: 1fr 1fr; }
+  .process { padding: 8px 18px 40px; }
+  .process-grid { grid-template-columns: 1fr; }
+  .known { padding: 8px 18px 40px; }
+  .known-grid { grid-template-columns: 1fr 1fr; }
   .story { grid-template-columns: 1fr; padding: 8px 18px 40px; gap: 24px; }
   .story-photo { height: 220px; order: -1; }
   .cta-banner { flex-direction: column; text-align: center; padding: 36px 18px; }
@@ -117,8 +140,9 @@ section[id] { scroll-margin-top: 76px; }
   </a>
   <div class="nav-links">
     <a href="/menu">Menu</a>
-    <a href="#delivery">Delivery area</a>
-    <a href="#story">Our story</a>
+    <a href="/delivery">Delivery</a>
+    <a href="/about">Our story</a>
+    <a href="/about#contact">Contact</a>
     <a href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank" class="nav-cta">Order on WhatsApp</a>
   </div>
 </nav>
@@ -130,89 +154,120 @@ section[id] { scroll-margin-top: 76px; }
 <section class="hero">
   <div>
     <div class="hero-badge">MYLAPORE · PURE VEG · SINCE 2015</div>
-    <h1>Home food, ordered straight from us.</h1>
-    <p class="hero-sub">No app to install. Message us on WhatsApp and the same kitchen that cooks your thali takes the order.</p>
+    <h1>North Indian food, cooked the way it is at home.</h1>
+    <p class="hero-sub">Kavita Lath has run this kitchen in Mylapore since 2015. Thalis, hot parathas, dal, sabzi, chaat — pure vegetarian, cooked the same day you eat it.</p>
     <div class="hero-actions">
       <a class="btn-wa" href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank">Order on WhatsApp</a>
       <a class="btn-menu" href="/menu">See today's menu</a>
     </div>
     <div class="hero-info">
-      <span>Delivery ₹30 within 3 km</span>
-      <span>Free above ₹700</span>
-      <span>Pickup in 20 min</span>
+      <span>Cooked to order, at your door in 30 to 60 minutes</span>
+      <span>Mylapore, Alwarpet, Teynampet and around</span>
+      <span>100% vegetarian — no eggs, no onion-garlic on request</span>
     </div>
   </div>
   <div class="hero-photo"><img src="/static/img/landing-hero.jpg" alt="Pav bhaji, freshly made at Tulsi Foods" loading="lazy"></div>
 </section>
 
-<div class="features">
-  <div class="feat-card reveal">
-    <div class="feat-num">100%</div>
-    <div class="feat-title">Pure veg, home-style</div>
-    <p class="feat-desc">Every dish is vegetarian, cooked fresh the same day — the way you'd get it at home, not a commercial kitchen.</p>
-  </div>
-  <div class="feat-card reveal">
-    <div class="feat-num">140</div>
-    <div class="feat-title">Dishes, cooked to order</div>
-    <p class="feat-desc">Thalis, parathas, chaats, sabzi, rice bowls. What's off the menu today is marked off, not silently missing.</p>
-  </div>
-  <div class="feat-card reveal">
-    <div class="feat-num">7 km</div>
-    <div class="feat-title">Delivery radius</div>
-    <p class="feat-desc">₹30 up to 3 km, ₹50 to 5 km, ₹70 to 7 km. Minimum order ₹250, ₹300, ₹350 by zone.</p>
-  </div>
-</div>
-
-<section class="delivery" id="delivery">
-  <div class="section-head reveal">
-    <div class="section-tag">Delivery area</div>
-    <h2>Mylapore, Alwarpet, Teynampet — and nearby.</h2>
-  </div>
-  <div class="zone-grid">
-    <div class="zone-card reveal">
-      <div class="zone-name">Zone A · Core</div>
-      <div class="zone-areas">Up to 3 km — Mylapore, Alwarpet</div>
-      <div class="zone-fee">₹30</div>
-      <div class="zone-min">Minimum order ₹250</div>
+<section class="stove" id="stove">
+  <div class="stove-head reveal">
+    <div>
+      <div class="section-tag">Today</div>
+      <h2>On the stove right now</h2>
     </div>
-    <div class="zone-card reveal">
-      <div class="zone-name">Zone B</div>
-      <div class="zone-areas">Up to 5 km — Teynampet &amp; around</div>
-      <div class="zone-fee">₹50</div>
-      <div class="zone-min">Minimum order ₹300</div>
+    <a class="stove-link" href="/menu">Full menu &rarr;</a>
+  </div>
+  <div class="stove-grid">
+    {% for d in picks %}
+    <div class="stove-card reveal">
+      <div class="stove-photo">
+        {% if d.has_photo %}<img src="/static/img/dishes/{{ d.id }}.jpg" alt="{{ d.name }}" loading="lazy">{% endif %}
+        {% if d.tag %}<span class="stove-tag">{{ d.tag|upper }}</span>{% endif %}
+      </div>
+      <div class="stove-body">
+        <div class="stove-name">{{ d.name }}</div>
+        {% if d.desc %}<div class="stove-desc">{{ d.desc }}</div>{% endif %}
+        <div class="stove-price">₹{{ d.price }}</div>
+      </div>
     </div>
-    <div class="zone-card reveal">
-      <div class="zone-name">Zone C</div>
-      <div class="zone-areas">Up to 7 km</div>
-      <div class="zone-fee">₹70</div>
-      <div class="zone-min">Minimum order ₹350</div>
-    </div>
+    {% endfor %}
   </div>
 </section>
 
 <section class="story" id="story">
   <div class="story-body reveal">
-    <div class="section-tag">Our story</div>
-    <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(24px,3vw,32px);margin-top:8px;">Run by Kavita Lath, since 2015.</h2>
-    <p>Tulsi Foods started in Mylapore with a simple idea: cook the same food we'd make at home, and serve it to people tired of eating junk.</p>
-    <p>Every dish is 100% pure vegetarian, cooked fresh the same day to help you feel at peace. Message us directly on WhatsApp and you're talking straight to the kitchen — not a call centre.</p>
+    <div class="section-tag">The kitchen</div>
+    <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(24px,3vw,32px);margin-top:8px;">Kavita cooks it. Kavita answers the phone.</h2>
+    <p>She started in 2015 cooking for families in Mylapore who wanted a plate of food that tasted like their own kitchen. It is still the same kitchen, the same hands, the same recipes from her home in Rajasthan.</p>
+    <p>Nothing is pre-made and reheated. When you order a thali, the phulka is rolled after you order it. That is also why the food takes 30 to 40 minutes.</p>
+    <a class="story-link" href="/about">Read our story &rarr;</a>
   </div>
   <div class="story-photo reveal">
     <img src="/static/img/story-photo.jpg" alt="A Tulsi Foods thali with roti, sabzi, dal and curd" loading="lazy">
   </div>
 </section>
 
+<section class="process" id="process">
+  <div class="section-head reveal">
+    <div class="section-tag">How it works</div>
+    <h2>Ordering takes about a minute</h2>
+  </div>
+  <div class="process-grid">
+    <div class="process-card reveal">
+      <div class="process-num">1</div>
+      <div class="process-title">Tell us what you want</div>
+      <p class="process-desc">Message us on WhatsApp, or pick from the menu here. Both land in the same kitchen.</p>
+    </div>
+    <div class="process-card reveal">
+      <div class="process-num">2</div>
+      <div class="process-title">Drop a pin, add your flat number</div>
+      <p class="process-desc">We read the address back to you before you pay, so nothing arrives at the wrong gate.</p>
+    </div>
+    <div class="process-card reveal">
+      <div class="process-num">3</div>
+      <div class="process-title">Pay by UPI, eat in 30–60 min</div>
+      <p class="process-desc">Cash works too. You get a message when the food leaves the kitchen.</p>
+    </div>
+  </div>
+  <p class="process-note">Ordering ahead for lunch or dinner? Tell us the time and it goes out hot at that hour.</p>
+</section>
+
+<section class="known" id="known">
+  <div class="section-head reveal">
+    <div class="section-tag">What people order again</div>
+    <h2>Four things we are known for</h2>
+  </div>
+  <div class="known-grid">
+    <div class="known-item reveal">
+      <div class="known-title">The everyday thali</div>
+      <p class="known-desc">Two sabzi, dal, four phulka, rice and a sweet. Enough for one working lunch.</p>
+    </div>
+    <div class="known-item reveal">
+      <div class="known-title">Family-size orders</div>
+      <p class="known-desc">Sabzi and dal by the kilo, phulka by the dozen, for four to twelve people.</p>
+    </div>
+    <div class="known-item reveal">
+      <div class="known-title">Jain and no-onion-garlic</div>
+      <p class="known-desc">Say so when you order. It is cooked separately, not just left out.</p>
+    </div>
+    <div class="known-item reveal">
+      <div class="known-title">Office and pooja catering</div>
+      <p class="known-desc">Give us a day's notice and a headcount, we will send a quote.</p>
+    </div>
+  </div>
+</section>
+
 <div class="cta-banner reveal">
   <div>
-    <div class="cta-text">Send us a "Hi". We'll take it from there.</div>
-    <p class="cta-sub">Today's menu, your last order, and payment all happen in the chat. Someone from the family is always on the other end.</p>
+    <div class="cta-text">Send a "Hi". Kavita will take it from there.</div>
+    <p class="cta-sub">Today's dishes, your last order and payment all happen in the same chat.</p>
   </div>
   <a class="cta-btn" href="https://wa.me/919940062840?text=Hi%20Tulsi" target="_blank">wa.me/919940062840</a>
 </div>
 
 <div class="footer">
-  <span>Tulsi Foods, 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
-  <span><a href="/privacy-policy">Privacy policy</a> · <a href="/menu">Order now</a></span>
+  <span>Tulsi Foods · 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
+  <span><a href="/menu">Menu</a> · <a href="/delivery">Delivery areas</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/privacy-policy">Privacy</a></span>
 </div>
 
 <script type="application/ld+json">

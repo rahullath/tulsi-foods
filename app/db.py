@@ -35,12 +35,25 @@ CREATE TABLE IF NOT EXISTS orders (
     delivery_pincode TEXT,
     delivery_lat    TEXT,
     delivery_lng    TEXT,
+    address_flagged INTEGER NOT NULL DEFAULT 0,
+    address_flag_reason TEXT,
     sr_order_id     INTEGER,
     sr_awb          TEXT,
     sr_courier      TEXT,
     sr_tracking_url TEXT,
     dispatched_at   TEXT,
     created_at      TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS customer_addresses (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL REFERENCES customers(id),
+    label       TEXT,
+    address     TEXT NOT NULL,
+    landmark    TEXT,
+    lat         TEXT,
+    lng         TEXT,
+    is_default  INTEGER NOT NULL DEFAULT 0,
+    created_at  TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS order_items (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,6 +118,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE orders ADD COLUMN delivery_lat TEXT")
     if not _has_col("orders", "delivery_lng"):
         conn.execute("ALTER TABLE orders ADD COLUMN delivery_lng TEXT")
+    if not _has_col("orders", "address_flagged"):
+        conn.execute("ALTER TABLE orders ADD COLUMN address_flagged INTEGER NOT NULL DEFAULT 0")
+    if not _has_col("orders", "address_flag_reason"):
+        conn.execute("ALTER TABLE orders ADD COLUMN address_flag_reason TEXT")
     # daily_specials table (may not exist in older databases)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS daily_specials ("
@@ -199,22 +216,59 @@ def get_customer(phone: str) -> dict | None:
     return dict(row) if row else None
 
 
+def list_customer_addresses(customer_id: int) -> list[dict]:
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT id, label, address, landmark, lat, lng, is_default FROM customer_addresses "
+        "WHERE customer_id=? ORDER BY is_default DESC, created_at DESC",
+        (customer_id,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def add_customer_address(customer_id: int, address: str, landmark: str | None = None,
+                         lat: str | None = None, lng: str | None = None,
+                         label: str | None = None) -> None:
+    """Save a delivery address for future reuse, skipping exact duplicates."""
+    conn = get_conn()
+    exists = conn.execute(
+        "SELECT 1 FROM customer_addresses WHERE customer_id=? AND address=?",
+        (customer_id, address),
+    ).fetchone()
+    if not exists:
+        is_default = not conn.execute(
+            "SELECT 1 FROM customer_addresses WHERE customer_id=?", (customer_id,)
+        ).fetchone()
+        conn.execute(
+            "INSERT INTO customer_addresses(customer_id, label, address, landmark, lat, lng, is_default) "
+            "VALUES(?,?,?,?,?,?,?)",
+            (customer_id, label, address, landmark, lat, lng, 1 if is_default else 0),
+        )
+        conn.commit()
+    conn.close()
+
+
 def create_order(customer_id: int, order_type: str, subtotal: float,
                  delivery_fee: float, total: float, payment_method: str,
                  instructions: str | None, items: list[dict],
                  delivery_address: str | None = None,
                  delivery_pincode: str | None = None,
                  delivery_lat: str | None = None,
-                 delivery_lng: str | None = None) -> int:
+                 delivery_lng: str | None = None,
+                 scheduled_at: str | None = None,
+                 address_flagged: bool = False,
+                 address_flag_reason: str | None = None) -> int:
     conn = get_conn()
     cur = conn.execute(
         "INSERT INTO orders(customer_id, status, order_type, subtotal, delivery_fee, "
         "total, payment_method, instructions, delivery_address, delivery_pincode, "
-        "delivery_lat, delivery_lng) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+        "delivery_lat, delivery_lng, scheduled_at, address_flagged, address_flag_reason) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (customer_id, "new", order_type, subtotal, delivery_fee, total,
          payment_method, instructions, delivery_address, delivery_pincode,
-         delivery_lat, delivery_lng),
+         delivery_lat, delivery_lng, scheduled_at,
+         1 if address_flagged else 0, address_flag_reason),
     )
     oid = cur.lastrowid
     conn.executemany(
@@ -224,6 +278,18 @@ def create_order(customer_id: int, order_type: str, subtotal: float,
     conn.commit()
     conn.close()
     return oid
+
+
+def update_order_address(order_id: int, address: str, lat: str | None, lng: str | None,
+                         address_flagged: bool = False, address_flag_reason: str | None = None) -> None:
+    conn = get_conn()
+    conn.execute(
+        "UPDATE orders SET delivery_address=?, delivery_lat=?, delivery_lng=?, "
+        "address_flagged=?, address_flag_reason=? WHERE id=?",
+        (address, lat, lng, 1 if address_flagged else 0, address_flag_reason, order_id),
+    )
+    conn.commit()
+    conn.close()
 
 
 def update_order_dispatch(order_id: int, sr_order_id: int, awb: str,
