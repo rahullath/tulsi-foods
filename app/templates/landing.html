@@ -98,6 +98,9 @@ section[id] { scroll-margin-top: 76px; }
 /* Awards */
 .awards { padding: 8px 40px 56px; max-width: 1200px; margin: 0 auto; text-align: center; }
 .awards-badges { display: flex; justify-content: center; align-items: center; gap: 32px; margin-top: 24px; flex-wrap: wrap; }
+.google-rating-badge { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 22px; text-decoration: none; color: inherit; }
+.google-rating-num { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: var(--g); }
+.google-rating-label { font-size: 12px; color: var(--sub); }
 
 /* Our story */
 .story { padding: 8px 40px 56px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
@@ -271,6 +274,12 @@ section[id] { scroll-margin-top: 76px; }
     <h2>Restaurant Guru, 2026</h2>
   </div>
   <div class="awards-badges reveal">
+    {% if google_stats and google_stats.rating %}
+    <a class="google-rating-badge" href="{{ google_review_link }}" target="_blank" rel="noopener">
+      <span class="google-rating-num">{{ google_stats.rating }}★</span>
+      <span class="google-rating-label">Google · {{ google_stats.review_count }} reviews</span>
+    </a>
+    {% endif %}
     <link href="https://awards.infcdn.net/2024/circ5_n.css" rel="stylesheet">
     <div id="b-rcirc5" class="rg-award-lang-en_US" onclick="if(event.target.nodeName.toLowerCase() != 'a') {window.open(this.querySelector('.b-rcirc_bot_title').href);return 0;}"><div class="circ_cont"> <img class="circ_img" src="https://awards.infcdn.net/img/star_red.svg" alt="star"><a href="https://restaurantguru.com" target="_blank" class="b-rcirc_top_title">Restaurant Guru 2026</a><p class=" b-rcirc_ttl">Recommended</p><a href="https://restaurant-guru.in/Tulsi-Foods-Chennai" class="b-rcirc_bot_title " target="_blank">Tulsi Foods</a></div></div>
     <link href="https://awards.infcdn.net/2026/r_rcm.css" rel="stylesheet">
@@ -334,6 +343,13 @@ section[id] { scroll-margin-top: 76px; }
       "closes": "21:00"
     }
   ],
+  {% if google_stats and google_stats.rating %}
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ google_stats.rating }}",
+    "reviewCount": "{{ google_stats.review_count }}"
+  },
+  {% endif %}
   "sameAs": [
     "https://www.instagram.com/tulsi.foods_chennai/",
     "https://www.facebook.com/tulsifoodservices",

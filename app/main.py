@@ -56,17 +56,57 @@ def landing_page(request: Request):
             picks.append({**item, "tag": tag, "desc": desc, "has_photo": item_id in photos})
         if len(picks) == 4:
             break
-    return templates.TemplateResponse(request, "landing.html", {"picks": picks})
+    google_stats = reviews.get_platform_stats().get("google")
+    return templates.TemplateResponse(
+        request, "landing.html",
+        {"picks": picks, "google_stats": google_stats, "google_review_link": GOOGLE_REVIEW_LINK},
+    )
+
+
+def build_menu_schema(groups: list[dict]) -> dict:
+    """Menu/MenuSection/MenuItem JSON-LD — mirrors exactly what menu.html
+    renders (same groups, same items, same prices), so it always matches
+    the visible page rather than drifting into its own thing."""
+    return {
+        "@context": "https://schema.org",
+        "@type": "Menu",
+        "name": "Tulsi Foods Menu",
+        "url": f"{SITE_URL}/menu",
+        "hasMenuSection": [
+            {
+                "@type": "MenuSection",
+                "name": g["group"],
+                "hasMenuItem": [
+                    {
+                        "@type": "MenuItem",
+                        "name": it["name"],
+                        "offers": {
+                            "@type": "Offer",
+                            "price": str(it["price"]),
+                            "priceCurrency": "INR",
+                            "availability": "https://schema.org/InStock" if it["available"]
+                            else "https://schema.org/OutOfStock",
+                        },
+                        "suitableForDiet": "https://schema.org/VegetarianDiet",
+                    }
+                    for it in g["items"]
+                ],
+            }
+            for g in groups
+        ],
+    }
 
 
 @app.get("/menu", response_class=HTMLResponse)
 def menu_page(request: Request):
+    groups = menu.grouped()
     return templates.TemplateResponse(
         request,
         "menu.html",
-        {"groups": menu.grouped(), "zones": DELIVERY_ZONES, "dish_photos": dish_photo_ids(),
+        {"groups": groups, "zones": DELIVERY_ZONES, "dish_photos": dish_photo_ids(),
          "pickup_lat": PICKUP_LAT, "pickup_lng": PICKUP_LNG,
-         "google_maps_api_key": GOOGLE_MAPS_JS_API_KEY},
+         "google_maps_api_key": GOOGLE_MAPS_JS_API_KEY,
+         "menu_schema": build_menu_schema(groups)},
     )
 
 
