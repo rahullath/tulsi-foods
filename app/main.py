@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from . import db, menu, orders, reviews
-from .config import ADMIN_TOKEN, DELIVERY_ZONES, GOOGLE_REVIEW_LINK
+from .config import ADMIN_TOKEN, DELIVERY_ZONES, GOOGLE_MAPS_JS_API_KEY, GOOGLE_REVIEW_LINK
 from .delivery.config import PICKUP_LAT, PICKUP_LNG
 
 app = FastAPI(title="Tulsi Foods Direct Ordering", version="0.2.0")
@@ -65,7 +65,8 @@ def menu_page(request: Request):
         request,
         "menu.html",
         {"groups": menu.grouped(), "zones": DELIVERY_ZONES, "dish_photos": dish_photo_ids(),
-         "pickup_lat": PICKUP_LAT, "pickup_lng": PICKUP_LNG},
+         "pickup_lat": PICKUP_LAT, "pickup_lng": PICKUP_LNG,
+         "google_maps_api_key": GOOGLE_MAPS_JS_API_KEY},
     )
 
 

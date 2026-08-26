@@ -54,8 +54,17 @@ ADMIN_PHONE = os.environ.get("ADMIN_PHONE", "")
 # Google Business Profile "ask for review" short link
 GOOGLE_REVIEW_LINK = "https://g.page/r/CbCaykOYyQTPEAE/review"
 
-# Google Places API (New) — optional; live rating/review count on /about.
-# Cached server-side (see app/reviews.py) so this stays well inside the
-# 5,000 free Place Details Pro calls/month. Unset = feature just stays hidden.
+# Google Places API (New) — server-side key, optional; live rating/review
+# count on /about. Cached server-side (see app/reviews.py) so this stays
+# well inside the 5,000 free Place Details Pro calls/month. Unset = feature
+# just stays hidden. (Not the same key as GOOGLE_MAPS_JS_API_KEY below —
+# this one should be IP-restricted, not exposed to browsers.)
 GOOGLE_PLACES_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "")
 GOOGLE_PLACE_ID = os.environ.get("GOOGLE_PLACE_ID", "")
+
+# Google Maps JavaScript API — client-side key, optional; powers the address
+# autocomplete + map pin in checkout. This key IS meant to be visible in
+# page source (that's how Maps JS API keys work) — restrict it by HTTP
+# referrer to tulsifoods.app in Google Cloud Console, not by keeping it
+# secret. Unset = checkout falls back to a plain address textarea.
+GOOGLE_MAPS_JS_API_KEY = os.environ.get("GOOGLE_MAP_API_KEY", "")

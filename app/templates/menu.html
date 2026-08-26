@@ -209,24 +209,23 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 (() => {
   const PICKUP_LAT = {{ pickup_lat }};
   const PICKUP_LNG = {{ pickup_lng }};
+  const GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
 
-  // Lazy-load Leaflet + OpenStreetMap tiles only when checkout actually opens.
-  let leafletPromise = null;
-  function loadLeaflet() {
-    if (window.L) return Promise.resolve(window.L);
-    if (leafletPromise) return leafletPromise;
-    leafletPromise = new Promise((resolve, reject) => {
-      const css = document.createElement("link");
-      css.rel = "stylesheet";
-      css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(css);
+  // Lazy-load the Google Maps JS API (places library) only when checkout
+  // actually opens, and only if a key is configured — otherwise checkout
+  // just uses the plain address textarea, no map.
+  let googleMapsPromise = null;
+  function loadGoogleMaps() {
+    if (window.google && window.google.maps) return Promise.resolve(window.google.maps);
+    if (googleMapsPromise) return googleMapsPromise;
+    googleMapsPromise = new Promise((resolve, reject) => {
+      window.__initGoogleMaps = () => resolve(window.google.maps);
       const script = document.createElement("script");
-      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.onload = () => resolve(window.L);
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&callback=__initGoogleMaps`;
       script.onerror = reject;
       document.head.appendChild(script);
     });
-    return leafletPromise;
+    return googleMapsPromise;
   }
 
   const CART_KEY = "tulsi_menu_cart";
@@ -384,7 +383,12 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             <label>You have ordered here before</label>
             <div class="saved-addr-list" id="saved-addr-list"></div>
           </div>
-          <div class="checkout-field" id="addr-field"><label>Address</label><textarea name="address" rows="2" placeholder="Flat/house number, building, street" required></textarea>
+          <div class="checkout-field" id="addr-field"><label>Address</label>
+            {% if google_maps_api_key %}
+            <input type="text" name="address" id="address-input" placeholder="Start typing your address" autocomplete="off" required>
+            {% else %}
+            <textarea name="address" rows="2" placeholder="Flat/house number, building, street" required></textarea>
+            {% endif %}
             <div id="map-pin" class="map-pin"></div>
             <div id="map-address-preview" class="map-address-preview"></div>
             <button type="button" id="gps-btn" style="margin-top:6px;font-size:12px;padding:5px 10px;border:1px solid #C9C4B8;border-radius:8px;background:#fff;cursor:pointer;color:#4A4F45;">📍 Centre on my location</button>
@@ -411,19 +415,15 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     const form = overlay.querySelector("#checkout-form");
     const inputLat = overlay.querySelector("#input-lat");
     const inputLng = overlay.querySelector("#input-lng");
-    let leafletMap = null, leafletMarker = null;
+    let gMap = null, gMarker = null, gGeocoder = null;
 
-    async function reverseGeocode(lat, lng) {
+    function reverseGeocode(lat, lng) {
       const preview = overlay.querySelector("#map-address-preview");
-      if (!preview) return;
+      if (!preview || !gGeocoder) return;
       preview.textContent = "Looking up address…";
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-        const data = await res.json();
-        preview.textContent = data.display_name ? "📍 " + data.display_name : "";
-      } catch (_) {
-        preview.textContent = "";
-      }
+      gGeocoder.geocode({ location: { lat: Number(lat), lng: Number(lng) } }, (results, status) => {
+        preview.textContent = (status === "OK" && results[0]) ? "📍 " + results[0].formatted_address : "";
+      });
     }
 
     function applyPin(lat, lng, geocode = true) {
@@ -434,25 +434,48 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 
     function movePin(lat, lng, geocode = true) {
       applyPin(lat, lng, geocode);
-      if (leafletMap && leafletMarker) {
-        leafletMap.setView([lat, lng], 16);
-        leafletMarker.setLatLng([lat, lng]);
+      if (gMap && gMarker) {
+        const pos = { lat: Number(lat), lng: Number(lng) };
+        gMap.setCenter(pos);
+        gMap.setZoom(16);
+        gMarker.setPosition(pos);
       }
     }
 
     async function ensureMap() {
-      if (leafletMap) return;
+      if (!GOOGLE_MAPS_API_KEY || gMap) return;
       const mapEl = overlay.querySelector("#map-pin");
       if (!mapEl) return;
-      const L = await loadLeaflet();
-      leafletMap = L.map(mapEl, { attributionControl: false }).setView([PICKUP_LAT, PICKUP_LNG], 15);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(leafletMap);
-      leafletMarker = L.marker([PICKUP_LAT, PICKUP_LNG], { draggable: true }).addTo(leafletMap);
-      leafletMarker.on("dragend", () => {
-        const pos = leafletMarker.getLatLng();
-        applyPin(pos.lat, pos.lng);
+      const gmaps = await loadGoogleMaps();
+      gGeocoder = new gmaps.Geocoder();
+      gMap = new gmaps.Map(mapEl, {
+        center: { lat: PICKUP_LAT, lng: PICKUP_LNG }, zoom: 15,
+        streetViewControl: false, mapTypeControl: false, fullscreenControl: false,
+      });
+      gMarker = new gmaps.Marker({ position: { lat: PICKUP_LAT, lng: PICKUP_LNG }, map: gMap, draggable: true });
+      gMarker.addListener("dragend", () => {
+        const pos = gMarker.getPosition();
+        applyPin(pos.lat(), pos.lng());
       });
       applyPin(PICKUP_LAT, PICKUP_LNG, false);
+
+      const addressInput = overlay.querySelector("#address-input");
+      if (addressInput) {
+        const autocomplete = new gmaps.places.Autocomplete(addressInput, {
+          fields: ["geometry", "formatted_address", "address_components"],
+          componentRestrictions: { country: "in" },
+          types: ["address"],
+        });
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          if (!place.geometry || !place.geometry.location) return;
+          const loc = place.geometry.location;
+          movePin(loc.lat(), loc.lng(), false);
+          const pinComponent = (place.address_components || []).find(c => c.types.includes("postal_code"));
+          const pincodeInput = form.querySelector('[name=pincode]');
+          if (pinComponent && pincodeInput) pincodeInput.value = pinComponent.short_name;
+        });
+      }
     }
 
     const typeSelect = form.querySelector('[name=order_type]');
