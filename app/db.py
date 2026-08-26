@@ -74,6 +74,23 @@ CREATE TABLE IF NOT EXISTS daily_specials (
     item_name TEXT NOT NULL,
     price     REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS reviews (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    source      TEXT NOT NULL,
+    author_name TEXT,
+    quote       TEXT NOT NULL,
+    rating      INTEGER,
+    proof_url   TEXT,
+    featured    INTEGER NOT NULL DEFAULT 0,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    created_at  TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS platform_stats (
+    platform     TEXT PRIMARY KEY,
+    rating       REAL,
+    review_count INTEGER,
+    updated_at   TEXT
+);
 """
 
 
@@ -348,6 +365,13 @@ def recent_orders(limit: int = 20) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def lifetime_order_count() -> int:
+    conn = get_conn()
+    n = conn.execute("SELECT COUNT(*) FROM orders WHERE status != 'cancelled'").fetchone()[0]
+    conn.close()
+    return n
+
+
 def customer_orders(phone: str, limit: int = 5) -> list[dict]:
     """Get recent orders for a customer (for reorder)."""
     conn = get_conn()
@@ -422,5 +446,76 @@ def clear_special(day: str | None = None) -> None:
     day = day or date.today().isoformat()
     conn = get_conn()
     conn.execute("DELETE FROM daily_specials WHERE date=?", (day,))
+    conn.commit()
+    conn.close()
+
+
+# ---- reviews ----
+
+def list_reviews() -> list[dict]:
+    """All reviews, newest first — for the admin tab."""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT * FROM reviews ORDER BY featured DESC, sort_order DESC, id DESC"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def list_featured_reviews(limit: int = 6) -> list[dict]:
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT * FROM reviews WHERE featured=1 ORDER BY sort_order DESC, id DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def add_review(source: str, quote: str, author_name: str | None = None,
+              rating: int | None = None, proof_url: str | None = None) -> int:
+    conn = get_conn()
+    cur = conn.execute(
+        "INSERT INTO reviews(source, author_name, quote, rating, proof_url) VALUES(?,?,?,?,?)",
+        (source, author_name, quote, rating, proof_url),
+    )
+    conn.commit()
+    rid = cur.lastrowid
+    conn.close()
+    return rid
+
+
+def delete_review(review_id: int) -> None:
+    conn = get_conn()
+    conn.execute("DELETE FROM reviews WHERE id=?", (review_id,))
+    conn.commit()
+    conn.close()
+
+
+def set_review_featured(review_id: int, featured: bool) -> None:
+    conn = get_conn()
+    conn.execute("UPDATE reviews SET featured=? WHERE id=?", (1 if featured else 0, review_id))
+    conn.commit()
+    conn.close()
+
+
+# ---- platform stats (Swiggy/Zomato manual entry, Google auto-refreshed) ----
+
+def get_platform_stats() -> dict:
+    conn = get_conn()
+    rows = conn.execute("SELECT * FROM platform_stats").fetchall()
+    conn.close()
+    return {r["platform"]: dict(r) for r in rows}
+
+
+def set_platform_stats(platform: str, rating: float | None, review_count: int | None) -> None:
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO platform_stats(platform, rating, review_count, updated_at) "
+        "VALUES(?,?,?,datetime('now')) "
+        "ON CONFLICT(platform) DO UPDATE SET rating=excluded.rating, "
+        "review_count=excluded.review_count, updated_at=excluded.updated_at",
+        (platform, rating, review_count),
+    )
     conn.commit()
     conn.close()

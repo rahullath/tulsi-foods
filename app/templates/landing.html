@@ -95,6 +95,10 @@ section[id] { scroll-margin-top: 76px; }
 .known-title { font-size: 16px; font-weight: 600; }
 .known-desc { margin: 6px 0 0; font-size: 14px; line-height: 1.6; color: var(--sub); }
 
+/* Awards */
+.awards { padding: 8px 40px 56px; max-width: 1200px; margin: 0 auto; text-align: center; }
+.awards-badges { display: flex; justify-content: center; align-items: center; gap: 32px; margin-top: 24px; flex-wrap: wrap; }
+
 /* Our story */
 .story { padding: 8px 40px 56px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
 .story-body p { font-size: 15px; line-height: 1.7; color: #4A4F45; margin-top: 14px; }
@@ -126,6 +130,7 @@ section[id] { scroll-margin-top: 76px; }
   .process-grid { grid-template-columns: 1fr; }
   .known { padding: 8px 18px 40px; }
   .known-grid { grid-template-columns: 1fr 1fr; }
+  .awards { padding: 8px 18px 40px; }
   .story { grid-template-columns: 1fr; padding: 8px 18px 40px; gap: 24px; }
   .story-photo { height: 220px; order: -1; }
   .cta-banner { flex-direction: column; text-align: center; padding: 36px 18px; }
@@ -254,6 +259,19 @@ section[id] { scroll-margin-top: 76px; }
       <div class="known-title">Office and pooja catering</div>
       <p class="known-desc">Give us a day's notice and a headcount, we will send a quote.</p>
     </div>
+  </div>
+</section>
+
+<section class="awards" id="awards">
+  <div class="section-head reveal" style="max-width:none; margin-left:auto; margin-right:auto;">
+    <div class="section-tag">As recognized by</div>
+    <h2>Restaurant Guru, 2026</h2>
+  </div>
+  <div class="awards-badges reveal">
+    <link href="https://awards.infcdn.net/2024/circ5_n.css" rel="stylesheet">
+    <div id="b-rcirc5" class="rg-award-lang-en_US" onclick="if(event.target.nodeName.toLowerCase() != 'a') {window.open(this.querySelector('.b-rcirc_bot_title').href);return 0;}"><div class="circ_cont"> <img class="circ_img" src="https://awards.infcdn.net/img/star_red.svg" alt="star"><a href="https://restaurantguru.com" target="_blank" class="b-rcirc_top_title">Restaurant Guru 2026</a><p class=" b-rcirc_ttl">Recommended</p><a href="https://restaurant-guru.in/Tulsi-Foods-Chennai" class="b-rcirc_bot_title " target="_blank">Tulsi Foods</a></div></div>
+    <link href="https://awards.infcdn.net/2026/r_rcm.css" rel="stylesheet">
+    <div id="b-rcircle" data-length="41" class=" b-rcircle_black rg-award-lang-en_US" onclick="if(event.target.nodeName.toLowerCase() != 'a') {window.open(this.querySelector('.b-rcircle_r-link').href);return 0;}"> <a href="https://restaurant-guru.in/Tulsi-Foods-Chennai" class="b-rcircle_r-link" target="_blank">Tulsi Foods</a> <p class="b-rcircle_year">2026</p> <div class="b-rcircle_bottom b-rcircle_row-doubled "> <p class="b-rcircle_str1 f10" style="font-size: 10px !important;">Excellent takeaway</p> <p class="b-rcircle_str2 " style="">food</p> </div> <div class="b-rcircle_heading"> <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="144px" height="144px" viewBox="0 0 144 144"> <defs> <path id="b-rcircle-arc" d="M 12 72 a 60 60 0 0 0 120 0"></path> </defs> <text class="b-rcircle_heading__bottom b-rcircle_small " fill="#fff" text-anchor="middle"> <textPath startOffset="50%" xlink:href="#b-rcircle-arc"> <a href="https://restaurantguru.com/" target="_blank" class="b-rcircle_heading__link"> Restaurant Guru </a> </textPath> </text> </svg> </div></div>
   </div>
 </section>
 

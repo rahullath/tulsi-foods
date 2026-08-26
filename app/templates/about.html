@@ -40,6 +40,16 @@ section[id] { scroll-margin-top: 76px; }
 .reviews-tag { font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--sub); letter-spacing: .05em; }
 .reviews-text { margin: 10px 0 0; font-size: 14px; line-height: 1.65; color: var(--sub); max-width: 640px; }
 
+.stats-row { display: flex; flex-wrap: wrap; gap: 14px; }
+.stat-item, .stat-badge { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; text-align: center; text-decoration: none; color: inherit; min-width: 140px; }
+.stat-num { display: block; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; color: var(--g); }
+.stat-label { display: block; font-size: 12px; color: var(--sub); margin-top: 4px; }
+
+.reviews-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.review-quote-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+.review-quote-text { font-size: 14px; line-height: 1.65; color: #43483F; }
+.review-quote-meta { margin-top: 10px; font-size: 12px; color: var(--sub); }
+
 .contact { max-width: 1000px; margin: 40px auto 0; padding: 0 40px 64px; }
 .contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
 .contact-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
@@ -57,6 +67,8 @@ section[id] { scroll-margin-top: 76px; }
   .story { grid-template-columns: 1fr; padding: 32px 18px 0; gap: 24px; }
   .story-photo { height: 220px; order: -1; }
   .reviews { padding: 0 18px; }
+  .reviews-grid { grid-template-columns: 1fr; }
+  .stat-item, .stat-badge { flex: 1; min-width: 0; }
   .contact { padding: 0 18px 48px; }
   .contact-grid { grid-template-columns: 1fr; }
   .footer { flex-direction: column; gap: 8px; padding: 20px 18px 30px; }
@@ -90,11 +102,52 @@ section[id] { scroll-margin-top: 76px; }
   </div>
 </section>
 
-<section class="reviews">
-  <div class="reviews-card">
+<section class="reviews" id="reviews">
+  <div class="stats-row">
+    <div class="stat-item">
+      <span class="stat-num">{{ order_count }}+</span>
+      <span class="stat-label">orders and counting</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">2015</span>
+      <span class="stat-label">cooking since</span>
+    </div>
+    {% if platform_stats.google and platform_stats.google.rating %}
+    <a class="stat-badge" href="{{ google_review_link }}" target="_blank" rel="noopener">
+      <span class="stat-num">{{ platform_stats.google.rating }}★</span>
+      <span class="stat-label">Google · {{ platform_stats.google.review_count }} reviews</span>
+    </a>
+    {% endif %}
+    {% if platform_stats.swiggy and platform_stats.swiggy.rating %}
+    <div class="stat-badge">
+      <span class="stat-num">{{ platform_stats.swiggy.rating }}★</span>
+      <span class="stat-label">Swiggy · {{ platform_stats.swiggy.review_count }} reviews</span>
+    </div>
+    {% endif %}
+    {% if platform_stats.zomato and platform_stats.zomato.rating %}
+    <div class="stat-badge">
+      <span class="stat-num">{{ platform_stats.zomato.rating }}★</span>
+      <span class="stat-label">Zomato · {{ platform_stats.zomato.review_count }} reviews</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if featured_reviews %}
+  <div class="reviews-tag" style="margin-top:32px;">FROM OUR CUSTOMERS</div>
+  <div class="reviews-grid">
+    {% for r in featured_reviews %}
+    <div class="review-quote-card">
+      <p class="review-quote-text">"{{ r.quote }}"</p>
+      <div class="review-quote-meta">— {{ r.author_name or "A customer" }}, on {{ r.source_label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="reviews-card" style="margin-top:32px;">
     <div class="reviews-tag">FROM OUR CUSTOMERS</div>
     <p class="reviews-text">Real reviews go here as they come in, each with a first name and where it came from — nothing invented.</p>
   </div>
+  {% endif %}
 </section>
 
 <section class="contact" id="contact">

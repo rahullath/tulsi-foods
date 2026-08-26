@@ -53,3 +53,9 @@ ADMIN_PHONE = os.environ.get("ADMIN_PHONE", "")
 
 # Google Business Profile "ask for review" short link
 GOOGLE_REVIEW_LINK = "https://g.page/r/CbCaykOYyQTPEAE/review"
+
+# Google Places API (New) — optional; live rating/review count on /about.
+# Cached server-side (see app/reviews.py) so this stays well inside the
+# 5,000 free Place Details Pro calls/month. Unset = feature just stays hidden.
+GOOGLE_PLACES_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "")
+GOOGLE_PLACE_ID = os.environ.get("GOOGLE_PLACE_ID", "")

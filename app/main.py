@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
-from . import db, menu, orders
+from . import db, menu, orders, reviews
 from .config import ADMIN_TOKEN, DELIVERY_ZONES, GOOGLE_REVIEW_LINK
 from .delivery.config import PICKUP_LAT, PICKUP_LNG
 
@@ -75,7 +75,16 @@ def delivery_page(request: Request):
 
 @app.get("/about", response_class=HTMLResponse)
 def about_page(request: Request):
-    return templates.TemplateResponse(request, "about.html", {})
+    return templates.TemplateResponse(
+        request,
+        "about.html",
+        {
+            "featured_reviews": reviews.list_featured_reviews(),
+            "platform_stats": reviews.get_platform_stats(),
+            "order_count": db.lifetime_order_count(),
+            "google_review_link": GOOGLE_REVIEW_LINK,
+        },
+    )
 
 
 RECOMMENDED_DISHES = [
@@ -291,6 +300,73 @@ def admin_clear_special(day: str | None = None, x_admin_token: str | None = Head
     day = menu.today(day)
     db.clear_special(day)
     return {"date": day, "ok": True}
+
+
+# ---- reviews (admin) ----
+
+class ReviewIn(BaseModel):
+    source: str
+    quote: str
+    author_name: str | None = None
+    rating: int | None = None
+    proof_url: str | None = None
+
+
+class FeaturedIn(BaseModel):
+    featured: bool
+
+
+class PlatformStatsIn(BaseModel):
+    platform: str
+    rating: float | None = None
+    review_count: int | None = None
+
+
+@app.get("/api/admin/reviews")
+def admin_list_reviews(x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    return {"reviews": reviews.list_reviews()}
+
+
+@app.post("/api/admin/reviews")
+def admin_add_review(body: ReviewIn, x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    try:
+        rid = reviews.add_review(body.source, body.quote, author_name=body.author_name,
+                                 rating=body.rating, proof_url=body.proof_url)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"ok": True, "id": rid}
+
+
+@app.delete("/api/admin/reviews/{review_id}")
+def admin_delete_review(review_id: int, x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    reviews.delete_review(review_id)
+    return {"ok": True}
+
+
+@app.post("/api/admin/reviews/{review_id}/feature")
+def admin_feature_review(review_id: int, body: FeaturedIn, x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    reviews.set_review_featured(review_id, body.featured)
+    return {"ok": True, "featured": body.featured}
+
+
+@app.get("/api/admin/platform-stats")
+def admin_get_platform_stats(x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    return {"stats": reviews.get_platform_stats()}
+
+
+@app.post("/api/admin/platform-stats")
+def admin_set_platform_stats(body: PlatformStatsIn, x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    try:
+        reviews.set_platform_stats(body.platform, body.rating, body.review_count)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"ok": True}
 
 
 # ---- WhatsApp conversations (admin) ----

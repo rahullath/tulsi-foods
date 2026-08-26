@@ -353,10 +353,140 @@
     }
   }
 
+  // ---- Reviews ----
+  const SOURCE_LABELS = {
+    google: "Google", swiggy: "Swiggy", zomato: "Zomato", instagram: "Instagram",
+    facebook: "Facebook", whatsapp: "WhatsApp", in_person: "Physical / in-person",
+  };
+
+  function renderReview(r) {
+    const card = document.createElement("div");
+    card.className = "review-card";
+    const stars = r.rating ? "★".repeat(r.rating) + "☆".repeat(5 - r.rating) : "";
+    card.innerHTML = `
+      <div class="review-top">
+        <div>
+          <span class="review-source">${SOURCE_LABELS[r.source] || r.source}</span>
+          <div class="review-quote">"${r.quote}"</div>
+          <div class="review-meta">${r.author_name || "Anonymous"}${stars ? " · " + stars : ""}${r.proof_url ? ` · <a href="${r.proof_url}" target="_blank" rel="noopener">proof</a>` : ""}</div>
+        </div>
+        <div class="review-actions">
+          <label class="toggle" title="Feature on site">
+            <input type="checkbox" class="review-feature" data-id="${r.id}" ${r.featured ? "checked" : ""}>
+            <span class="slider"></span>
+          </label>
+          <button type="button" class="review-delete" data-id="${r.id}">Delete</button>
+        </div>
+      </div>
+    `;
+    return card;
+  }
+
+  async function loadReviews() {
+    try {
+      const d = await api("/api/admin/reviews");
+      const list = document.getElementById("reviews-list");
+      const empty = document.getElementById("reviews-empty");
+      list.innerHTML = "";
+      empty.hidden = d.reviews.length > 0;
+      for (const r of d.reviews) list.appendChild(renderReview(r));
+      list.querySelectorAll(".review-feature").forEach(inp => {
+        inp.addEventListener("change", async () => {
+          try {
+            await api(`/api/admin/reviews/${inp.dataset.id}/feature`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ featured: inp.checked }),
+            });
+            toast(inp.checked ? "Featured on site ✓" : "Removed from site");
+          } catch (e) { toast("Failed: " + e.message); inp.checked = !inp.checked; }
+        });
+      });
+      list.querySelectorAll(".review-delete").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("Delete this review?")) return;
+          try {
+            await api(`/api/admin/reviews/${btn.dataset.id}`, { method: "DELETE" });
+            loadReviews();
+          } catch (e) { toast("Failed: " + e.message); }
+        });
+      });
+    } catch (e) {
+      document.getElementById("reviews-empty").textContent = "Failed to load: " + e.message;
+      document.getElementById("reviews-empty").hidden = false;
+    }
+  }
+
+  document.getElementById("review-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    try {
+      await api("/api/admin/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: fd.get("source"),
+          quote: fd.get("quote"),
+          author_name: fd.get("author_name") || null,
+          rating: fd.get("rating") ? Number(fd.get("rating")) : null,
+          proof_url: fd.get("proof_url") || null,
+        }),
+      });
+      e.target.reset();
+      toast("Review added ✓");
+      loadReviews();
+    } catch (e) { toast("Failed: " + e.message); }
+  });
+
+  async function loadPlatformStats() {
+    try {
+      const d = await api("/api/admin/platform-stats");
+      const s = d.stats || {};
+      const form = document.getElementById("platform-stats-form");
+      if (s.swiggy) {
+        form.querySelector('[name=swiggy_rating]').value = s.swiggy.rating ?? "";
+        form.querySelector('[name=swiggy_count]').value = s.swiggy.review_count ?? "";
+      }
+      if (s.zomato) {
+        form.querySelector('[name=zomato_rating]').value = s.zomato.rating ?? "";
+        form.querySelector('[name=zomato_count]').value = s.zomato.review_count ?? "";
+      }
+      const googleDisplay = document.getElementById("google-stats-display");
+      googleDisplay.textContent = s.google
+        ? `Google: ${s.google.rating}★ (${s.google.review_count} reviews) · updated ${s.google.updated_at}`
+        : "Google: not configured yet (needs GOOGLE_PLACES_API_KEY + GOOGLE_PLACE_ID)";
+    } catch (e) { /* non-fatal — form just stays blank */ }
+  }
+
+  document.getElementById("platform-stats-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    try {
+      const swiggyRating = fd.get("swiggy_rating"), swiggyCount = fd.get("swiggy_count");
+      const zomatoRating = fd.get("zomato_rating"), zomatoCount = fd.get("zomato_count");
+      if (swiggyRating || swiggyCount) {
+        await api("/api/admin/platform-stats", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ platform: "swiggy", rating: swiggyRating ? Number(swiggyRating) : null, review_count: swiggyCount ? Number(swiggyCount) : null }),
+        });
+      }
+      if (zomatoRating || zomatoCount) {
+        await api("/api/admin/platform-stats", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ platform: "zomato", rating: zomatoRating ? Number(zomatoRating) : null, review_count: zomatoCount ? Number(zomatoCount) : null }),
+        });
+      }
+      toast("Numbers saved ✓");
+      loadPlatformStats();
+    } catch (e) { toast("Failed: " + e.message); }
+  });
+
   // ---- Init ----
   loadOrders();
   loadMenu().catch(() => {});
   loadConvos().catch(() => {});
   loadDayStats().catch(() => {});
+  loadReviews().catch(() => {});
+  loadPlatformStats().catch(() => {});
   setInterval(loadOrders, 30000);
 })();
