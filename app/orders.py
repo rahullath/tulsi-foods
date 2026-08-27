@@ -4,7 +4,15 @@ import re
 from datetime import datetime, timedelta
 
 from . import db, menu
-from .config import DELIVERY_ZONES, FREE_DELIVERY_ABOVE
+from .config import (
+    DELIVERY_ZONES,
+    FREE_DELIVERY_ABOVE,
+    GST_ENABLED,
+    GST_RATE,
+    PACKING_FEE,
+    PACKING_FEE_LARGE_ORDER,
+    PACKING_FEE_LARGE_ORDER_THRESHOLD,
+)
 
 ADDRESS_EDIT_WINDOW = timedelta(minutes=3)
 MAX_SCHEDULE_AHEAD = timedelta(days=14)
@@ -106,6 +114,19 @@ def build_lines(items: list[dict]) -> tuple[list[dict], float]:
     return lines, subtotal
 
 
+def packing_fee_for(subtotal: float) -> float:
+    if not PACKING_FEE:
+        return 0.0
+    return PACKING_FEE_LARGE_ORDER if subtotal >= PACKING_FEE_LARGE_ORDER_THRESHOLD else PACKING_FEE
+
+
+def gst_for(taxable_base: float) -> float:
+    """GST on item total + packing charge — delivery fee stays outside the
+    taxable base, matching how the aggregator data tracks delivery "without
+    tax" separately from the restaurant-service charge."""
+    return round(taxable_base * GST_RATE, 2) if GST_ENABLED else 0.0
+
+
 def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     r = 6371000
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
@@ -167,7 +188,9 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
         else:
             raise OrderError("Delivery distance or pincode is required", 400)
 
-    total = subtotal + delivery_fee
+    packing_fee = packing_fee_for(subtotal)
+    gst_amount = gst_for(subtotal + packing_fee)
+    total = subtotal + packing_fee + gst_amount + delivery_fee
     flagged, flag_reason = check_address(address, pincode, lat, lng)
     cid = db.upsert_customer(phone, name, address, pincode)
     oid = db.create_order(cid, order_type, subtotal, delivery_fee, total,
@@ -175,7 +198,8 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                           delivery_address=address, delivery_pincode=pincode,
                           delivery_lat=lat, delivery_lng=lng,
                           scheduled_at=scheduled_at,
-                          address_flagged=flagged, address_flag_reason=flag_reason)
+                          address_flagged=flagged, address_flag_reason=flag_reason,
+                          packing_fee=packing_fee, gst_amount=gst_amount)
     if order_type == "delivery" and address:
         base_address, landmark = _split_landmark(address)
         try:
@@ -183,6 +207,7 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
         except Exception:
             pass  # address book is a convenience, never block order creation
     return {"order_id": oid, "status": "new", "subtotal": round(subtotal, 2),
+            "packing_fee": packing_fee, "gst_amount": gst_amount,
             "delivery_fee": delivery_fee, "total": round(total, 2)}
 
 

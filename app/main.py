@@ -9,7 +9,17 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from . import db, menu, orders, reviews
-from .config import ADMIN_TOKEN, DELIVERY_ZONES, GOOGLE_MAPS_JS_API_KEY, GOOGLE_REVIEW_LINK
+from .config import (
+    ADMIN_TOKEN,
+    DELIVERY_ZONES,
+    GOOGLE_MAPS_JS_API_KEY,
+    GOOGLE_REVIEW_LINK,
+    GST_ENABLED,
+    GST_RATE,
+    PACKING_FEE,
+    PACKING_FEE_LARGE_ORDER,
+    PACKING_FEE_LARGE_ORDER_THRESHOLD,
+)
 from .delivery.config import PICKUP_LAT, PICKUP_LNG
 
 app = FastAPI(title="Tulsi Foods Direct Ordering", version="0.2.0")
@@ -106,7 +116,10 @@ def menu_page(request: Request):
         {"groups": groups, "zones": DELIVERY_ZONES, "dish_photos": dish_photo_ids(),
          "pickup_lat": PICKUP_LAT, "pickup_lng": PICKUP_LNG,
          "google_maps_api_key": GOOGLE_MAPS_JS_API_KEY,
-         "menu_schema": build_menu_schema(groups)},
+         "menu_schema": build_menu_schema(groups),
+         "packing_fee": PACKING_FEE, "packing_fee_large": PACKING_FEE_LARGE_ORDER,
+         "packing_fee_threshold": PACKING_FEE_LARGE_ORDER_THRESHOLD,
+         "gst_rate": GST_RATE, "gst_enabled": GST_ENABLED},
     )
 
 

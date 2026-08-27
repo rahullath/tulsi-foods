@@ -100,6 +100,15 @@
       ? `Delivery · ${pin}${addr ? " · " + addr.slice(0, 20) : ""}` + (o.payment_method ? ` · ${o.payment_method.toUpperCase()}` : "")
       : `Pickup` + (o.payment_method ? ` · ${o.payment_method.toUpperCase()}` : "");
 
+    let breakdownHTML = "";
+    if (o.packing_fee || o.gst_amount) {
+      const parts = [`Subtotal ${money(o.subtotal)}`];
+      if (o.packing_fee) parts.push(`Packing ${money(o.packing_fee)}`);
+      if (o.gst_amount) parts.push(`GST ${money(o.gst_amount)}`);
+      if (o.delivery_fee) parts.push(`Delivery ${money(o.delivery_fee)}`);
+      breakdownHTML = `<div class="order-breakdown">${parts.join(" · ")}</div>`;
+    }
+
     let progressHTML = "";
     if (!isDone && o.status !== "cancelled") {
       const steps = 5;
@@ -159,6 +168,7 @@
         <span class="order-badge ${meta.badge}">${meta.label}${!isDone && o.scheduled_at ? " · " + formatScheduled(o.scheduled_at) : (!isDone && o.created_at ? " · " + timeSince(o.created_at) : "")}</span>
       </div>
       <div class="order-items">${items}${o.notes ? `<br><span class="order-notes">"${o.notes}"</span>` : ""}</div>
+      ${breakdownHTML}
       ${flagHTML}
       ${quickHTML}
       ${progressHTML}

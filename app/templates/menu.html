@@ -190,6 +190,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .checkout-summary { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 14px; }
 .checkout-row { display: flex; justify-content: space-between; padding: 4px 0; }
 .checkout-row.total { font-weight: 700; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; font-size: 16px; }
+.checkout-row-note { font-size: 11px; color: var(--sub); text-align: right; margin-top: 2px; }
 .checkout-nudge { background: #FBF0DE; border: 1px solid #EFDFC2; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
 .checkout-nudge-title { font-size: 13px; font-weight: 600; color: #8A5A12; }
 .checkout-nudge-sub { font-size: 12px; color: #8A5A12; opacity: .85; margin-top: 3px; line-height: 1.5; }
@@ -217,6 +218,19 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   const PICKUP_LAT = {{ pickup_lat }};
   const PICKUP_LNG = {{ pickup_lng }};
   const GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
+  const PACKING_FEE = {{ packing_fee }};
+  const PACKING_FEE_LARGE = {{ packing_fee_large }};
+  const PACKING_FEE_THRESHOLD = {{ packing_fee_threshold }};
+  const GST_RATE = {{ gst_rate }};
+  const GST_ENABLED = {{ "true" if gst_enabled else "false" }};
+
+  function packingFeeFor(subtotal) {
+    if (!PACKING_FEE) return 0;
+    return subtotal >= PACKING_FEE_THRESHOLD ? PACKING_FEE_LARGE : PACKING_FEE;
+  }
+  function gstFor(taxableBase) {
+    return GST_ENABLED ? Math.round(taxableBase * GST_RATE * 100) / 100 : 0;
+  }
 
   // Lazy-load the Google Maps JS API (places library) only when checkout
   // actually opens, and only if a key is configured — otherwise checkout
@@ -436,9 +450,17 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     function refreshCheckoutSummary() {
       const currentIds = Object.keys(cart);
       const currentSubtotal = currentIds.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
+      const packing = packingFeeFor(currentSubtotal);
+      const gst = gstFor(currentSubtotal + packing);
       overlay.querySelector(".checkout-summary").innerHTML =
         currentIds.map(id => `<div class="checkout-row"><span>${NAMES[id]} × ${cart[id]}</span><span>₹${(PRICES[id] || 0) * cart[id]}</span></div>`).join("")
-        + `<div class="checkout-row total"><span>Total</span><span>₹${currentSubtotal}</span></div>`;
+        + (currentSubtotal > 0 ? `
+          <div class="checkout-row"><span>Subtotal</span><span>₹${currentSubtotal}</span></div>
+          ${packing ? `<div class="checkout-row"><span>Packing charge</span><span>₹${packing}</span></div>` : ""}
+          ${gst ? `<div class="checkout-row"><span>GST (${(GST_RATE * 100).toFixed(0)}%)</span><span>₹${gst.toFixed(2)}</span></div>` : ""}
+        ` : "")
+        + `<div class="checkout-row total"><span>Total</span><span>₹${(currentSubtotal + packing + gst).toFixed(2)}</span></div>
+           <div class="checkout-row-note">+ delivery, shown before you pay</div>`;
 
       const nudge = overlay.querySelector("#checkout-nudge");
       const candidates = UPSELL_ITEMS.filter(id => !cart[id] && PRICES[id] != null && AVAILABLE[id]);

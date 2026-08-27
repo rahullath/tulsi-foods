@@ -24,6 +24,24 @@ DELIVERY_ZONES = [
 
 FREE_DELIVERY_ABOVE = 700  # optional: free delivery over this amount
 
+# GST for direct (non-aggregator) orders. Swiggy data shows a consistent 5%
+# charged on every order (the standard non-ITC restaurant rate) — aggregators
+# remit that themselves under Section 9(5), which doesn't cover direct sales,
+# so this app has to collect it itself. Confirm the rate/registration status
+# with your CA before changing — this mirrors observed data, not tax advice.
+GST_RATE = 0.05
+GST_ENABLED = True
+
+# Packing charge for direct orders — flat, with a step up for large orders.
+# Mirrors the existing "Container Charge" already used elsewhere in the
+# business; retune these two numbers freely, they're a starting estimate.
+PACKING_FEE = 20
+PACKING_FEE_LARGE_ORDER_THRESHOLD = 1000
+PACKING_FEE_LARGE_ORDER = 40
+
+# GSTIN — shown on order confirmations/receipts once set. Blank until filled in.
+GSTIN = os.environ.get("GSTIN", "")
+
 ORDER_STATUSES = [
     "new",
     "preparing",

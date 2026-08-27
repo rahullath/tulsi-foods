@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS orders (
     order_type      TEXT NOT NULL DEFAULT 'delivery',
     subtotal        REAL NOT NULL,
     delivery_fee    REAL NOT NULL DEFAULT 0,
+    packing_fee     REAL NOT NULL DEFAULT 0,
+    gst_amount      REAL NOT NULL DEFAULT 0,
     total           REAL NOT NULL,
     payment_method  TEXT NOT NULL DEFAULT 'cod',
     paid            INTEGER NOT NULL DEFAULT 0,
@@ -144,6 +146,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE orders ADD COLUMN address_flagged INTEGER NOT NULL DEFAULT 0")
     if not _has_col("orders", "address_flag_reason"):
         conn.execute("ALTER TABLE orders ADD COLUMN address_flag_reason TEXT")
+    if not _has_col("orders", "packing_fee"):
+        conn.execute("ALTER TABLE orders ADD COLUMN packing_fee REAL NOT NULL DEFAULT 0")
+    if not _has_col("orders", "gst_amount"):
+        conn.execute("ALTER TABLE orders ADD COLUMN gst_amount REAL NOT NULL DEFAULT 0")
     # daily_specials table (may not exist in older databases)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS daily_specials ("
@@ -280,15 +286,18 @@ def create_order(customer_id: int, order_type: str, subtotal: float,
                  delivery_lng: str | None = None,
                  scheduled_at: str | None = None,
                  address_flagged: bool = False,
-                 address_flag_reason: str | None = None) -> int:
+                 address_flag_reason: str | None = None,
+                 packing_fee: float = 0.0,
+                 gst_amount: float = 0.0) -> int:
     conn = get_conn()
     cur = conn.execute(
         "INSERT INTO orders(customer_id, status, order_type, subtotal, delivery_fee, "
-        "total, payment_method, instructions, delivery_address, delivery_pincode, "
-        "delivery_lat, delivery_lng, scheduled_at, address_flagged, address_flag_reason) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        (customer_id, "new", order_type, subtotal, delivery_fee, total,
-         payment_method, instructions, delivery_address, delivery_pincode,
+        "packing_fee, gst_amount, total, payment_method, instructions, delivery_address, "
+        "delivery_pincode, delivery_lat, delivery_lng, scheduled_at, address_flagged, "
+        "address_flag_reason) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (customer_id, "new", order_type, subtotal, delivery_fee, packing_fee, gst_amount,
+         total, payment_method, instructions, delivery_address, delivery_pincode,
          delivery_lat, delivery_lng, scheduled_at,
          1 if address_flagged else 0, address_flag_reason),
     )

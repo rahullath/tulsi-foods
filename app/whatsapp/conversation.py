@@ -442,8 +442,14 @@ def _summary(sess: dict) -> list[dict]:
     if ctx.get("order_anyway_fee"):
         fee += 30
         lines.append(f"Small order fee: {money(30)}")
+    packing = orders.packing_fee_for(total)
+    gst = orders.gst_for(total + packing)
+    if packing:
+        lines.append(f"Packing charge: {money(packing)}")
+    if gst:
+        lines.append(f"GST: {money(gst)}")
     lines.append(f"Delivery fee: {money(fee)} (approx, confirmed at dispatch)")
-    lines.append(f"Total: {money(total + fee)}")
+    lines.append(f"Total: {money(total + packing + gst + fee)}")
     sess["ctx"]["fee"] = fee
     return [buttons("\n".join(lines) + "\n\nReply YES to confirm, EDIT to change, or CANCEL.",
                     ["YES", "EDIT", "CANCEL"])]
