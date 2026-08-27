@@ -135,3 +135,45 @@ Additional resilience for the abroad period:
 1. **Photos** — go through `dev/tulsi-foods/media`, pick ~3 best hero-quality shots (daylight, plain plate, top-down, no clutter — matches the photo checklist already in §B.5), crop/compress to reasonable web size (webp/jpg, square-ish aspect), save as `app/static/img/hero-1.jpg`, `hero-2.jpg`, `hero-3.jpg`. The hero markup in `app/templates/index.html` already points at those exact filenames and falls back to a gradient placeholder via `onerror` if a file is missing — dropping the files in is enough, no HTML/CSS changes needed. If there are good shots of specific dishes, consider also wiring per-item thumbnails into the menu list later (not scoped yet).
 2. Check `media` for anything else worth surfacing (e.g. an existing paper/PDF menu that reveals dishes or prices missing from `app/menu` or `data/`).
 3. **Testimonials** (§B.4 — skipped this session, don't fabricate quotes): user is going to scrape Zomato/Swiggy/Google reviews + collect physical/photo reviews and hand over a real list **later**. When that list arrives: add a "What people say" section to the hero/landing area with a handful of real short quotes (name + platform, no fabricated star ratings beyond what the source shows).
+
+---
+
+## F. Handoff note — 2026-08-27 session (for next session)
+
+Big session — v3 site redesign, a batch of ordering-flow follow-ups, SEO work, a curated-reviews system, Google Maps checkout, and packing/GST. All pushed to `master`; commits `88f5c08` through `b1cdc9c` cover the follow-up-features and SEO/reviews/GST work specifically (`git log --oneline` for the full list). Summarizing what's **still open** rather than re-describing everything already shipped and verified.
+
+### Needs your action (not code — real-world steps)
+
+1. **Google Maps/Places in production** — was mid-troubleshoot when this session ended. Root cause found: 7 different API keys exist in the Google Cloud console (all created the same day), and there's no way to tell which value actually made it into Railway's env vars. Agreed fix: use the key named **"API key 3"** (no restrictions, works for both purposes) for both `GOOGLE_MAP_API_KEY` and `GOOGLE_PLACES_API_KEY` in Railway, with `GOOGLE_PLACE_ID=ChIJUTRGijNmUjoRsJrKQ5jJBM8`. **Confirm this is actually done and working** — last verified state was still broken. Once confirmed stable, delete the other 6 unused keys in Cloud Console to stop this recurring.
+2. **Borzo is still in test**, per the user directly — don't trust `.env`'s production-looking URL/token as a signal either way, ask directly before assuming.
+3. **GST rate/registration** — the 5% figure and the "restaurant is GST-registered" conclusion are inferred from Swiggy CSV patterns (see commit `b1cdc9c` message for the exact evidence), not confirmed with a CA. Worth an actual 10-minute check before this matters for real money. Also worth checking whether Kavita's dine-in bills already itemize GST — if so, that's one more reason the itemized checkout approach is right.
+4. **Packing fee amounts** (₹20 flat / ₹40 for orders ≥ ₹1000, in `app/config.py`) are starting estimates, not measured numbers — retune based on actual container/packaging cost.
+5. **"Offset GST via commission savings" idea** — user's own idea, explicitly deferred, not built. `orders.gst_for()` is kept as a single isolated function specifically so this is a small follow-up later, not a rewrite.
+6. **Admin Reviews tab is empty of real content** — the system (`/admin` → Reviews) works and is verified, but someone needs to actually type in real quotes (physical stickers, WhatsApp praise, Swiggy/Zomato reviews) and toggle them featured. Swiggy/Zomato platform numbers are already filled in with real figures; Google's rating auto-refreshes once the Maps API key issue above is resolved.
+7. **GA4 conversion events** — base `gtag.js` is live site-wide, but nothing fires custom events yet (`click_to_call`, `click_to_whatsapp`, `order_form_submit`) — explicitly put on hold by the user ("we will do ga4, keep in mind"), not forgotten.
+8. **PageSpeed/Lighthouse check** — never actually run against the live site this session. Worth doing once before treating the technical SEO work as fully closed.
+9. **Google Business Profile** — manual work only (photos, attributes, weekly Posts, replying to reviews), can't be touched from code. Per the SEO research this session, still the single highest-leverage item left.
+
+### Cashfree — researched, not built
+
+`pay/cashfree-agent-skills.md` (untracked, still just this one file) is a doc about installing Cashfree's *AI-assistant reference skills* via `npx @cashfreepayments/agent-skills` — not an actual integration, and running that installer wasn't done this session (would write a `cashfree-skills/` tree + `CLAUDE.md` manifest at repo root — fine to do later, just noting it hasn't happened). Pulled the real Cashfree docs directly instead:
+
+- Auth: `x-client-id` / `x-client-secret` / `x-api-version` headers; sandbox at `sandbox.cashfree.com/pg/`, production at `api.cashfree.com/pg/`. Separate credential pairs per product (Payments vs Payouts) and per environment.
+- `POST /pg/orders` (Create Order) takes `order_amount`, `order_currency`, `customer_details` (`customer_id`, `customer_phone`), optional `order_id`; returns `payment_session_id`.
+- For a server-rendered site like this one (not a JS SPA), **Hosted Checkout** is the right flow — redirect the browser using the `payment_session_id`, not the JS Drop-in/Elements SDK.
+- Payment confirmation needs a **webhook** (same signature-verification pattern already built for Borzo in `app/webhooks.py`) — a return-URL redirect alone isn't trustworthy for marking an order paid.
+- Couldn't load the hosted-checkout integration page or the webhook signature-verification page this pass (both 404'd — Cashfree's docs site structure seems to have shifted under the URLs their own `llms.txt` index pointed at). Re-fetch `https://www.cashfree.com/docs/llms.txt` for current paths once mom's verification actually completes and real sandbox keys exist — better to build against a live sandbox than docs pages that won't load anyway.
+- Mom's "in verification stage" almost certainly means Cashfree's own KYC on their dashboard, not anything in this repo.
+
+### Petpooja Online Ordering API — quote received, needs a decision
+
+Petpooja (or a partner) emailed offering order-relay APIs into Petpooja — the POS system this business already appears to use (inferred from the "Container Charge" line and report structure in the daywise/itemwise CSVs analyzed this session). Quote: **₹3,000/outlet/year, exclusive of GST**. Docs at `https://onlineorderingapisv210.docs.apiary.io/` — contact is Malvi Vaghela. Their note: the "Fetch Menu API" is deprecated, use "Menu Push API" instead.
+
+**Could not review the actual spec this session** — the Apiary.io-hosted docs returned a hard `502 Bad Gateway` from Akamai's edge (confirmed via direct `curl`, not a one-off glitch), consistent with Apiary.io's general decline since Oracle's acquisition years ago. Before replying to Malvi with a feasibility answer:
+1. Retry that URL (or ask her for a PDF/alternate copy if it's still down).
+2. Once readable, check: does this *push* our web orders into Petpooja (so they print on the same kitchen ticket printer as Swiggy/Zomato orders, and show up in one unified sales/GST report), or does it only *pull* menu/order data the other direction? The email's wording ("order relay to Petpooja") suggests push, which would be the valuable direction — it'd mean building one more outbound API call from `app/orders.py` (same shape as the existing Borzo/Shiprocket dispatch calls), and would directly help the GST reconciliation problem from this session (right now, direct-website orders live only in this app's own SQLite DB, invisible to whatever system Kavita actually files taxes from).
+3. ₹3,000/year is cheap relative to that value *if* it's genuinely push-to-POS — but confirm what "generic APIs" actually covers (do they build the connector, or do we, using their endpoints?) before committing.
+
+### Open from earlier sessions, still unresolved
+- WhatsApp Business verification status — last known: still pending Meta review.
+- §E "Open questions" above (BSP/partner name check, min-order UX decision) — never confirmed answered in any later session note; worth a fresh look rather than assuming still relevant.
