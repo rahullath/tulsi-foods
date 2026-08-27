@@ -632,6 +632,14 @@ def admin_today_orders(x_admin_token: str | None = Header(None)):
     return {"orders": db.today_orders()}
 
 
+@app.get("/api/admin/scheduled-orders")
+def admin_scheduled_orders(x_admin_token: str | None = Header(None)):
+    """All upcoming scheduled orders (any creation date) — the Scheduled
+    tab's planning view, since today_orders() only covers today."""
+    _check_admin(x_admin_token)
+    return {"orders": db.upcoming_scheduled_orders()}
+
+
 # ---- admin: dispatch (Food Ready) ----
 
 @app.post("/api/admin/orders/{order_id}/dispatch")

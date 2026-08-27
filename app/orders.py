@@ -7,8 +7,24 @@ from . import db, menu
 from .config import DELIVERY_ZONES, FREE_DELIVERY_ABOVE
 
 ADDRESS_EDIT_WINDOW = timedelta(minutes=3)
+MAX_SCHEDULE_AHEAD = timedelta(days=14)
 
 _LANDMARK_RE = re.compile(r"\s*\(Landmark:\s*(.*?)\)\s*$", re.IGNORECASE)
+
+
+def _validate_scheduled_at(scheduled_at: str | None) -> None:
+    """scheduled_at arrives as a UTC ISO string (JS Date.toISOString())."""
+    if not scheduled_at:
+        return
+    try:
+        when = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        raise OrderError("Invalid scheduled time", 400)
+    now = datetime.utcnow()
+    if when < now - timedelta(minutes=5):
+        raise OrderError("That time has already passed", 400)
+    if when > now + MAX_SCHEDULE_AHEAD:
+        raise OrderError("We only take orders up to 2 weeks ahead", 400)
 
 
 def _split_landmark(address: str) -> tuple[str, str | None]:
@@ -134,6 +150,7 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                  lat: str | None = None, lng: str | None = None) -> dict:
     if order_type not in ("delivery", "pickup"):
         raise OrderError("Invalid order_type", 400)
+    _validate_scheduled_at(scheduled_at)
 
     lines, subtotal = build_lines(items)
 

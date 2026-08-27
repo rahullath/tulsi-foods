@@ -26,8 +26,21 @@
     setTimeout(() => el.remove(), 2500);
   }
 
+  function isScheduledForFutureDay(dateStr) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return d.getTime() > today.getTime();
+  }
+
   function formatScheduled(dateStr) {
-    return "FOR " + new Date(dateStr).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }).toUpperCase();
+    const d = new Date(dateStr);
+    const time = d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }).toUpperCase();
+    if (isScheduledForFutureDay(dateStr)) {
+      const day = d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
+      return `FOR ${day}, ${time}`;
+    }
+    return "FOR " + time;
   }
 
   function timeSince(dateStr) {
@@ -74,6 +87,7 @@
   const PROGRESS = { new: 0, preparing: 1, ready: 2, out_for_delivery: 3, delivered: 4 };
 
   let allOrders = [];
+  let scheduledOrders = [];
 
   function renderOrder(o) {
     const meta = STATUS_META[o.status] || STATUS_META.new;
@@ -158,13 +172,21 @@
     const list = document.getElementById("orders-list");
     const empty = document.getElementById("orders-empty");
     list.innerHTML = "";
-    const filtered = allOrders.filter(o => {
-      if (activeFilter === "all") return true;
-      if (activeFilter === "live") return ["new", "preparing", "ready", "out_for_delivery"].includes(o.status);
-      if (activeFilter === "scheduled") return !!o.scheduled_at && !["delivered", "cancelled"].includes(o.status);
-      if (activeFilter === "done") return ["delivered", "cancelled"].includes(o.status);
-      return true;
-    });
+    // Scheduled is a planning view across ALL days, not just today — it has
+    // its own data source (today_orders() only ever looks at today, so a
+    // 10-day-out order would otherwise vanish until its actual due date).
+    let filtered = activeFilter === "scheduled"
+      ? scheduledOrders
+      : allOrders.filter(o => {
+        if (activeFilter === "all") return true;
+        // Live = needs kitchen action today. An order scheduled for a future
+        // day shouldn't sit in today's action queue — it belongs in Scheduled
+        // until its actual day arrives, so it can't get started on by mistake.
+        if (activeFilter === "live") return ["new", "preparing", "ready", "out_for_delivery"].includes(o.status)
+          && !isScheduledForFutureDay(o.scheduled_at);
+        if (activeFilter === "done") return ["delivered", "cancelled"].includes(o.status);
+        return true;
+      });
     empty.hidden = filtered.length > 0;
     for (const o of filtered) list.appendChild(renderOrder(o));
     list.querySelectorAll(".action-primary").forEach(btn => {
@@ -193,15 +215,13 @@
     try {
       const d = await api("/api/admin/today-orders");
       allOrders = d.orders;
-      const live = allOrders.filter(o => ["new", "preparing", "ready", "out_for_delivery"].includes(o.status));
+      const live = allOrders.filter(o => ["new", "preparing", "ready", "out_for_delivery"].includes(o.status)
+        && !isScheduledForFutureDay(o.scheduled_at));
       const done = allOrders.filter(o => ["delivered", "cancelled"].includes(o.status));
-      const scheduled = allOrders.filter(o => o.scheduled_at && !["delivered", "cancelled"].includes(o.status));
       const total = allOrders.reduce((s, o) => s + (o.total || 0), 0);
       const chipLive = document.querySelector('[data-filter="live"]');
-      const chipScheduled = document.querySelector('[data-filter="scheduled"]');
       const chipDone = document.querySelector('[data-filter="done"]');
       if (chipLive) chipLive.textContent = `Live · ${live.length}`;
-      if (chipScheduled) chipScheduled.textContent = `Scheduled · ${scheduled.length}`;
       if (chipDone) chipDone.textContent = `Done · ${done.length}`;
       document.getElementById("day-summary").textContent = `${allOrders.length} orders · ${money(total)}`;
       renderFilteredOrders();
@@ -209,6 +229,16 @@
       document.getElementById("orders-empty").textContent = "Failed to load: " + e.message;
       document.getElementById("orders-empty").hidden = false;
     }
+  }
+
+  async function loadScheduledOrders() {
+    try {
+      const d = await api("/api/admin/scheduled-orders");
+      scheduledOrders = d.orders;
+      const chipScheduled = document.querySelector('[data-filter="scheduled"]');
+      if (chipScheduled) chipScheduled.textContent = `Scheduled · ${scheduledOrders.length}`;
+      if (activeFilter === "scheduled") renderFilteredOrders();
+    } catch (e) { /* non-fatal — chip just keeps its last count */ }
   }
 
   async function advanceOrder(orderId, nextStatus, btn) {
@@ -222,6 +252,7 @@
       });
       toast(`Order #${orderId} → ${nextStatus}`);
       loadOrders();
+      loadScheduledOrders().catch(() => {});
     } catch (e) {
       btn.textContent = "Failed: " + e.message;
       btn.disabled = false;
@@ -503,6 +534,7 @@
 
   // ---- Init ----
   loadOrders();
+  loadScheduledOrders().catch(() => {});
   loadMenu().catch(() => {});
   loadConvos().catch(() => {});
   loadDayStats().catch(() => {});
@@ -510,4 +542,5 @@
   loadPlatformStats().catch(() => {});
   loadOrderCount().catch(() => {});
   setInterval(loadOrders, 30000);
+  setInterval(loadScheduledOrders, 30000);
 })();

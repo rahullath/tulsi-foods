@@ -169,7 +169,9 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .checkout-field { margin-bottom: 14px; }
 .checkout-field label { display: block; font-size: 13px; color: var(--sub); margin-bottom: 4px; }
 .checkout-field input, .checkout-field select, .checkout-field textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; background: #fff; }
+.schedule-date-select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; margin-bottom: 8px; }
 .time-pills { display: flex; gap: 7px; }
+.time-pill[hidden] { display: none; }
 .time-pill { flex: 1; text-align: center; background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px; font-size: 13px; cursor: pointer; color: var(--ink); }
 .time-pill.active { background: var(--g); color: #fff; border-color: var(--g); font-weight: 600; }
 .saved-addr-list { display: flex; flex-direction: column; gap: 8px; }
@@ -188,6 +190,11 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .checkout-summary { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 14px; }
 .checkout-row { display: flex; justify-content: space-between; padding: 4px 0; }
 .checkout-row.total { font-weight: 700; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; font-size: 16px; }
+.checkout-nudge { background: #FBF0DE; border: 1px solid #EFDFC2; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
+.checkout-nudge-title { font-size: 13px; font-weight: 600; color: #8A5A12; }
+.checkout-nudge-sub { font-size: 12px; color: #8A5A12; opacity: .85; margin-top: 3px; line-height: 1.5; }
+.checkout-nudge-chips { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.nudge-chip { background: #fff; border: 1px solid #EFDFC2; border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; color: #8A5A12; cursor: pointer; }
 .checkout-place { width: 100%; background: var(--g); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 600; cursor: pointer; }
 .checkout-place:disabled { opacity: .6; cursor: not-allowed; }
 .checkout-msg { font-size: 13px; margin-top: 8px; text-align: center; }
@@ -241,12 +248,14 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 
   let activeCategory = "all";
 
-  // Build price/name lookup
+  // Build price/name/availability lookup
+  const AVAILABLE = {};
   document.querySelectorAll(".menu-card").forEach(card => {
     const id = card.dataset.id;
     const priceEl = card.querySelector(".card-price");
     if (priceEl) PRICES[id] = parseInt(priceEl.textContent.replace(/[₹,]/g, ""));
-    NAMES[id] = card.dataset.name;
+    NAMES[id] = card.querySelector(".card-name")?.textContent || card.dataset.name;
+    AVAILABLE[id] = !card.classList.contains("off");
   });
 
   // Restore cart from a previous visit
@@ -366,12 +375,18 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           ${items}
           <div class="checkout-row total"><span>Total</span><span>₹${subtotal}</span></div>
         </div>
+        <div class="checkout-nudge" id="checkout-nudge" hidden>
+          <div class="checkout-nudge-title">One delivery, however much you order</div>
+          <div class="checkout-nudge-sub">The rider costs the same either way — worth adding a little.</div>
+          <div class="checkout-nudge-chips"></div>
+        </div>
         <form id="checkout-form">
           <div class="checkout-field"><label>Name</label><input name="name" required placeholder="Your name"></div>
           <div class="checkout-field"><label>Phone</label><input name="phone" required placeholder="10-digit number" pattern="[0-9]{10,}"></div>
           <div class="checkout-field"><label>Order type</label><select name="order_type"><option value="delivery">Delivery</option><option value="pickup">Pickup</option></select></div>
           <div class="checkout-field">
             <label>When do you want it?</label>
+            <select id="schedule-date" class="schedule-date-select"></select>
             <div class="time-pills" id="time-pills">
               <button type="button" class="time-pill active" data-preset="asap">As soon as possible</button>
               <button type="button" class="time-pill" data-preset="lunch">Lunch, 12:30</button>
@@ -411,6 +426,42 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 
     overlay.querySelector("#checkout-close").addEventListener("click", () => overlay.remove());
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+
+    // Small-cart nudge: cheap, quick-add items shown while the order is
+    // light — no minimum order exists, but delivery costs the same either
+    // way, so it's worth surfacing an easy add rather than nothing at all.
+    const UPSELL_ITEMS = ["roasted-papad", "masala-chai", "masala-thumsup"];
+    const UPSELL_THRESHOLD = 300;
+
+    function refreshCheckoutSummary() {
+      const currentIds = Object.keys(cart);
+      const currentSubtotal = currentIds.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
+      overlay.querySelector(".checkout-summary").innerHTML =
+        currentIds.map(id => `<div class="checkout-row"><span>${NAMES[id]} × ${cart[id]}</span><span>₹${(PRICES[id] || 0) * cart[id]}</span></div>`).join("")
+        + `<div class="checkout-row total"><span>Total</span><span>₹${currentSubtotal}</span></div>`;
+
+      const nudge = overlay.querySelector("#checkout-nudge");
+      const candidates = UPSELL_ITEMS.filter(id => !cart[id] && PRICES[id] != null && AVAILABLE[id]);
+      if (currentSubtotal > 0 && currentSubtotal < UPSELL_THRESHOLD && candidates.length) {
+        nudge.hidden = false;
+        nudge.querySelector(".checkout-nudge-chips").innerHTML = candidates.map(id =>
+          `<button type="button" class="nudge-chip" data-id="${id}">+ ${NAMES[id]} ₹${PRICES[id]}</button>`
+        ).join("");
+        nudge.querySelectorAll(".nudge-chip").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = btn.dataset.id;
+            cart[id] = (cart[id] || 0) + 1;
+            updateCart();
+            const stepperQty = document.querySelector(`.card-stepper[data-id="${id}"] .qty`);
+            if (stepperQty) stepperQty.textContent = String(cart[id]);
+            refreshCheckoutSummary();
+          });
+        });
+      } else {
+        nudge.hidden = true;
+      }
+    }
+    refreshCheckoutSummary();
 
     const form = overlay.querySelector("#checkout-form");
     const inputLat = overlay.querySelector("#input-lat");
@@ -529,23 +580,53 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       }, 400);
     });
 
-    // Time pills: ASAP sends no scheduled_at; Lunch/Dinner compute the next
-    // occurrence of that time (today, or tomorrow if it's already passed).
-    function presetTime(hour, minute) {
-      const d = new Date();
-      d.setHours(hour, minute, 0, 0);
-      if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
-      return d.toISOString();
-    }
+    // Date + time scheduling, up to 2 weeks out. ASAP only makes sense for
+    // today; picking a future date auto-switches off it since "as soon as
+    // possible" 9 days from now isn't a real option.
+    const SCHEDULE_DAYS = 14;
     const scheduledInput = overlay.querySelector("#input-scheduled");
+    const dateSelect = overlay.querySelector("#schedule-date");
+    const asapPill = overlay.querySelector('.time-pill[data-preset="asap"]');
+    const lunchPill = overlay.querySelector('.time-pill[data-preset="lunch"]');
+
+    dateSelect.innerHTML = Array.from({ length: SCHEDULE_DAYS }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const label = i === 0 ? "Today" : i === 1 ? "Tomorrow"
+        : d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+      return `<option value="${i}">${label}</option>`;
+    }).join("");
+
+    function dateAtOffset(dayOffset, hour, minute) {
+      const d = new Date();
+      d.setDate(d.getDate() + dayOffset);
+      d.setHours(hour, minute, 0, 0);
+      return d;
+    }
+
+    function updateScheduledAt() {
+      const dayOffset = Number(dateSelect.value);
+      const preset = overlay.querySelector(".time-pill.active")?.dataset.preset || "asap";
+      if (preset === "lunch") scheduledInput.value = dateAtOffset(dayOffset, 12, 30).toISOString();
+      else if (preset === "dinner") scheduledInput.value = dateAtOffset(dayOffset, 20, 0).toISOString();
+      else scheduledInput.value = "";
+    }
+
+    dateSelect.addEventListener("change", () => {
+      const isToday = dateSelect.value === "0";
+      asapPill.hidden = !isToday;
+      if (!isToday && asapPill.classList.contains("active")) {
+        asapPill.classList.remove("active");
+        lunchPill.classList.add("active");
+      }
+      updateScheduledAt();
+    });
+
     overlay.querySelectorAll(".time-pill").forEach(pill => {
       pill.addEventListener("click", () => {
         overlay.querySelectorAll(".time-pill").forEach(p => p.classList.remove("active"));
         pill.classList.add("active");
-        const preset = pill.dataset.preset;
-        scheduledInput.value = preset === "lunch" ? presetTime(12, 30)
-          : preset === "dinner" ? presetTime(20, 0)
-          : "";
+        updateScheduledAt();
       });
     });
 

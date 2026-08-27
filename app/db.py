@@ -391,15 +391,7 @@ def customer_orders(phone: str, limit: int = 5) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def today_orders() -> list[dict]:
-    """Today's orders with full details for admin dashboard."""
-    conn = get_conn()
-    rows = conn.execute(
-        "SELECT o.*, c.name AS customer_name, c.phone AS customer_phone "
-        "FROM orders o LEFT JOIN customers c ON c.id=o.customer_id "
-        "WHERE date(o.created_at) = date('now') "
-        "ORDER BY o.id DESC"
-    ).fetchall()
+def _orders_with_items(rows) -> list[dict]:
     result = []
     for r in rows:
         d = dict(r)
@@ -411,6 +403,39 @@ def today_orders() -> list[dict]:
         ic.close()
         d["items"] = [dict(i) for i in items]
         result.append(d)
+    return result
+
+
+def today_orders() -> list[dict]:
+    """Orders for the admin dashboard's main view: placed today, OR placed
+    earlier but scheduled for today (a 2-week-ahead order has to actually
+    surface on the day it's due, not just on the day it was created)."""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT o.*, c.name AS customer_name, c.phone AS customer_phone "
+        "FROM orders o LEFT JOIN customers c ON c.id=o.customer_id "
+        "WHERE date(o.created_at) = date('now') "
+        "   OR (o.scheduled_at IS NOT NULL AND date(o.scheduled_at) = date('now')) "
+        "ORDER BY o.id DESC"
+    ).fetchall()
+    result = _orders_with_items(rows)
+    conn.close()
+    return result
+
+
+def upcoming_scheduled_orders() -> list[dict]:
+    """Every not-yet-fulfilled order with a scheduled time, regardless of
+    which day it was placed on — the Scheduled tab's planning view. Without
+    this, an order placed today for 10 days out would vanish from every
+    admin view in between (today_orders() only ever looks at today)."""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT o.*, c.name AS customer_name, c.phone AS customer_phone "
+        "FROM orders o LEFT JOIN customers c ON c.id=o.customer_id "
+        "WHERE o.scheduled_at IS NOT NULL AND o.status NOT IN ('delivered', 'cancelled') "
+        "ORDER BY o.scheduled_at ASC"
+    ).fetchall()
+    result = _orders_with_items(rows)
     conn.close()
     return result
 
