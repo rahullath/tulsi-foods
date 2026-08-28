@@ -107,6 +107,12 @@ def build_menu_schema(groups: list[dict]) -> dict:
     }
 
 
+@app.get("/mxt0vtchhifb4bxbj27i4aw1em76ra.html", response_class=PlainTextResponse)
+def facebook_domain_verification():
+    # Meta Business (Facebook) domain ownership verification HTML file.
+    return PlainTextResponse("mxt0vtchhifb4bxbj27i4aw1em76ra")
+
+
 @app.get("/menu", response_class=HTMLResponse)
 def menu_page(request: Request):
     groups = menu.grouped()
