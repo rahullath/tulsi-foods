@@ -238,12 +238,24 @@ def _send_status_whatsapp_if_needed(order: dict, status: str) -> None:
         if not phone:
             return
         oid = order["id"]
+        cname = order.get("customer_name") or "there"
+        t = lambda *params: [{"type": "text", "text": str(p)} for p in params]
         if status == "delivered":
+            try:
+                client.send_template(phone, "order_delivered", "en", t(cname, oid))
+                return
+            except Exception:
+                pass
             msg = (
                 f"Order #{oid} delivered! Enjoy your meal 🙏 If anything wasn't right, reply here and we'll fix it.\n\n"
                 f"If you did enjoy it, an honest Google review helps our small kitchen a lot."
             )
         elif status == "cancelled":
+            try:
+                client.send_template(phone, "order_cancelled_1", "en", t(cname, oid, "0"))
+                return
+            except Exception:
+                pass
             msg = f"Order #{oid} has been cancelled."
         else:
             return  # don't spam for intermediate statuses

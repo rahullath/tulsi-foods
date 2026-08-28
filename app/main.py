@@ -512,24 +512,30 @@ def admin_update_order_status(order_id: int, body: StatusIn,
 
 
 def _send_status_whatsapp(order: dict, status: str) -> None:
-    """Send status update to customer. Uses template if available, falls back to text."""
+    """Send status update to customer. Uses pre-approved template if available, falls back to text."""
     try:
         from .whatsapp import client
         phone = order.get("customer_phone", "")
         if not phone:
             return
         oid = order["id"]
-        # Map status → template name + params
+        cname = order.get("customer_name") or "there"
+        t = lambda *params: [{"type": "text", "text": str(p)} for p in params]
+        # Map status → (template name, params). Uses Meta pre-approved templates.
         templates = {
-            "preparing": ("order_preparing", [{"type": "text", "text": str(oid)}]),
-            "ready": (
-                ("order_out_for_delivery" if order["order_type"] == "delivery" else "order_preparing"),
-                [{"type": "text", "text": str(oid)},
-                 {"type": "text", "text": order.get("sr_courier") or "the restaurant"},
-                 {"type": "text", "text": ""}],
-            ),
-            "delivered": ("order_delivered", []),
+            "preparing": ("order_update_1", t(cname, oid)),
         }
+        if order["order_type"] == "pickup":
+            templates["ready"] = (
+                "order_pick_up_1",
+                t(cname, oid, order.get("delivery_address") or "Tulsi Foods, Alwarpet"),
+            )
+        else:
+            templates["ready"] = ("order_confirmed", t(cname, oid))
+        templates["delivered"] = ("order_delivered", t(cname, oid))
+        templates["cancelled"] = ("order_cancelled_1", t(cname, oid, "0"))
+        templates["out_for_delivery"] = ("delivery_confirmation_1", t(cname, oid))
+
         if status in templates:
             tpl_name, params = templates[status]
             try:
@@ -545,6 +551,9 @@ def _send_status_whatsapp(order: dict, status: str) -> None:
                 msg = f"Order #{oid} is ready for pickup! Come and collect."
             else:
                 msg = f"Order #{oid} is ready! Dispatching shortly."
+        elif status == "out_for_delivery":
+            track = order.get("sr_tracking_url") or "we will update you"
+            msg = f"Order #{oid} is on its way! 🛵 Track: {track}."
         elif status == "delivered":
             msg = (
                 f"Order #{oid} delivered. Enjoy your meal 🙏 If anything wasn't right, reply here and we'll fix it.\n\n"
@@ -723,12 +732,21 @@ def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)
 
 
 def _send_dispatch_whatsapp(order: dict, dispatch: dict) -> None:
-    """Send tracking notification to customer via WhatsApp."""
+    """Send tracking notification to customer via WhatsApp (delivery_update template)."""
     try:
         from .whatsapp import client
         phone = order.get("customer_phone", "")
         if not phone:
             return
+        try:
+            params = [
+                {"type": "text", "text": str(order.get("customer_name") or "there")},
+                {"type": "text", "text": str(order["id"])},
+            ]
+            client.send_template(phone, "order_shipped", "en", params)
+            return
+        except Exception:
+            pass  # fall back to text
         msg = (
             f"Your order #{order['id']} is on its way! 🛵\n"
             f"Courier: {dispatch['courier_name']}\n"
