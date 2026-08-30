@@ -232,33 +232,12 @@ def _handle_borzo_order_status(order_id: int, status: str, order: dict) -> None:
 
 
 def _send_status_whatsapp_if_needed(order: dict, status: str) -> None:
-    """Send WhatsApp notification on delivery status change (non-fatal)."""
-    try:
-        phone = order.get("customer_phone", "")
-        if not phone:
-            return
-        oid = order["id"]
-        cname = order.get("customer_name") or "there"
-        t = lambda *params: [{"type": "text", "text": str(p)} for p in params]
-        if status == "delivered":
-            try:
-                client.send_template(phone, "order_delivered", "en", t(cname, oid))
-                return
-            except Exception:
-                pass
-            msg = (
-                f"Order #{oid} delivered! Enjoy your meal 🙏 If anything wasn't right, reply here and we'll fix it.\n\n"
-                f"If you did enjoy it, an honest Google review helps our small kitchen a lot."
-            )
-        elif status == "cancelled":
-            try:
-                client.send_template(phone, "order_cancelled_1", "en", t(cname, oid, "0"))
-                return
-            except Exception:
-                pass
-            msg = f"Order #{oid} has been cancelled."
-        else:
-            return  # don't spam for intermediate statuses
-        client.send_text(phone, msg)
-    except Exception:
-        pass  # non-fatal
+    """Send notification on delivery status change (non-fatal).
+
+    Only delivered/cancelled move the customer to act/settle up; intermediate
+    webhook statuses are handled by the dispatch flow, so skip them here.
+    """
+    if status not in ("delivered", "cancelled"):
+        return
+    from .notify import notify_status
+    notify_status(order, status)

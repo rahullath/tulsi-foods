@@ -231,6 +231,22 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   const PACKING_FEE_THRESHOLD = {{ packing_fee_threshold }};
   const GST_RATE = {{ gst_rate }};
   const GST_ENABLED = {{ "true" if gst_enabled else "false" }};
+  const UPI_VPA = "{{ upi_vpa }}";
+  const UPI_PAYEE = "{{ upi_payee_name }}";
+
+  // Build a UPI Intent deep-link: opens the customer's UPI app pre-filled with
+  // Tulsi's VPA, the order amount and a transaction ref = the order id.
+  function upiLink(amount, txnRef) {
+    if (!UPI_VPA) return "";
+    const p = new URLSearchParams();
+    p.set("pa", UPI_VPA);
+    p.set("pn", UPI_PAYEE);
+    p.set("am", amount);
+    p.set("cu", "INR");
+    p.set("tr", txnRef);
+    p.set("tn", "Tulsi Foods order " + txnRef);
+    return "upi://pay?" + p.toString();
+  }
 
   function packingFeeFor(subtotal) {
     if (!PACKING_FEE) return 0;
@@ -437,7 +453,15 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             <div style="font-size:11px;color:#6F7468;margin-top:4px;">This is the one thing riders actually ask for.</div>
           </div>
           <div class="checkout-field" id="pin-field"><label>Pincode</label><input name="pincode" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode"></div>
-          <div class="checkout-field"><label>Payment</label><select name="payment_method"><option value="cod">Cash on delivery</option><option value="upi">UPI</option></select></div>
+          <div class="checkout-field"><label>Payment</label><select name="payment_method" id="payment-method">
+            <option value="cod">Cash on delivery</option>
+            {% if upi_vpa %}<option value="upi">Pay by UPI</option>{% endif %}
+          </select></div>
+          {% if upi_vpa %}
+          <div class="checkout-field" id="upi-pay-field" hidden>
+            <div class="checkout-row"><span>UPI</span><span>Pay after placing — we'll show you the exact amount.</span></div>
+          </div>
+          {% endif %}
           <div class="checkout-field"><label>Note</label><input name="instructions" placeholder="e.g. no coriander"></div>
           <button type="submit" class="checkout-place">Place order</button>
           <div class="checkout-msg" id="checkout-msg"></div>
@@ -497,6 +521,14 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     const inputLat = overlay.querySelector("#input-lat");
     const inputLng = overlay.querySelector("#input-lng");
     let gMap = null, gMarker = null, gGeocoder = null;
+
+    const paySelect = overlay.querySelector("#payment-method");
+    const upiField = overlay.querySelector("#upi-pay-field");
+    if (paySelect && upiField) {
+      const syncPaymentUI = () => { upiField.hidden = paySelect.value !== "upi"; };
+      paySelect.addEventListener("change", syncPaymentUI);
+      syncPaymentUI();
+    }
 
     function reverseGeocode(lat, lng) {
       const preview = overlay.querySelector("#map-address-preview");
@@ -719,12 +751,22 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         updateCart();
         document.querySelectorAll(".card-stepper .qty").forEach(el => el.textContent = "0");
         const isDelivery = payload.order_type === "delivery" && payload.address;
+        const isUpi = payload.payment_method === "upi" && UPI_VPA;
         overlay.querySelector(".checkout-panel").innerHTML = `
           <button class="checkout-close" id="checkout-close-2">✕</button>
           <div class="checkout-success">
-            <div class="checkout-success-icon">✓</div>
-            <div class="checkout-title">Order placed!</div>
-            <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}<br>We'll message you on WhatsApp with updates.</p>
+            <div class="checkout-success-icon">${isUpi ? "₹" : "✓"}</div>
+            <div class="checkout-title">${isUpi ? "Pay to confirm your order" : "Order placed!"}</div>
+            <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}<br>
+              ${isUpi ? "Pay now — we start cooking once it's confirmed." : "Track it live — no app needed."}</p>
+            ${isUpi ? `
+              <a class="checkout-place" id="upi-pay-now" style="text-decoration:none;display:inline-block;margin-bottom:10px"
+                 href="${upiLink(data.total, data.order_id)}">Pay ₹${data.total} with UPI app →</a>
+              <p style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
+                Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Your UPI app will open pre-filled.
+                We confirm the payment, then start your order.</p>
+            ` : ""}
+            <a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px" href="/track/${data.order_id}">Track my order ↳</a>
             <button class="checkout-place" id="checkout-continue">Continue browsing</button>
             ${isDelivery ? `<div class="edit-window" id="edit-window">
               <div class="edit-window-text">Wrong address? You have <span id="edit-countdown">3:00</span> to fix it.</div>

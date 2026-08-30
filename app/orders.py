@@ -206,6 +206,16 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
             db.add_customer_address(cid, base_address, landmark=landmark, lat=lat, lng=lng)
         except Exception:
             pass  # address book is a convenience, never block order creation
+
+    # Kitchen alert (mom) — Telegram DMs her, never blocks the order flow.
+    try:
+        from .telegram import notify_new_order
+        order_row = db.get_order(oid)
+        if order_row is not None:
+            notify_new_order(order_row)
+    except Exception:
+        pass
+
     return {"order_id": oid, "status": "new", "subtotal": round(subtotal, 2),
             "packing_fee": packing_fee, "gst_amount": gst_amount,
             "delivery_fee": delivery_fee, "total": round(total, 2)}

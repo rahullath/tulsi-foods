@@ -88,6 +88,34 @@
 
   let allOrders = [];
   let scheduledOrders = [];
+  let seenOrderIds = new Set();
+
+  // Beep + flash the tab when a brand-new order arrives (fallback for when the
+  // kitchen isn't on Telegram). Uses the WebAudio API — no audio file needed.
+  function beepNewOrder(n) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.18, 0.36].forEach((delay, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.value = i === 2 ? 988 : 784;  // G5, G5, B5
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.22);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.25);
+      });
+    } catch (e) { /* audio unavailable — skip */ }
+    if (n === 1) {
+      toast(`🔔 New order!`);
+    } else if (n > 1) {
+      toast(`🔔 ${n} new orders!`);
+    }
+    document.title = `(${n}) New order · Tulsi Admin`;
+    setTimeout(() => { document.title = "Tulsi Admin"; }, 8000);
+  }
 
   function renderOrder(o) {
     const meta = STATUS_META[o.status] || STATUS_META.new;
@@ -224,6 +252,12 @@
   async function loadOrders() {
     try {
       const d = await api("/api/admin/today-orders");
+      const freshIds = new Set(d.orders.map(o => o.id));
+      const isFirstLoad = seenOrderIds.size === 0;
+      const newOnes = [...freshIds].filter(id => !seenOrderIds.has(id)
+        && d.orders.find(o => o.id === id && !["delivered", "cancelled"].includes(o.status)));
+      if (!isFirstLoad && newOnes.length) beepNewOrder(newOnes.length);
+      seenOrderIds = freshIds;
       allOrders = d.orders;
       const live = allOrders.filter(o => ["new", "preparing", "ready", "out_for_delivery"].includes(o.status)
         && !isScheduledForFutureDay(o.scheduled_at));

@@ -62,12 +62,66 @@ WHATSAPP_GRAPH_URL = "https://graph.facebook.com"
 # If set, the bot appends replies here instead of sending to WhatsApp (dev mode)
 WHATSAPP_DRY_LOG = os.environ.get("WHATSAPP_DRY_LOG", "data/whatsapp.log")
 
+# Master switch for outbound WhatsApp. Set to "1" once Meta business verification
+# completes and the number is registered; until then, status notifications are
+# routed to the SMS fallback (Twilio). Flip this (no code change) to go live.
+WHATSAPP_ACTIVE = os.environ.get("WHATSAPP_ACTIVE", "") == "1"
+
+# Twilio SMS fallback (used when WhatsApp templates/number aren't verified yet).
+# Auth via API Key SID + secret, scoped to an Account SID (SDK pattern).
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_ID", "")   # AC...
+TWILIO_API_KEY = os.environ.get("TWILIO_SID", "")              # SK...
+TWILIO_API_SECRET = os.environ.get("TWILIO_CLIENT_SECRET", "")
+TWILIO_FROM = os.environ.get("TWILIO_FROM", "")                # E.164 sender / sender ID
+# Trial accounts (verified recipients + pre-defined templates only) block custom
+# bodies with error 572006 and only deliver to verified numbers — so on trial the
+# client SKIPS (can't send meaningful order SMS). Set to "1" while on the free
+# trial; flip to "" after upgrading to a paid account with an Indian DLT sender
+# ID for real free-form order-status SMS.
+TWILIO_TRIAL = os.environ.get("TWILIO_TRIAL", "1") == "1"
+TWILIO_API_URL = "https://api.twilio.com"
+
+# Telegram admin-alert on new orders (no Meta, no sender-ID). Sends mom a message
+# when an order lands so she knows without opening admin. TELEGRAM_BOT_TOKEN from
+# @BotFather; TELEGRAM_CHAT_ID is her bot-chat id (talk to @userinfobot to get it).
+# Empty token = disabled; the admin page beep remains the fallback.
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+# Static UPI payment collection (no gateway needed). When a customer pays by UPI,
+# we hand them a upi:// deep link (and QR) pre-filled with Tulsi's VPA and the
+# order amount; the credit is confirmed manually by the kitchen. UPI_VPA is the
+# only required setting (e.g. "tulsifoods@oksbi"); UPI_PAYEE_NAME shows on the
+# pay screen. Empty VPA = UPI hidden at checkout (COD only).
+UPI_VPA = os.environ.get("UPI_VPA", "")
+UPI_PAYEE_NAME = os.environ.get("UPI_PAYEE_NAME", "Tulsi Foods")
+UPI_TXN_NOTE = os.environ.get("UPI_TXN_NOTE", "Tulsi Foods order payment")
+
+
+def upi_uri(amount: float | int, txn_ref: str, payee_name: str | None = None) -> str:
+    """Build a UPI Intent deep-link the customer's UPI app can open.
+
+    Uses the standard UPI Intent spec (pa/pn/am/cu/tn/tr). The transaction
+    reference doubles as the order id so a UPI payment notice can be matched.
+    """
+    from urllib.parse import quote
+    pn = payee_name or UPI_PAYEE_NAME
+    tr = quote(txn_ref)
+    tn = quote(UPI_TXN_NOTE)
+    return (
+        f"upi://pay?pa={UPI_VPA}&pn={quote(pn)}&am={amount}&cu=INR"
+        f"&tn={tn}&tr={tr}"
+    )
+
 # Shiprocket Quick (hyperlocal delivery) — credentials for API auth
 SHIPROCKET_API_EMAIL = os.environ.get("SHIPROCKET_API_EMAIL", "")
 SHIPROCKET_API_PASSWORD = os.environ.get("SHIPROCKET_API_PASSWORD", "")
 
 # Mom's WhatsApp phone number — messages from this number trigger admin commands
 ADMIN_PHONE = os.environ.get("ADMIN_PHONE", "")
+
+# Public base URL for admin links (used in Telegram kitchen alerts).
+TULSI_ADMIN_URL = os.environ.get("TULSI_ADMIN_URL", "https://tulsifoods.app")
 
 # Google Business Profile "ask for review" short link
 GOOGLE_REVIEW_LINK = "https://g.page/r/CbCaykOYyQTPEAE/review"

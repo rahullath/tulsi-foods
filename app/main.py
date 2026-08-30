@@ -20,6 +20,7 @@ from .config import (
     PACKING_FEE_LARGE_ORDER,
     PACKING_FEE_LARGE_ORDER_THRESHOLD,
 )
+from .config import UPI_PAYEE_NAME, UPI_VPA
 from .delivery.config import PICKUP_LAT, PICKUP_LNG
 
 app = FastAPI(title="Tulsi Foods Direct Ordering", version="0.2.0")
@@ -125,13 +126,21 @@ def menu_page(request: Request):
          "menu_schema": build_menu_schema(groups),
          "packing_fee": PACKING_FEE, "packing_fee_large": PACKING_FEE_LARGE_ORDER,
          "packing_fee_threshold": PACKING_FEE_LARGE_ORDER_THRESHOLD,
-         "gst_rate": GST_RATE, "gst_enabled": GST_ENABLED},
+         "gst_rate": GST_RATE, "gst_enabled": GST_ENABLED,
+         "upi_vpa": UPI_VPA, "upi_payee_name": UPI_PAYEE_NAME},
     )
-
 
 @app.get("/delivery", response_class=HTMLResponse)
 def delivery_page(request: Request):
     return templates.TemplateResponse(request, "delivery.html", {"zones": DELIVERY_ZONES})
+
+
+@app.get("/track/{order_id}", response_class=HTMLResponse)
+def track_page(request: Request, order_id: int):
+    o = db.get_order(order_id)
+    if not o:
+        raise HTTPException(404, "Order not found")
+    return templates.TemplateResponse(request, "track.html", {"order_id": order_id})
 
 
 @app.get("/about", response_class=HTMLResponse)
@@ -512,60 +521,9 @@ def admin_update_order_status(order_id: int, body: StatusIn,
 
 
 def _send_status_whatsapp(order: dict, status: str) -> None:
-    """Send status update to customer. Uses pre-approved template if available, falls back to text."""
-    try:
-        from .whatsapp import client
-        phone = order.get("customer_phone", "")
-        if not phone:
-            return
-        oid = order["id"]
-        cname = order.get("customer_name") or "there"
-        t = lambda *params: [{"type": "text", "text": str(p)} for p in params]
-        # Map status → (template name, params). Uses Meta pre-approved templates.
-        templates = {
-            "preparing": ("order_update_1", t(cname, oid)),
-        }
-        if order["order_type"] == "pickup":
-            templates["ready"] = (
-                "order_pick_up_1",
-                t(cname, oid, order.get("delivery_address") or "Tulsi Foods, Alwarpet"),
-            )
-        else:
-            templates["ready"] = ("order_confirmed", t(cname, oid))
-        templates["delivered"] = ("order_delivered", t(cname, oid))
-        templates["cancelled"] = ("order_cancelled_1", t(cname, oid, "0"))
-        templates["out_for_delivery"] = ("delivery_confirmation_1", t(cname, oid))
-
-        if status in templates:
-            tpl_name, params = templates[status]
-            try:
-                client.send_template(phone, tpl_name, "en", params)
-                return
-            except Exception:
-                pass  # template not approved yet, fall back to text
-        # Fallback: plain text
-        if status == "preparing":
-            msg = f"Order #{oid} is being cooked now. We'll tell you when it leaves the kitchen."
-        elif status == "ready":
-            if order["order_type"] == "pickup":
-                msg = f"Order #{oid} is ready for pickup! Come and collect."
-            else:
-                msg = f"Order #{oid} is ready! Dispatching shortly."
-        elif status == "out_for_delivery":
-            track = order.get("sr_tracking_url") or "we will update you"
-            msg = f"Order #{oid} is on its way! 🛵 Track: {track}."
-        elif status == "delivered":
-            msg = (
-                f"Order #{oid} delivered. Enjoy your meal 🙏 If anything wasn't right, reply here and we'll fix it.\n\n"
-                f"If you did enjoy it, an honest Google review helps our small kitchen a lot: {GOOGLE_REVIEW_LINK}"
-            )
-        elif status == "cancelled":
-            msg = f"Order #{oid} has been cancelled."
-        else:
-            return
-        client.send_text(phone, msg)
-    except Exception:
-        pass  # non-fatal
+    """Send status update to customer (WhatsApp template if active, else SMS fallback)."""
+    from .notify import notify_status
+    notify_status(order, status)
 
 
 @app.get("/api/admin/conversations")
@@ -732,30 +690,9 @@ def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)
 
 
 def _send_dispatch_whatsapp(order: dict, dispatch: dict) -> None:
-    """Send tracking notification to customer via WhatsApp (delivery_update template)."""
-    try:
-        from .whatsapp import client
-        phone = order.get("customer_phone", "")
-        if not phone:
-            return
-        try:
-            params = [
-                {"type": "text", "text": str(order.get("customer_name") or "there")},
-                {"type": "text", "text": str(order["id"])},
-            ]
-            client.send_template(phone, "order_shipped", "en", params)
-            return
-        except Exception:
-            pass  # fall back to text
-        msg = (
-            f"Your order #{order['id']} is on its way! 🛵\n"
-            f"Courier: {dispatch['courier_name']}\n"
-            f"Track: {dispatch['tracking_url']}\n"
-            f"We'll update you when it's delivered."
-        )
-        client.send_text(phone, msg)
-    except Exception:
-        pass  # non-fatal
+    """Send tracking notification to customer (WhatsApp template if active, else SMS fallback)."""
+    from .notify import notify_dispatch
+    notify_dispatch(order, dispatch)
 
 
 @app.get("/api/orders/{order_id}/track")
