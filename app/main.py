@@ -185,6 +185,13 @@ def admin_page(request: Request):
     )
 
 
+@app.get("/kitchen", response_class=HTMLResponse)
+def kitchen_page(request: Request):
+    # Stripped-down, one-purpose order screen for a kitchen tablet — no tabs,
+    # no menu/chat/reviews, just live orders with one big action button each.
+    return templates.TemplateResponse(request, "kitchen.html", {})
+
+
 @app.get("/privacy-policy", response_class=HTMLResponse)
 def privacy_page(request: Request):
     return templates.TemplateResponse(request, "privacy.html", {})
@@ -206,6 +213,7 @@ def robots_txt():
     lines = [
         "User-agent: *",
         "Disallow: /admin",
+        "Disallow: /kitchen",
         "Disallow: /api/",
         "Disallow: /f",
         "",
@@ -243,7 +251,7 @@ def llms_txt():
 
 
 # Paths that render HTML but shouldn't be in the public sitemap.
-SITEMAP_EXCLUDE = {"/admin"}
+SITEMAP_EXCLUDE = {"/admin", "/kitchen"}
 
 # Optional path -> template file, just to attach a real <lastmod>. A page
 # missing here still appears in the sitemap (via route auto-discovery below),
