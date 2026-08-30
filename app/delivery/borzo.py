@@ -132,7 +132,7 @@ def create_order(
         },
     ]
 
-    payment = "balance"  # pay from Borzo wallet balance (prepaid)
+    payment = "non_cash"  # company account pays from Borzo balance (see client-profile payment_methods)
 
     payload = {
         "matter": matter,

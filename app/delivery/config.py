@@ -1,11 +1,14 @@
 """Delivery partner configuration — Borzo (primary) + Shiprocket (fallback)."""
 import os
 
-# Borzo API auth (static token from Borzo dashboard → Integration)
+# Borzo (WeFast) API auth.
+# Base URL is the CMS-module API, which (unlike the Business API) lets a normal
+# account log in via the OpenCart wizard and obtain a production token with no
+# support approval. Payload shape is identical to the Business API.
 BORZO_AUTH_TOKEN = os.environ.get("BORZO_AUTH_TOKEN", "")
 BORZO_BASE_URL = os.environ.get(
     "BORZO_BASE_URL",
-    "https://robotapitest-in.borzodelivery.com/api/business/1.8",  # test env
+    "https://robot.wefast.in/api/cms-module/1.0",  # production CMS-module API
 )
 BORZO_CALLBACK_TOKEN = os.environ.get("BORZO_CALLBACK_TOKEN", "")  # for webhook verification
 
