@@ -555,6 +555,7 @@ def admin_conversation_human(wa_id: str, body: HumanIn,
 class OrderItemIn(BaseModel):
     item_id: str
     qty: float = Field(gt=0)
+    note: str | None = None
 
 
 class OrderIn(BaseModel):
@@ -581,7 +582,7 @@ def create_order(order: OrderIn):
             lat=order.lat, lng=order.lng,
             payment_method=order.payment_method, instructions=order.instructions,
             scheduled_at=order.scheduled_at,
-            items=[{"item_id": it.item_id, "qty": it.qty} for it in order.items],
+            items=[{"item_id": it.item_id, "qty": it.qty, "note": it.note} for it in order.items],
         )
         return result
     except orders.OrderError as e:

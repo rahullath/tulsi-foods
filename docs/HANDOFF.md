@@ -113,6 +113,107 @@ correct.
 
 ---
 
+## 3b. Petpooja POS integration — code-complete, waiting on credentials
+
+Paid (2026-08-31); Malvi's team still owes staging (and prod) `app_key` /
+`app_secret` / `access_token` / `restID`. Everything downstream is built and
+tested against the documented API shape (`onlineorderingapisv210.docs.apiary.io`)
+so that dropping in credentials is the only step left:
+
+- `app/petpooja/config.py` — all four creds + endpoint URLs, env-driven, blank by default.
+- `app/petpooja/mapping.py` — our order → Petpooja `Save Order` payload; Petpooja
+  status code → our order status.
+- `app/petpooja/client.py` — `save_order`, `cancel_order`, `fetch_menu`, `push_rider_status`.
+- `app/orders.py` — after creating an order, pushes it to Petpooja POS via `Save
+  Order` (no-op until `PETPOOJA_APP_KEY` is set — verified via `is_configured()`
+  guard). Also gates new orders on `db.get_store_status()`.
+- `app/webhooks.py` — routes we host for Petpooja to call:
+  - `POST /webhook/petpooja/order-callback` — status sync, tested end-to-end locally.
+  - `POST /webhook/petpooja/menu` — Push Menu receiver, caches raw JSON to
+    `data/petpooja_menu_raw.json`. **Not wired into the live menu** — see below.
+  - `POST /webhook/petpooja/stock` — item stock toggle receiver, logs only for now.
+  - `GET/POST /webhook/petpooja/store-status` + `POST /webhook/petpooja/store-status/update`
+    — tested end-to-end; toggling this actually blocks new orders (`orders.create_order`).
+  - Borzo webhook now also relays courier status to Petpooja's "Rider Information" webhook
+    when an order has a `petpooja_order_id`.
+
+**Two real gaps, not just config, worth knowing about before assuming this "just works":**
+
+1. **Item-id reconciliation.** `Save Order` sends our own `data/menu.json` item ids
+   (sourced from Swiggy exports) as `OrderInfo/OrderItem/id`. Petpooja's POS almost
+   certainly expects *its own* catalog item ids. We won't know those until a real
+   `Fetch Menu` call against staging, then reconciling item-by-item against
+   `data/menu.json`. Until that's done, Save Order calls may be rejected or
+   misattribute items on the Petpooja terminal — verify with a real test order the
+   moment staging creds land.
+2. **GST line-item breakdown is a derived approximation.** Our order model keeps one
+   `gst_amount` per order (see `orders.gst_for()`); Petpooja wants tax itemised per
+   line. `mapping.py` prorates the order total across items by price share and
+   splits each into CGST/SGST halves — standard for intra-state GST, but not sourced
+   from a real per-item tax table. Confirm it reconciles with how Petpooja's own tax
+   setup is configured for this restaurant before relying on it for filing.
+
+Also unresolved: Petpooja's docs don't specify a request-signing scheme for the
+endpoints *they* call (Push Menu, Order Callback, stock/store toggles), so those
+routes are protected with a locally-generated `PETPOOJA_WEBHOOK_TOKEN` baked into
+the URL (`?t=...`) we hand Petpooja — not a Petpooja-native mechanism. Fine for now,
+but worth asking Malvi if they support anything stronger before going live.
+
+---
+
+## 3c. Menu enrichment from a real Petpooja export (2026-09-01)
+
+User pasted two real CSV exports from Petpooja's admin panel (not the API —
+just a manual export): `data/petpooja_items.csv` and `data/petpooja_addons.csv`
+(both gitignored, local only — re-export from Petpooja and re-run the merge
+script below if they go stale). `scripts/merge_petpooja.py` layers this onto
+`data/menu.json` (which `scripts/build_menu.py` still builds from Swiggy sales
+data first — run build then merge, in that order):
+
+- **Descriptions**: 124/141 items now have a real description, sourced from
+  Petpooja. Shown on `/menu` under the item name (`.card-desc`, was dead CSS
+  before this). ~17 items still have none — Petpooja's own export didn't have
+  one either; needs mom to write them if wanted.
+- **Fruit Chaat**: added as a new item (₹120, Chaats & Snacks) — it existed in
+  Petpooja's export but not in the Swiggy-derived menu (low/no Swiggy sales).
+- **25 Petpooja items not auto-added** (Combo A/B/C, Soft Drinks, loose
+  chutneys/pickles, a few sandwiches, etc.) — logged by the script, not
+  imported, since it wasn't clear which are still sold vs. Petpooja
+  leftovers. Re-run `scripts/merge_petpooja.py` to see the current list.
+- **Half portions**: any item with `half_price` set gets an auto-generated
+  `<id>__half` menu entry (`app/menu.py`), fully orderable end-to-end (tested:
+  checkout, GST, order total all correct). The 17 Sabzi items got a
+  **placeholder half_price at 60% of full, rounded to ₹10** — not a real price
+  mom set, just a starting point. Override individual values directly in
+  `data/menu.json` (`half_price` key) once she confirms real ones; the merge
+  script won't clobber a value that's already set.
+- **Specialities = Thursdays only**: enforced in `menu.is_available()`, so it
+  blocks checkout too, not just the UI (`/menu` shows "Only available
+  Thursdays" instead of "Finished for today"). Hardcoded Thursday
+  (`SPECIALITIES_WEEKDAY` in `app/menu.py`) — change there if that's wrong.
+- **Monday half day**: `orders._schedule_closed_reason()` blocks new orders
+  Monday before `MONDAY_OPENS_AT` (`app/config.py`, default **14:00 IST — a
+  placeholder**, confirm the real reopen time with mom). Respects
+  `scheduled_at` for pre-orders (a Sunday-night pre-order for Monday 3pm is
+  fine; one for Monday 10am isn't).
+
+**Thali customization (2026-09-01, follow-up same day):** built as a
+no-pricing-yet note field. On `/menu`, any item with `category == "Thalis"`
+gets a "Customize (swap sabzi, change rotis)" `<details>` toggle with a
+freeform textarea (`app/templates/menu.html`, `.card-note`). The text is sent
+as `note` per order item (`OrderIn.items[].note` in `app/main.py`) and
+appended to the stored `order_items.name` in `orders.build_lines()` — so it
+shows verbatim on mom's Telegram kitchen alert and the admin panel, with
+**zero price impact by design**. User explicitly deferred the pricing
+decision twice ("we will see later lol" on sabzi-swap delta pricing, "No
+roti pricing yet" on phulka add/remove pricing) — don't invent pricing logic
+for this without asking again; the UI copy already tells customers price
+changes get confirmed by phone if needed. Verified end-to-end: order total
+stayed at the plain thali price with a note attached, note appeared in
+`db.get_order()`'s item name.
+
+---
+
 ## 4. Configuration (secrets live ONLY in `.env` locally + Railway vars — never in code/docs)
 
 | var | value (redacted; see `.env`) | note |
@@ -126,6 +227,8 @@ correct.
 | BORZO_CALLBACK_TOKEN | (webhook secret) | secret — see .env |
 | TWILIO_* | set | trial (TWILIO_TRIAL=1) → SMS skips |
 | WHATSAPP_ACTIVE | (empty) | flip to 1 post-Meta for WhatsApp |
+| PETPOOJA_APP_KEY / _APP_SECRET / _ACCESS_TOKEN / _REST_ID | (empty) | from Malvi once staging/prod issued — see §3b |
+| PETPOOJA_WEBHOOK_TOKEN | (empty) | generate locally; goes in the callback URLs we give Petpooja |
 
 ⚠️ **Never put real tokens in this doc or any committed file.** Copy the actual
 values from the local `.env` when setting Railway vars.
@@ -158,7 +261,11 @@ Then redeploy (Railway auto-builds on push; set vars then re-deploy).
 ## 6. Open / pending
 
 - **Borzo live dispatch** — user testing now that wallet funded. Verified payload.
-- **Petpooja relay** — awaiting staging creds from Malvi (kitchen-first POS path).
+- **Petpooja relay** — code-complete (§3b), awaiting staging/prod creds from Malvi.
+  Once they land: set the four `PETPOOJA_*` env vars + `PETPOOJA_WEBHOOK_TOKEN`,
+  give Malvi our `/webhook/petpooja/*` URLs, then do one real Fetch Menu + test
+  order before trusting it — item-id reconciliation and the GST breakdown are
+  approximations until verified against staging.
 - **Meta / WhatsApp** — `WHATSAPP_ACTIVE` still off; WhatsApp long-term channel,
   SMS trial (skips), Petpooja + tracking primary for now.
 - **Mom's Telegram chat** — currently 8550745217; swap if she uses a different
@@ -173,4 +280,4 @@ Then redeploy (Railway auto-builds on push; set vars then re-deploy).
 - `docs/META_CONTINGENCY_PLAN.md` — Meta fallback strategy.
 - `app/templates/track.html`, `app/telegram.py`, `app/notify.py`, `app/sms/`,
   `app/delivery/borzo.py`, `app/config.py`, `app/static/admin.js`, `app/orders.py`,
-  `app/main.py`, `app/webhooks.py`.
+  `app/main.py`, `app/webhooks.py`, `app/petpooja/` (config/mapping/client, §3b).

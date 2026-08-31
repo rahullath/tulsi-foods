@@ -40,9 +40,9 @@
       <h2>{{ g["group"] }}</h2>
       {% for it in g["items"] %}
       <div class="menu-card{% if not it.available %} off{% endif %}" data-id="{{ it.id }}" data-name="{{ it.name|lower }}" data-popular="{{ 'true' if it.popular else 'false' }}">
-        {% if it.id in dish_photos %}
+        {% if it.photo_id in dish_photos %}
         <div class="card-photo">
-          <img src="/static/img/dishes/{{ it.id }}.jpg" alt="{{ it.name }}" loading="lazy">
+          <img src="/static/img/dishes/{{ it.photo_id }}.jpg" alt="{{ it.name }}" loading="lazy">
         </div>
         {% endif %}
         <div class="card-body">
@@ -51,6 +51,14 @@
             <span class="card-name">{{ it.name }}</span>
             {% if it.popular %}<span class="card-pop">popular</span>{% endif %}
           </div>
+          {% if it.description %}<div class="card-desc">{{ it.description }}</div>{% endif %}
+          {% if it.category == "Thalis" and it.available %}
+          <details class="card-customize">
+            <summary>Customize (swap sabzi, change rotis)</summary>
+            <textarea class="card-note" data-id="{{ it.id }}" maxlength="200"
+              placeholder="e.g. swap dry sabzi for Paneer Butter Masala, +2 phulka. We'll confirm price by phone if it changes."></textarea>
+          </details>
+          {% endif %}
           <div class="card-bottom">
             <span class="card-price">₹{{ it.price }}</span>
             {% if it.available %}
@@ -60,7 +68,7 @@
               <button data-act="inc" aria-label="increase">+</button>
             </div>
             {% else %}
-            <span class="card-sold-out">Finished for today</span>
+            <span class="card-sold-out">{{ it.unavailable_reason or "Finished for today" }}</span>
             {% endif %}
           </div>
         </div>
@@ -146,6 +154,9 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .mh-sub .veg-mark { border-color: #fff; margin-right: 5px; vertical-align: -1px; }
 .mh-sub .veg-mark::after { background: #fff; }
 .card-desc { font-size: 12px; color: var(--sub); margin-top: 3px; line-height: 1.45; }
+.card-customize { margin-top: 6px; }
+.card-customize summary { font-size: 12px; color: var(--g); cursor: pointer; font-weight: 500; }
+.card-note { width: 100%; margin-top: 6px; padding: 8px; font: 13px/1.4 'IBM Plex Sans', sans-serif; border: 1px solid var(--border); border-radius: 8px; resize: vertical; min-height: 44px; box-sizing: border-box; }
 .card-bottom { margin-top: auto; display: flex; justify-content: space-between; align-items: center; padding-top: 6px; }
 .card-price { font-size: 16px; font-weight: 600; }
 .card-sold-out { font: 500 11px/1 'IBM Plex Mono', monospace; color: #B3261E; }
@@ -737,7 +748,11 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         payment_method: fd.get("payment_method"),
         instructions: fd.get("instructions") || null,
         scheduled_at: fd.get("scheduled_at") || null,
-        items: ids.map(id => ({ item_id: id, qty: cart[id] })),
+        items: ids.map(id => {
+          const noteEl = document.querySelector(`.card-note[data-id="${id}"]`);
+          const note = noteEl ? noteEl.value.trim() : "";
+          return note ? { item_id: id, qty: cart[id], note } : { item_id: id, qty: cart[id] };
+        }),
       };
       try {
         const res = await fetch("/api/orders", {
@@ -750,6 +765,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         Object.keys(cart).forEach(k => delete cart[k]);
         updateCart();
         document.querySelectorAll(".card-stepper .qty").forEach(el => el.textContent = "0");
+        document.querySelectorAll(".card-note").forEach(el => el.value = "");
         const isDelivery = payload.order_type === "delivery" && payload.address;
         const isUpi = payload.payment_method === "upi" && UPI_VPA;
         overlay.querySelector(".checkout-panel").innerHTML = `

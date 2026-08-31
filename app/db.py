@@ -98,6 +98,13 @@ CREATE TABLE IF NOT EXISTS site_stats (
     order_count INTEGER,
     updated_at  TEXT
 );
+CREATE TABLE IF NOT EXISTS store_status (
+    id            INTEGER PRIMARY KEY CHECK (id = 1),
+    is_open       INTEGER NOT NULL DEFAULT 1,
+    reason        TEXT,
+    turn_on_time  TEXT,
+    updated_at    TEXT DEFAULT (datetime('now'))
+);
 """
 
 
@@ -150,6 +157,20 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE orders ADD COLUMN packing_fee REAL NOT NULL DEFAULT 0")
     if not _has_col("orders", "gst_amount"):
         conn.execute("ALTER TABLE orders ADD COLUMN gst_amount REAL NOT NULL DEFAULT 0")
+    if not _has_col("orders", "petpooja_order_id"):
+        conn.execute("ALTER TABLE orders ADD COLUMN petpooja_order_id TEXT")
+    if not _has_col("orders", "petpooja_synced_at"):
+        conn.execute("ALTER TABLE orders ADD COLUMN petpooja_synced_at TEXT")
+    # store_status table (may not exist in older databases)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS store_status ("
+        "    id            INTEGER PRIMARY KEY CHECK (id = 1),"
+        "    is_open       INTEGER NOT NULL DEFAULT 1,"
+        "    reason        TEXT,"
+        "    turn_on_time  TEXT,"
+        "    updated_at    TEXT DEFAULT (datetime('now'))"
+        ")"
+    )
     # daily_specials table (may not exist in older databases)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS daily_specials ("
@@ -362,6 +383,42 @@ def get_order(order_id: int) -> dict | None:
 def update_order_status(order_id: int, status: str) -> None:
     conn = get_conn()
     conn.execute("UPDATE orders SET status=? WHERE id=?", (status, order_id))
+    conn.commit()
+    conn.close()
+
+
+def update_order_petpooja(order_id: int, petpooja_order_id: str) -> None:
+    """Record the Petpooja POS order id after a successful Save Order push."""
+    from datetime import datetime
+    conn = get_conn()
+    conn.execute(
+        "UPDATE orders SET petpooja_order_id=?, petpooja_synced_at=? WHERE id=?",
+        (petpooja_order_id, datetime.utcnow().isoformat(), order_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+# ---- store status (Petpooja "Update Store Status" push target) ----
+
+def get_store_status() -> dict:
+    conn = get_conn()
+    row = conn.execute("SELECT is_open, reason, turn_on_time FROM store_status WHERE id=1").fetchone()
+    conn.close()
+    if not row:
+        return {"is_open": True, "reason": None, "turn_on_time": None}
+    return {"is_open": bool(row["is_open"]), "reason": row["reason"], "turn_on_time": row["turn_on_time"]}
+
+
+def set_store_status(is_open: bool, reason: str | None = None, turn_on_time: str | None = None) -> None:
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO store_status(id, is_open, reason, turn_on_time, updated_at) "
+        "VALUES(1, ?, ?, ?, datetime('now')) "
+        "ON CONFLICT(id) DO UPDATE SET is_open=excluded.is_open, reason=excluded.reason, "
+        "turn_on_time=excluded.turn_on_time, updated_at=excluded.updated_at",
+        (1 if is_open else 0, reason, turn_on_time),
+    )
     conn.commit()
     conn.close()
 

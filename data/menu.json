@@ -4,7 +4,15 @@
     "built_from": "08_highest_selling_items_jun-aug2026.csv",
     "note": "Prices are approximate platform averages. Confirm against Petpooja.",
     "item_count": 140,
-    "popular_count": 49
+    "popular_count": 49,
+    "petpooja_merge": {
+      "source": "data/petpooja_items.csv",
+      "matched": 141,
+      "added": 1,
+      "half_price_ratio": 0.6,
+      "half_priced_items": 17,
+      "note": "half_price values are a 60%-of-full placeholder, not confirmed with the restaurant — override per item in menu.json once real half-portion prices are set."
+    }
   },
   "display_groups": [
     "Thalis & Combos",
@@ -28,7 +36,8 @@
       "avg_price": 248.12,
       "popular": true,
       "qty_2mo": 361.0,
-      "revenue_2mo": 89569.73
+      "revenue_2mo": 89569.73,
+      "description": "[4 Phulka + 1 Dal + 1 Sabji Gravy + 1 Sabji Dry + Rice + Curd + Pickel + Salad + Sweet + Papad]"
     },
     {
       "id": "mini-thali",
@@ -39,7 +48,8 @@
       "avg_price": 187.86,
       "popular": true,
       "qty_2mo": 360.0,
-      "revenue_2mo": 67629.29
+      "revenue_2mo": 67629.29,
+      "description": "[2 Phulka + Dal + 1 Dry Sabji + Curd + Pickel + Salad + Rice}"
     },
     {
       "id": "phulka",
@@ -50,7 +60,8 @@
       "avg_price": 40.82,
       "popular": true,
       "qty_2mo": 1454.0,
-      "revenue_2mo": 59347.5
+      "revenue_2mo": 59347.5,
+      "description": "Soft, whole wheat Indian bread."
     },
     {
       "id": "sabudana-vada-2pcs",
@@ -61,7 +72,8 @@
       "avg_price": 142.31,
       "popular": true,
       "qty_2mo": 391.5,
-      "revenue_2mo": 55713.04
+      "revenue_2mo": 55713.04,
+      "description": "Deep-fried patties made from soaked tapioca pearls, mashed potatoes, and spices."
     },
     {
       "id": "aloo-paratha",
@@ -72,7 +84,8 @@
       "avg_price": 112.73,
       "popular": true,
       "qty_2mo": 280.0,
-      "revenue_2mo": 31565.04
+      "revenue_2mo": 31565.04,
+      "description": "Whole wheat bread stuffed with a delicious mixture of spiced mashed potatoes."
     },
     {
       "id": "chola-bhatura",
@@ -83,7 +96,8 @@
       "avg_price": 252.94,
       "popular": true,
       "qty_2mo": 113.5,
-      "revenue_2mo": 28708.2
+      "revenue_2mo": 28708.2,
+      "description": "Fluffy deep-fried bread served with spicy chickpeas, a North Indian favorite."
     },
     {
       "id": "dhokla",
@@ -94,7 +108,8 @@
       "avg_price": 110.75,
       "popular": true,
       "qty_2mo": 250.5,
-      "revenue_2mo": 27743.64
+      "revenue_2mo": 27743.64,
+      "description": "Steamed and spongy fermented cake made from rice and flour."
     },
     {
       "id": "paneer-butter-masala",
@@ -105,7 +120,9 @@
       "avg_price": 365.48,
       "popular": true,
       "qty_2mo": 75.0,
-      "revenue_2mo": 27411.36
+      "revenue_2mo": 27411.36,
+      "description": "Rich and creamy tomato-based curry with succulent cubes of paneer.",
+      "half_price": 220
     },
     {
       "id": "paneer-paratha",
@@ -116,7 +133,8 @@
       "avg_price": 122.83,
       "popular": true,
       "qty_2mo": 204.0,
-      "revenue_2mo": 25056.71
+      "revenue_2mo": 25056.71,
+      "description": "Stuffed paratha with a savory filling of spiced paneer (Indian cottage cheese)."
     },
     {
       "id": "paneer-tikka",
@@ -127,7 +145,8 @@
       "avg_price": 257.17,
       "popular": true,
       "qty_2mo": 85.0,
-      "revenue_2mo": 21859.34
+      "revenue_2mo": 21859.34,
+      "description": "Sliced paneer marinated in flavorful spices and grilled to perfection."
     },
     {
       "id": "samosa-2pcs",
@@ -138,7 +157,8 @@
       "avg_price": 78.41,
       "popular": true,
       "qty_2mo": 264.5,
-      "revenue_2mo": 20739.79
+      "revenue_2mo": 20739.79,
+      "description": "Kolkata styled triangular puff filled with a spiced mixture of potatoes and peas"
     },
     {
       "id": "vegetable-kofta",
@@ -149,7 +169,9 @@
       "avg_price": 343.1,
       "popular": true,
       "qty_2mo": 57.5,
-      "revenue_2mo": 19728.09
+      "revenue_2mo": 19728.09,
+      "description": "Vegetable dumplings in a flavorful curry, a delightful and hearty dish.",
+      "half_price": 210
     },
     {
       "id": "dal-tadka",
@@ -160,7 +182,9 @@
       "avg_price": 303.75,
       "popular": true,
       "qty_2mo": 63.5,
-      "revenue_2mo": 19288.14
+      "revenue_2mo": 19288.14,
+      "description": "Yellow lentils tempered with aromatic spices, a simple and comforting dish.",
+      "half_price": 180
     },
     {
       "id": "dal-makhani",
@@ -171,7 +195,9 @@
       "avg_price": 363.7,
       "popular": true,
       "qty_2mo": 51.0,
-      "revenue_2mo": 18548.54
+      "revenue_2mo": 18548.54,
+      "description": "Slow-cooked black lentils and kidney beans in a creamy and aromatic tomato sauce.",
+      "half_price": 220
     },
     {
       "id": "gobi-paratha",
@@ -182,7 +208,8 @@
       "avg_price": 122.8,
       "popular": true,
       "qty_2mo": 143.0,
-      "revenue_2mo": 17559.7
+      "revenue_2mo": 17559.7,
+      "description": "Flaky paratha filled with spiced cauliflower, a popular North Indian dish."
     },
     {
       "id": "mixed-vegetable",
@@ -193,7 +220,9 @@
       "avg_price": 368.9,
       "popular": true,
       "qty_2mo": 44.3,
-      "revenue_2mo": 16342.22
+      "revenue_2mo": 16342.22,
+      "description": "Assorted vegetables cooked in a flavorful curry sauce.",
+      "half_price": 220
     },
     {
       "id": "pav-bhaji",
@@ -204,7 +233,8 @@
       "avg_price": 152.31,
       "popular": true,
       "qty_2mo": 106.0,
-      "revenue_2mo": 16145.17
+      "revenue_2mo": 16145.17,
+      "description": "A flavorful mixed vegetable curry served with soft buttered buns"
     },
     {
       "id": "vegetable-pulao",
@@ -215,7 +245,8 @@
       "avg_price": 201.2,
       "popular": true,
       "qty_2mo": 79.5,
-      "revenue_2mo": 15995.2
+      "revenue_2mo": 15995.2,
+      "description": "Aromatic rice cooked with a mix of colorful vegetables and spices."
     },
     {
       "id": "executive-combo",
@@ -226,7 +257,8 @@
       "avg_price": 281.26,
       "popular": true,
       "qty_2mo": 53.0,
-      "revenue_2mo": 14906.65
+      "revenue_2mo": 14906.65,
+      "description": "3 Phulkas with Paneer Butter Masala / Dal Makhani / Mixed Vegetable / Malai Kofta"
     },
     {
       "id": "masala-chai",
@@ -237,7 +269,8 @@
       "avg_price": 50.51,
       "popular": true,
       "qty_2mo": 281.0,
-      "revenue_2mo": 14192.8
+      "revenue_2mo": 14192.8,
+      "description": "Aromatic Indian spiced tea, brewed with a blend of rich black tea, spices, and milk."
     },
     {
       "id": "gulab-jamun-2pcs",
@@ -248,7 +281,8 @@
       "avg_price": 100.41,
       "popular": true,
       "qty_2mo": 139.5,
-      "revenue_2mo": 14007.12
+      "revenue_2mo": 14007.12,
+      "description": "Soft and spongy milk dumplings soaked in a sweet, fragrant sugar syrup."
     },
     {
       "id": "papdi-chat-6pcs",
@@ -259,7 +293,8 @@
       "avg_price": 100.24,
       "popular": true,
       "qty_2mo": 139.0,
-      "revenue_2mo": 13933.32
+      "revenue_2mo": 13933.32,
+      "description": "A street food snack consisting of crispy dough wafers topped with potatoes, channas, and chutn"
     },
     {
       "id": "cheesy-disc-2pcs",
@@ -270,7 +305,8 @@
       "avg_price": 131.57,
       "popular": true,
       "qty_2mo": 102.5,
-      "revenue_2mo": 13485.94
+      "revenue_2mo": 13485.94,
+      "description": "Melt-in-your-mouth cheesy discs, a delightful blend of cheese and veggies"
     },
     {
       "id": "channa-masala",
@@ -281,7 +317,9 @@
       "avg_price": 306.24,
       "popular": true,
       "qty_2mo": 43.5,
-      "revenue_2mo": 13321.51
+      "revenue_2mo": 13321.51,
+      "description": "Spiced channas cooked in a tomato-based gravy, a popular vegetarian dish.",
+      "half_price": 180
     },
     {
       "id": "mutter-paneer",
@@ -292,7 +330,9 @@
       "avg_price": 334.77,
       "popular": true,
       "qty_2mo": 39.5,
-      "revenue_2mo": 13223.52
+      "revenue_2mo": 13223.52,
+      "description": "Peas and paneer cubes in a rich and creamy tomato-based curry.",
+      "half_price": 200
     },
     {
       "id": "veg-briyani",
@@ -303,7 +343,8 @@
       "avg_price": 251.98,
       "popular": true,
       "qty_2mo": 48.0,
-      "revenue_2mo": 12095.2
+      "revenue_2mo": 12095.2,
+      "description": "A fragrant and flavorful rice dish cooked with mixed vegetables and biryani spices."
     },
     {
       "id": "tomato-soup",
@@ -314,7 +355,8 @@
       "avg_price": 201.45,
       "popular": true,
       "qty_2mo": 59.0,
-      "revenue_2mo": 11885.68
+      "revenue_2mo": 11885.68,
+      "description": "A comforting and flavorful soup made with ripe tomatoes and aromatic herbs."
     },
     {
       "id": "cutlet-2pcs",
@@ -325,7 +367,8 @@
       "avg_price": 100.46,
       "popular": true,
       "qty_2mo": 104.0,
-      "revenue_2mo": 10447.6
+      "revenue_2mo": 10447.6,
+      "description": "Pan-fried or deep-fried savory patties made with a mixture of mashed potatoes and vegetables"
     },
     {
       "id": "malai-kofta",
@@ -336,7 +379,9 @@
       "avg_price": 353.7,
       "popular": true,
       "qty_2mo": 27.0,
-      "revenue_2mo": 9550.02
+      "revenue_2mo": 9550.02,
+      "description": "Soft and creamy paneer dumplings in a rich and aromatic tomato-based curry.",
+      "half_price": 210
     },
     {
       "id": "gobi-manchurian",
@@ -347,7 +392,8 @@
       "avg_price": 283.76,
       "popular": true,
       "qty_2mo": 33.0,
-      "revenue_2mo": 9364.2
+      "revenue_2mo": 9364.2,
+      "description": "Crispy cauliflower florets coated in a savory, tangy Manchurian sauce."
     },
     {
       "id": "crispy-chilly-corn",
@@ -358,7 +404,8 @@
       "avg_price": 252.25,
       "popular": true,
       "qty_2mo": 37.0,
-      "revenue_2mo": 9333.3
+      "revenue_2mo": 9333.3,
+      "description": "Golden-fried corn kernels tossed in a spicy and tangy chili seasoning"
     },
     {
       "id": "aloo-gobi",
@@ -369,7 +416,9 @@
       "avg_price": 283.28,
       "popular": true,
       "qty_2mo": 32.5,
-      "revenue_2mo": 9206.64
+      "revenue_2mo": 9206.64,
+      "description": "A classic North Indian dish featuring spiced potatoes and cauliflower.",
+      "half_price": 170
     },
     {
       "id": "chola-tikki-2pcs",
@@ -380,7 +429,8 @@
       "avg_price": 168.29,
       "popular": true,
       "qty_2mo": 52.5,
-      "revenue_2mo": 8834.98
+      "revenue_2mo": 8834.98,
+      "description": "Spiced channas served over a crispy potato patty, garnished with various chutneys."
     },
     {
       "id": "masala-kulcha",
@@ -391,7 +441,8 @@
       "avg_price": 120.16,
       "popular": true,
       "qty_2mo": 73.0,
-      "revenue_2mo": 8771.42
+      "revenue_2mo": 8771.42,
+      "description": "Kulcha stuffed with a spiced potato filling, adding an extra layer of flavor."
     },
     {
       "id": "aloo-sabzi",
@@ -402,7 +453,9 @@
       "avg_price": 273.1,
       "popular": true,
       "qty_2mo": 29.0,
-      "revenue_2mo": 7920.02
+      "revenue_2mo": 7920.02,
+      "description": "Spiced potato curry, a comforting and versatile side dish.",
+      "half_price": 160
     },
     {
       "id": "butter-naan",
@@ -413,7 +466,8 @@
       "avg_price": 86.67,
       "popular": true,
       "qty_2mo": 90.0,
-      "revenue_2mo": 7799.85
+      "revenue_2mo": 7799.85,
+      "description": "Naan brushed with ghee or butter for an extra layer of richness."
     },
     {
       "id": "mosambi-juice",
@@ -424,7 +478,8 @@
       "avg_price": 120.54,
       "popular": true,
       "qty_2mo": 64.0,
-      "revenue_2mo": 7714.26
+      "revenue_2mo": 7714.26,
+      "description": "Sweet and tangy juice extracted from fresh mosambi (sweet lime)."
     },
     {
       "id": "kulfi",
@@ -435,7 +490,8 @@
       "avg_price": 120.0,
       "popular": true,
       "qty_2mo": 63.0,
-      "revenue_2mo": 7560.0
+      "revenue_2mo": 7560.0,
+      "description": "Traditional Indian ice cream with rich, condensed milk flavors and various aromatic infusions."
     },
     {
       "id": "vegetable-soup",
@@ -446,7 +502,8 @@
       "avg_price": 200.79,
       "popular": true,
       "qty_2mo": 36.0,
-      "revenue_2mo": 7228.56
+      "revenue_2mo": 7228.56,
+      "description": "A hearty soup loaded with a variety of fresh vegetables, simmered to perfection."
     },
     {
       "id": "regular-pizza",
@@ -457,7 +514,8 @@
       "avg_price": 182.48,
       "popular": true,
       "qty_2mo": 38.0,
-      "revenue_2mo": 6934.27
+      "revenue_2mo": 6934.27,
+      "description": "Classic pizza with a tomato sauce base, cheese, and assorted toppings."
     },
     {
       "id": "dahi-papdi-chat-6pcs",
@@ -468,7 +526,8 @@
       "avg_price": 148.38,
       "popular": true,
       "qty_2mo": 45.0,
-      "revenue_2mo": 6677.13
+      "revenue_2mo": 6677.13,
+      "description": "Crispy papdis topped with dahi, potatoes, and a medley of chutneys."
     },
     {
       "id": "pani-puri",
@@ -479,7 +538,8 @@
       "avg_price": 81.41,
       "popular": true,
       "qty_2mo": 81.0,
-      "revenue_2mo": 6594.3
+      "revenue_2mo": 6594.3,
+      "description": "Hollow puris filled with a spicy and tangy mixture of tamarind water, channas, and potatoes."
     },
     {
       "id": "aloo-tikki-2pcs",
@@ -490,7 +550,8 @@
       "avg_price": 110.7,
       "popular": true,
       "qty_2mo": 59.0,
-      "revenue_2mo": 6531.36
+      "revenue_2mo": 6531.36,
+      "description": "Golden-fried potato patties served with mint chutney and tamarind sauce."
     },
     {
       "id": "bhindi-ki-sabzi",
@@ -501,7 +562,9 @@
       "avg_price": 204.99,
       "popular": true,
       "qty_2mo": 30.5,
-      "revenue_2mo": 6252.32
+      "revenue_2mo": 6252.32,
+      "description": "Okra cooked with spices, a delicious and crunchy vegetable dish.",
+      "half_price": 120
     },
     {
       "id": "classic-dal-rice",
@@ -512,7 +575,8 @@
       "avg_price": 231.53,
       "popular": true,
       "qty_2mo": 27.0,
-      "revenue_2mo": 6251.4
+      "revenue_2mo": 6251.4,
+      "description": "Slow-cooked yellow dal tempered with mustard seeds, ghee, and fresh coriander — served with steamed basmati rice, a fresh cucumber-tomato salad, and a pickle on the side. Light, nourishing, and full of warmth. (Serves 1)"
     },
     {
       "id": "corn-cheese-bun-2pcs",
@@ -523,7 +587,8 @@
       "avg_price": 100.38,
       "popular": true,
       "qty_2mo": 62.0,
-      "revenue_2mo": 6223.8
+      "revenue_2mo": 6223.8,
+      "description": "Soft buns filled with a delightful combination of corn and gooey cheese"
     },
     {
       "id": "peas-paratha",
@@ -534,7 +599,8 @@
       "avg_price": 123.73,
       "popular": true,
       "qty_2mo": 49.0,
-      "revenue_2mo": 6062.72
+      "revenue_2mo": 6062.72,
+      "description": "Whole wheat paratha filled with a flavorful mixture of spiced peas."
     },
     {
       "id": "cheese-balls",
@@ -545,7 +611,8 @@
       "avg_price": 221.16,
       "popular": true,
       "qty_2mo": 27.0,
-      "revenue_2mo": 5971.44
+      "revenue_2mo": 5971.44,
+      "description": "Golden-fried cheese balls with a crispy outer layer and a gooey, melted cheese center"
     },
     {
       "id": "dal-makhani-rice-bowl",
@@ -556,7 +623,8 @@
       "avg_price": 268.25,
       "popular": true,
       "qty_2mo": 22.0,
-      "revenue_2mo": 5901.42
+      "revenue_2mo": 5901.42,
+      "description": "Our signature dal makhani — whole black lentils and kidney beans slow-cooked overnight in a buttery tomato gravy, finished with a swirl of cream and a sprig of coriander. Served with steamed basmati rice, fresh salad, and pickle. (Serves 1)"
     },
     {
       "id": "club-kachori-6pcs",
@@ -567,7 +635,8 @@
       "avg_price": 196.19,
       "popular": false,
       "qty_2mo": 30.0,
-      "revenue_2mo": 5885.76
+      "revenue_2mo": 5885.76,
+      "description": "Small, crispy lentil-filled kachoris served with a side of Aloo sabzi"
     },
     {
       "id": "mini-samosa",
@@ -589,7 +658,8 @@
       "avg_price": 104.25,
       "popular": false,
       "qty_2mo": 56.0,
-      "revenue_2mo": 5838.0
+      "revenue_2mo": 5838.0,
+      "description": "Flattened rice cooked with spices, peas, and topped with fresh coriander."
     },
     {
       "id": "vada-pav",
@@ -600,7 +670,8 @@
       "avg_price": 143.83,
       "popular": false,
       "qty_2mo": 40.0,
-      "revenue_2mo": 5753.37
+      "revenue_2mo": 5753.37,
+      "description": "Spicy potato fritter sandwiched in a bun."
     },
     {
       "id": "paneer-butter-masala-rice-bowl",
@@ -611,7 +682,8 @@
       "avg_price": 267.55,
       "popular": false,
       "qty_2mo": 21.0,
-      "revenue_2mo": 5618.56
+      "revenue_2mo": 5618.56,
+      "description": "Tender cottage cheese cubes dunked in a rich, mildly spiced tomato-butter-cashew gravy, topped with fresh cream and coriander. Served with steamed basmati rice, cucumber-tomato salad, and tangy pickle. (Serves 1)"
     },
     {
       "id": "masala-papad",
@@ -622,7 +694,8 @@
       "avg_price": 60.12,
       "popular": false,
       "qty_2mo": 93.0,
-      "revenue_2mo": 5591.44
+      "revenue_2mo": 5591.44,
+      "description": "Crispy papad topped with a flavorful mixture of spices, vegetables, and chutneys."
     },
     {
       "id": "bhel-puri",
@@ -633,7 +706,8 @@
       "avg_price": 111.78,
       "popular": false,
       "qty_2mo": 47.0,
-      "revenue_2mo": 5253.84
+      "revenue_2mo": 5253.84,
+      "description": "A delightful street food mix of puffed rice, vegetables, chutneys, and sev"
     },
     {
       "id": "buttermilk",
@@ -644,7 +718,8 @@
       "avg_price": 60.84,
       "popular": false,
       "qty_2mo": 82.0,
-      "revenue_2mo": 4988.64
+      "revenue_2mo": 4988.64,
+      "description": "Refreshing spiced yogurt drink, perfect to cool your palate."
     },
     {
       "id": "garlic-naan",
@@ -655,7 +730,8 @@
       "avg_price": 91.35,
       "popular": false,
       "qty_2mo": 54.0,
-      "revenue_2mo": 4932.93
+      "revenue_2mo": 4932.93,
+      "description": "Naan infused with garlic and herbs, a flavorful twist on the classic."
     },
     {
       "id": "sweet-corn-soup",
@@ -666,7 +742,8 @@
       "avg_price": 222.38,
       "popular": false,
       "qty_2mo": 22.0,
-      "revenue_2mo": 4892.4
+      "revenue_2mo": 4892.4,
+      "description": "A creamy and comforting soup featuring sweet corn kernels and vegetables."
     },
     {
       "id": "vegetable-hakka-noodles",
@@ -677,7 +754,8 @@
       "avg_price": 178.89,
       "popular": false,
       "qty_2mo": 27.0,
-      "revenue_2mo": 4830.05
+      "revenue_2mo": 4830.05,
+      "description": "Stir-fried noodles with an assortment of vegetables, flavored with Hakka spices."
     },
     {
       "id": "pakodi-ki-kadi",
@@ -688,7 +766,8 @@
       "avg_price": 200.41,
       "popular": false,
       "qty_2mo": 23.0,
-      "revenue_2mo": 4609.52
+      "revenue_2mo": 4609.52,
+      "half_price": 120
     },
     {
       "id": "french-fries",
@@ -699,7 +778,8 @@
       "avg_price": 181.03,
       "popular": false,
       "qty_2mo": 25.0,
-      "revenue_2mo": 4525.71
+      "revenue_2mo": 4525.71,
+      "description": "Classic golden fries, perfectly crispy on the outside and fluffy on the inside"
     },
     {
       "id": "cheese-pasta",
@@ -710,7 +790,8 @@
       "avg_price": 250.66,
       "popular": false,
       "qty_2mo": 18.0,
-      "revenue_2mo": 4511.9
+      "revenue_2mo": 4511.9,
+      "description": "Creamy pasta with a rich cheese sauce, a comforting and indulgent choice."
     },
     {
       "id": "lemonade",
@@ -721,7 +802,8 @@
       "avg_price": 80.07,
       "popular": false,
       "qty_2mo": 56.0,
-      "revenue_2mo": 4483.81
+      "revenue_2mo": 4483.81,
+      "description": "Classic and thirst-quenching lemonade, the perfect balance of sweet and tart."
     },
     {
       "id": "garlic-bread-cheese",
@@ -732,7 +814,8 @@
       "avg_price": 150.74,
       "popular": false,
       "qty_2mo": 29.0,
-      "revenue_2mo": 4371.42
+      "revenue_2mo": 4371.42,
+      "description": "Crunchy garlic bread topped with melted cheese for the perfect savory indulgence."
     },
     {
       "id": "plain-paratha",
@@ -743,7 +826,8 @@
       "avg_price": 50.31,
       "popular": false,
       "qty_2mo": 84.0,
-      "revenue_2mo": 4226.18
+      "revenue_2mo": 4226.18,
+      "description": "Buttery and flaky layered flatbread, a versatile accompaniment."
     },
     {
       "id": "jeera-rice",
@@ -754,7 +838,8 @@
       "avg_price": 183.35,
       "popular": false,
       "qty_2mo": 23.0,
-      "revenue_2mo": 4217.13
+      "revenue_2mo": 4217.13,
+      "description": "Basmati rice flavored with cumin seeds, a simple and aromatic side dish."
     },
     {
       "id": "moong-dal-halwa",
@@ -776,7 +861,8 @@
       "avg_price": 145.5,
       "popular": false,
       "qty_2mo": 27.0,
-      "revenue_2mo": 3928.55
+      "revenue_2mo": 3928.55,
+      "description": "Hollow puris filled with a mixture of dahi, potatoes, and tamarind chutney"
     },
     {
       "id": "white-sauce-pasta",
@@ -787,7 +873,8 @@
       "avg_price": 202.51,
       "popular": false,
       "qty_2mo": 19.0,
-      "revenue_2mo": 3847.6
+      "revenue_2mo": 3847.6,
+      "description": "Pasta coated in a luscious white sauce, rich with cream and cheese."
     },
     {
       "id": "mixed-sauce-pasta",
@@ -798,7 +885,8 @@
       "avg_price": 243.81,
       "popular": false,
       "qty_2mo": 15.0,
-      "revenue_2mo": 3657.15
+      "revenue_2mo": 3657.15,
+      "description": "Pasta with a medley of white and red sauces, creating a creamy and flavorful dish."
     },
     {
       "id": "chilli-cheeesetoast",
@@ -809,7 +897,8 @@
       "avg_price": 112.46,
       "popular": false,
       "qty_2mo": 32.0,
-      "revenue_2mo": 3598.6
+      "revenue_2mo": 3598.6,
+      "description": "Spicy and cheesy toast sandwich with a kick of chili."
     },
     {
       "id": "kathi-roll",
@@ -820,7 +909,8 @@
       "avg_price": 137.85,
       "popular": false,
       "qty_2mo": 26.0,
-      "revenue_2mo": 3584.23
+      "revenue_2mo": 3584.23,
+      "description": "A rolled wrap filled with a tasty mixture of vegetables or paneer."
     },
     {
       "id": "peas-pulao",
@@ -831,7 +921,8 @@
       "avg_price": 243.15,
       "popular": false,
       "qty_2mo": 14.5,
-      "revenue_2mo": 3525.72
+      "revenue_2mo": 3525.72,
+      "description": "Basmati rice cooked with green peas and aromatic spices."
     },
     {
       "id": "veg-fried-rice",
@@ -842,7 +933,8 @@
       "avg_price": 215.0,
       "popular": false,
       "qty_2mo": 16.0,
-      "revenue_2mo": 3440.0
+      "revenue_2mo": 3440.0,
+      "description": "Fragrant and flavorful fried rice loaded with mixed vegetables."
     },
     {
       "id": "cafe-latte",
@@ -853,7 +945,8 @@
       "avg_price": 60.1,
       "popular": false,
       "qty_2mo": 57.0,
-      "revenue_2mo": 3425.72
+      "revenue_2mo": 3425.72,
+      "description": "Smooth and velvety espresso-based coffee with steamed milk."
     },
     {
       "id": "penne-arrabiata",
@@ -864,7 +957,8 @@
       "avg_price": 204.76,
       "popular": false,
       "qty_2mo": 16.0,
-      "revenue_2mo": 3276.16
+      "revenue_2mo": 3276.16,
+      "description": "Penne pasta in a spicy and tangy tomato-based arrabiata sauce."
     },
     {
       "id": "lassi",
@@ -875,7 +969,8 @@
       "avg_price": 101.78,
       "popular": false,
       "qty_2mo": 32.0,
-      "revenue_2mo": 3257.12
+      "revenue_2mo": 3257.12,
+      "description": "Yogurt-based drink, available in sweet or savory variations."
     },
     {
       "id": "vegetable-sandwich",
@@ -886,7 +981,8 @@
       "avg_price": 101.49,
       "popular": false,
       "qty_2mo": 32.0,
-      "revenue_2mo": 3247.6
+      "revenue_2mo": 3247.6,
+      "description": "A delicious sandwich with a medley of fresh vegetables and spreads."
     },
     {
       "id": "watermelon-juice",
@@ -897,7 +993,8 @@
       "avg_price": 100.59,
       "popular": false,
       "qty_2mo": 32.0,
-      "revenue_2mo": 3219.04
+      "revenue_2mo": 3219.04,
+      "description": "Refreshing and hydrating juice made from juicy watermelon."
     },
     {
       "id": "grilled-sandwich",
@@ -908,7 +1005,8 @@
       "avg_price": 160.0,
       "popular": false,
       "qty_2mo": 20.0,
-      "revenue_2mo": 3200.0
+      "revenue_2mo": 3200.0,
+      "description": "A wholesome sandwich with a variety of fillings, grilled to perfection."
     },
     {
       "id": "paneer-sandwich",
@@ -919,7 +1017,8 @@
       "avg_price": 143.81,
       "popular": false,
       "qty_2mo": 21.0,
-      "revenue_2mo": 3020.04
+      "revenue_2mo": 3020.04,
+      "description": "A satisfying sandwich with a filling of marinated and grilled paneer."
     },
     {
       "id": "crispy-chilly-paneer",
@@ -930,7 +1029,8 @@
       "avg_price": 300.38,
       "popular": false,
       "qty_2mo": 10.0,
-      "revenue_2mo": 3003.8
+      "revenue_2mo": 3003.8,
+      "description": "Pan-fried paneer cubes coated in a spicy and flavorful chili glaze"
     },
     {
       "id": "rabdi",
@@ -941,7 +1041,8 @@
       "avg_price": 220.0,
       "popular": false,
       "qty_2mo": 13.5,
-      "revenue_2mo": 2970.0
+      "revenue_2mo": 2970.0,
+      "description": "Indulgent and creamy dessert made by reducing sweetened milk to a thick, luscious consistency"
     },
     {
       "id": "corn-cheese-sandwich",
@@ -952,7 +1053,8 @@
       "avg_price": 141.33,
       "popular": false,
       "qty_2mo": 20.0,
-      "revenue_2mo": 2826.68
+      "revenue_2mo": 2826.68,
+      "description": "Delicious corn and cheese filling between slices of bread, grilled to perfection."
     },
     {
       "id": "mint-mojito",
@@ -963,7 +1065,8 @@
       "avg_price": 80.0,
       "popular": false,
       "qty_2mo": 35.0,
-      "revenue_2mo": 2800.0
+      "revenue_2mo": 2800.0,
+      "description": "A refreshing and zesty mocktail with mint, lime, and soda."
     },
     {
       "id": "gobi-masala",
@@ -974,7 +1077,9 @@
       "avg_price": 214.17,
       "popular": false,
       "qty_2mo": 12.0,
-      "revenue_2mo": 2570.0
+      "revenue_2mo": 2570.0,
+      "description": "Cauliflower florets cooked in a flavorful and spiced tomato-based sauce.",
+      "half_price": 130
     },
     {
       "id": "palak-paneer",
@@ -985,7 +1090,9 @@
       "avg_price": 312.5,
       "popular": false,
       "qty_2mo": 8.0,
-      "revenue_2mo": 2500.03
+      "revenue_2mo": 2500.03,
+      "description": "Cubes of paneer in a creamy spinach gravy, a nutritious and delicious dish.",
+      "half_price": 190
     },
     {
       "id": "rajasthani-thali",
@@ -996,7 +1103,8 @@
       "avg_price": 599.0,
       "popular": false,
       "qty_2mo": 4.0,
-      "revenue_2mo": 2396.0
+      "revenue_2mo": 2396.0,
+      "description": "A combo a rajsthani flavours (sweet, dal baati, kadi pulao, missi roti, gatte ki sabzi)"
     },
     {
       "id": "aloo-dum",
@@ -1007,7 +1115,9 @@
       "avg_price": 334.49,
       "popular": false,
       "qty_2mo": 7.0,
-      "revenue_2mo": 2341.42
+      "revenue_2mo": 2341.42,
+      "description": "Potatoes cooked in a rich and flavorful gravy, a perfect accompaniment.",
+      "half_price": 200
     },
     {
       "id": "tandoori-roti",
@@ -1018,7 +1128,8 @@
       "avg_price": 121.9,
       "popular": false,
       "qty_2mo": 18.0,
-      "revenue_2mo": 2194.26
+      "revenue_2mo": 2194.26,
+      "description": "Round flatbread cooked in a tandoor, lending it a smoky flavor."
     },
     {
       "id": "aloo-sandwich",
@@ -1029,7 +1140,8 @@
       "avg_price": 104.01,
       "popular": false,
       "qty_2mo": 19.0,
-      "revenue_2mo": 1976.16
+      "revenue_2mo": 1976.16,
+      "description": "Simple yet flavorful sandwich with a filling of spiced mashed potatoes."
     },
     {
       "id": "aloo-pakoda",
@@ -1040,7 +1152,8 @@
       "avg_price": 103.76,
       "popular": false,
       "qty_2mo": 19.0,
-      "revenue_2mo": 1971.4
+      "revenue_2mo": 1971.4,
+      "description": "Crispy and spiced deep-fried potato fritters."
     },
     {
       "id": "tea",
@@ -1051,7 +1164,8 @@
       "avg_price": 41.17,
       "popular": false,
       "qty_2mo": 47.0,
-      "revenue_2mo": 1935.1
+      "revenue_2mo": 1935.1,
+      "description": "Hot and aromatic tea, served with or without milk, and customizable to taste."
     },
     {
       "id": "plain-rice",
@@ -1062,7 +1176,8 @@
       "avg_price": 131.33,
       "popular": false,
       "qty_2mo": 14.0,
-      "revenue_2mo": 1838.57
+      "revenue_2mo": 1838.57,
+      "description": "Steamed white rice"
     },
     {
       "id": "crispy-chilly-potato",
@@ -1073,7 +1188,8 @@
       "avg_price": 226.55,
       "popular": false,
       "qty_2mo": 8.0,
-      "revenue_2mo": 1812.4
+      "revenue_2mo": 1812.4,
+      "description": "Crispy fried potato slices tossed in a spicy and tangy chili sauce."
     },
     {
       "id": "corn-aloo-tikki-2pcs",
@@ -1084,7 +1200,8 @@
       "avg_price": 138.79,
       "popular": false,
       "qty_2mo": 13.0,
-      "revenue_2mo": 1804.26
+      "revenue_2mo": 1804.26,
+      "description": "A flavorful combination of corn and potato formed into delicious tikkis."
     },
     {
       "id": "jhal-puri",
@@ -1095,7 +1212,8 @@
       "avg_price": 111.64,
       "popular": false,
       "qty_2mo": 16.0,
-      "revenue_2mo": 1786.2
+      "revenue_2mo": 1786.2,
+      "description": "Crispy, hollow puris filled with spicy tamarind water, potatoes, and channas"
     },
     {
       "id": "kaju-vegetable-pulao",
@@ -1117,7 +1235,8 @@
       "avg_price": 120.0,
       "popular": false,
       "qty_2mo": 14.5,
-      "revenue_2mo": 1740.0
+      "revenue_2mo": 1740.0,
+      "description": "Classic vanilla-flavored frozen delight, a timeless treat for any dessert lover."
     },
     {
       "id": "samosa-chat",
@@ -1128,7 +1247,8 @@
       "avg_price": 101.12,
       "popular": false,
       "qty_2mo": 17.0,
-      "revenue_2mo": 1719.04
+      "revenue_2mo": 1719.04,
+      "description": "Samosa broken into pieces and topped with chutneys and spices."
     },
     {
       "id": "chocolate-ice-cream",
@@ -1139,7 +1259,8 @@
       "avg_price": 100.0,
       "popular": false,
       "qty_2mo": 16.0,
-      "revenue_2mo": 1600.0
+      "revenue_2mo": 1600.0,
+      "description": "Decadent chocolate-infused frozen goodness, a heavenly delight for chocolate enthusiasts."
     },
     {
       "id": "masala-thumsup",
@@ -1150,7 +1271,8 @@
       "avg_price": 90.0,
       "popular": false,
       "qty_2mo": 17.0,
-      "revenue_2mo": 1530.0
+      "revenue_2mo": 1530.0,
+      "description": "Spiced and flavored version of the popular cola, Thums Up."
     },
     {
       "id": "baby-cheese-naan-2pcs",
@@ -1161,7 +1283,8 @@
       "avg_price": 122.86,
       "popular": false,
       "qty_2mo": 12.0,
-      "revenue_2mo": 1474.26
+      "revenue_2mo": 1474.26,
+      "description": "Baby Naan filled with cheese and brushed with butter for an extra layer of richness."
     },
     {
       "id": "kadi",
@@ -1172,7 +1295,9 @@
       "avg_price": 210.0,
       "popular": false,
       "qty_2mo": 7.0,
-      "revenue_2mo": 1470.0
+      "revenue_2mo": 1470.0,
+      "description": "Dahi-based curry with besan dumplings, tempered with spices.",
+      "half_price": 130
     },
     {
       "id": "onion-pakoda",
@@ -1194,7 +1319,8 @@
       "avg_price": 120.0,
       "popular": false,
       "qty_2mo": 12.0,
-      "revenue_2mo": 1440.0
+      "revenue_2mo": 1440.0,
+      "description": "Rich and chocolaty milkshake, a delightful treat for chocolate lovers."
     },
     {
       "id": "peas-masala",
@@ -1205,7 +1331,9 @@
       "avg_price": 337.86,
       "popular": false,
       "qty_2mo": 4.0,
-      "revenue_2mo": 1351.42
+      "revenue_2mo": 1351.42,
+      "description": "A flavorful curry made with green peas in a spiced tomato-based sauce.",
+      "half_price": 200
     },
     {
       "id": "raita-250ml",
@@ -1227,7 +1355,8 @@
       "avg_price": 80.25,
       "popular": false,
       "qty_2mo": 15.0,
-      "revenue_2mo": 1203.81
+      "revenue_2mo": 1203.81,
+      "description": "Soft and mildly leavened Indian bread, perfect for scooping up curries."
     },
     {
       "id": "dahi-aloo-tikki-2pcs",
@@ -1238,7 +1367,8 @@
       "avg_price": 143.93,
       "popular": false,
       "qty_2mo": 8.0,
-      "revenue_2mo": 1151.42
+      "revenue_2mo": 1151.42,
+      "description": "Crispy potato patties topped with dahi, chutneys, and spices."
     },
     {
       "id": "dhokla-chat",
@@ -1249,7 +1379,8 @@
       "avg_price": 111.57,
       "popular": false,
       "qty_2mo": 10.0,
-      "revenue_2mo": 1115.72
+      "revenue_2mo": 1115.72,
+      "description": "A chat variation featuring bite-sized dhokla pieces topped with chutneys and spices."
     },
     {
       "id": "curd-rice",
@@ -1260,7 +1391,8 @@
       "avg_price": 155.1,
       "popular": false,
       "qty_2mo": 7.0,
-      "revenue_2mo": 1085.7
+      "revenue_2mo": 1085.7,
+      "description": "A South Indian dish featuring rice mixed with dahi and seasoned with spices."
     },
     {
       "id": "oreo-milkshake",
@@ -1271,7 +1403,8 @@
       "avg_price": 120.0,
       "popular": false,
       "qty_2mo": 9.0,
-      "revenue_2mo": 1080.0
+      "revenue_2mo": 1080.0,
+      "description": "Creamy and indulgent milkshake made with Oreo cookies."
     },
     {
       "id": "garlic-bread",
@@ -1282,7 +1415,8 @@
       "avg_price": 82.93,
       "popular": false,
       "qty_2mo": 13.0,
-      "revenue_2mo": 1078.1
+      "revenue_2mo": 1078.1,
+      "description": "Crunchy garlic bread topped with melted cheese for the perfect savory indulgence."
     },
     {
       "id": "naan",
@@ -1293,7 +1427,8 @@
       "avg_price": 71.55,
       "popular": false,
       "qty_2mo": 15.0,
-      "revenue_2mo": 1073.31
+      "revenue_2mo": 1073.31,
+      "description": "Soft and fluffy leavened bread, ideal for sopping up rich gravies"
     },
     {
       "id": "extra-bhatura",
@@ -1315,7 +1450,8 @@
       "avg_price": 40.09,
       "popular": false,
       "qty_2mo": 22.0,
-      "revenue_2mo": 881.9
+      "revenue_2mo": 881.9,
+      "description": "Plain papad roasted to perfection, a crispy and light appetizer."
     },
     {
       "id": "badam-milkshake",
@@ -1326,7 +1462,8 @@
       "avg_price": 120.82,
       "popular": false,
       "qty_2mo": 7.0,
-      "revenue_2mo": 845.71
+      "revenue_2mo": 845.71,
+      "description": "A nourishing milkshake made with almond paste."
     },
     {
       "id": "mango-ice-cream",
@@ -1348,7 +1485,8 @@
       "avg_price": 120.0,
       "popular": false,
       "qty_2mo": 6.0,
-      "revenue_2mo": 720.0
+      "revenue_2mo": 720.0,
+      "description": "Refreshing milkshake flavored with the essence of rose petals."
     },
     {
       "id": "mango-juice",
@@ -1381,7 +1519,8 @@
       "avg_price": 93.58,
       "popular": false,
       "qty_2mo": 6.0,
-      "revenue_2mo": 561.45
+      "revenue_2mo": 561.45,
+      "description": "A hearty vegetarian burger with a flavorful patty, fresh veggies, and a zesty dressing."
     },
     {
       "id": "extra-pav",
@@ -1403,7 +1542,8 @@
       "avg_price": 111.05,
       "popular": false,
       "qty_2mo": 5.0,
-      "revenue_2mo": 555.24
+      "revenue_2mo": 555.24,
+      "description": "A unique and delicious chat preparation with bite-sized bread pieces and flavorful toppings."
     },
     {
       "id": "nachos",
@@ -1414,7 +1554,8 @@
       "avg_price": 225.24,
       "popular": false,
       "qty_2mo": 2.0,
-      "revenue_2mo": 450.48
+      "revenue_2mo": 450.48,
+      "description": "Crispy tortilla chips generously topped with melted cheese and salsa."
     },
     {
       "id": "add-on-sabzi",
@@ -1436,7 +1577,8 @@
       "avg_price": 51.7,
       "popular": false,
       "qty_2mo": 7.0,
-      "revenue_2mo": 361.9
+      "revenue_2mo": 361.9,
+      "description": "Traditional unleavened flatbread, perfect for pairing with a variety of dishes."
     },
     {
       "id": "cold-coffee",
@@ -1447,7 +1589,8 @@
       "avg_price": 120.0,
       "popular": false,
       "qty_2mo": 3.0,
-      "revenue_2mo": 360.0
+      "revenue_2mo": 360.0,
+      "description": "Chilled and creamy coffee beverage"
     },
     {
       "id": "churmur-chat",
@@ -1469,7 +1612,8 @@
       "avg_price": 125.71,
       "popular": false,
       "qty_2mo": 2.0,
-      "revenue_2mo": 251.42
+      "revenue_2mo": 251.42,
+      "description": "Freshly squeezed orange juice, a burst of citrusy goodness."
     },
     {
       "id": "vanilla-milkshake",
@@ -1480,7 +1624,8 @@
       "avg_price": 120.0,
       "popular": false,
       "qty_2mo": 2.0,
-      "revenue_2mo": 240.0
+      "revenue_2mo": 240.0,
+      "description": "Classic and timeless milkshake with the pure and sweet flavor of vanilla."
     },
     {
       "id": "kadai-ki-puri",
@@ -1491,7 +1636,8 @@
       "avg_price": 20.95,
       "popular": false,
       "qty_2mo": 10.0,
-      "revenue_2mo": 209.5
+      "revenue_2mo": 209.5,
+      "description": "Soft-round fried wheat based traditional puris"
     },
     {
       "id": "blue-lagoon",
@@ -1502,7 +1648,8 @@
       "avg_price": 100.0,
       "popular": false,
       "qty_2mo": 2.0,
-      "revenue_2mo": 200.0
+      "revenue_2mo": 200.0,
+      "description": "A vibrant and colorful mocktail featuring blue cura?ao and citrus flavors."
     },
     {
       "id": "lemon-tea",
@@ -1535,7 +1682,8 @@
       "avg_price": 120.0,
       "popular": false,
       "qty_2mo": 1.0,
-      "revenue_2mo": 120.0
+      "revenue_2mo": 120.0,
+      "description": "A smooth and creamy milkshake featuring the natural sweetness of bananas."
     },
     {
       "id": "mini-kulcha",
@@ -1558,6 +1706,16 @@
       "popular": false,
       "qty_2mo": 1.0,
       "revenue_2mo": 20.0
+    },
+    {
+      "id": "fruit-chaat",
+      "name": "Fruit Chaat",
+      "category": "Chaats",
+      "group": "Chaats & Snacks",
+      "price": 120,
+      "avg_price": 120,
+      "popular": false,
+      "description": "Fresh seasonal fruits like papaya, bananas, and pomegranates chopped and tossed with lemon juice, black salt, roasted cumin powder, and chaat masala."
     }
   ]
 }

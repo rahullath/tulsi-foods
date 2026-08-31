@@ -1,10 +1,25 @@
-"""Menu catalogue loaded from data/menu.json + per-day availability."""
+"""Menu catalogue loaded from data/menu.json + per-day availability.
+
+Half-portion items: any item with a `half_price` set (see
+scripts/merge_petpooja.py) gets a synthetic second entry with id
+`<item_id>__half`, name suffixed " (Half)", priced at half_price. It shares
+the base item's availability/day-gating — no separate admin toggle.
+
+Specialities-day gating: the "Specialities" group (kachoris, chutneys, papad
+packs) is only orderable on Thursdays per how the restaurant runs it —
+enforced in is_available() so it also blocks checkout, not just display.
+"""
 import json
 from datetime import date
 from functools import lru_cache
 
 from .config import MENU_FILE
 from . import db
+
+HALF_SUFFIX = "__half"
+
+SPECIALITIES_GROUP = "Specialities"
+SPECIALITIES_WEEKDAY = 3  # Thursday (Monday = 0)
 
 
 @lru_cache(maxsize=1)
@@ -15,19 +30,45 @@ def load_menu() -> list[dict]:
     return items
 
 
+def _base_id(item_id: str) -> str:
+    return item_id[: -len(HALF_SUFFIX)] if item_id.endswith(HALF_SUFFIX) else item_id
+
+
 def get_item(item_id: str) -> dict | None:
+    if item_id.endswith(HALF_SUFFIX):
+        base = get_item(_base_id(item_id))
+        if not base or not base.get("half_price"):
+            return None
+        half = dict(base)
+        half["id"] = item_id
+        half["name"] = f"{base['name']} (Half)"
+        half["price"] = base["half_price"]
+        half["popular"] = False
+        return half
     for m in load_menu():
         if m["id"] == item_id:
             return m
     return None
 
 
+def _specialities_reason(base_item: dict | None, day: str) -> str | None:
+    if not base_item or base_item.get("group") != SPECIALITIES_GROUP:
+        return None
+    if date.fromisoformat(day).weekday() != SPECIALITIES_WEEKDAY:
+        return "Only available Thursdays"
+    return None
+
+
 def is_available(item_id: str, day: str | None = None) -> bool:
     day = today(day)
+    base_id = _base_id(item_id)
+    base_item = get_item(base_id)
+    if _specialities_reason(base_item, day):
+        return False
     available = db.get_available_ids(day)
     if not available:
         return True  # no availability saved yet → everything available
-    return item_id in available
+    return base_id in available
 
 
 def today(day: str | None = None) -> str:
@@ -35,14 +76,28 @@ def today(day: str | None = None) -> str:
 
 
 def menu_for(day: str | None = None) -> list[dict]:
-    """Full menu with today's availability flag."""
+    """Full menu with today's availability flag, half-portion variants included."""
     day = today(day)
     available = db.get_available_ids(day)
     out = []
     for m in load_menu():
         row = dict(m)
-        row["available"] = m["id"] in available if available else True
+        in_stock = m["id"] in available if available else True
+        reason = _specialities_reason(m, day)
+        row["available"] = in_stock and not reason
+        row["unavailable_reason"] = reason
+        row["photo_id"] = m["id"]
         out.append(row)
+        if m.get("half_price"):
+            half = dict(m)
+            half["id"] = m["id"] + HALF_SUFFIX
+            half["name"] = f"{m['name']} (Half)"
+            half["price"] = m["half_price"]
+            half["popular"] = False
+            half["available"] = row["available"]
+            half["unavailable_reason"] = row["unavailable_reason"]
+            half["photo_id"] = m["id"]  # reuse the full-portion photo
+            out.append(half)
     return out
 
 

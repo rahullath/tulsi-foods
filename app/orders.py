@@ -2,6 +2,7 @@
 import math
 import re
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from . import db, menu
 from .config import (
@@ -9,10 +10,13 @@ from .config import (
     FREE_DELIVERY_ABOVE,
     GST_ENABLED,
     GST_RATE,
+    MONDAY_OPENS_AT,
     PACKING_FEE,
     PACKING_FEE_LARGE_ORDER,
     PACKING_FEE_LARGE_ORDER_THRESHOLD,
 )
+
+IST = ZoneInfo("Asia/Kolkata")
 
 ADDRESS_EDIT_WINDOW = timedelta(minutes=3)
 MAX_SCHEDULE_AHEAD = timedelta(days=14)
@@ -97,8 +101,16 @@ def check_pincode_serviceable(pincode: str) -> dict:
     return {"serviceable": False, "couriers": [], "fee_estimate": None, "eta": None}
 
 
+MAX_NOTE_LEN = 200
+
+
 def build_lines(items: list[dict]) -> tuple[list[dict], float]:
-    """Validate item ids against today's availability; returns (lines, subtotal)."""
+    """Validate item ids against today's availability; returns (lines, subtotal).
+
+    An optional freeform `note` per item (e.g. "swap dry sabzi for Paneer
+    Butter Masala, +2 phulka" on a thali) is appended to the stored item
+    name — shows on the kitchen Telegram alert and admin panel as-is. No
+    price impact by design (customization pricing is a later decision)."""
     lines, subtotal = [], 0.0
     for it in items:
         m = menu.get_item(it["item_id"])
@@ -108,7 +120,11 @@ def build_lines(items: list[dict]) -> tuple[list[dict], float]:
             raise OrderError(f"'{m['name']}' is not available today", 409)
         price = float(m["price"])
         subtotal += price * it["qty"]
-        lines.append({"item_id": m["id"], "name": m["name"], "price": price, "qty": it["qty"]})
+        name = m["name"]
+        note = (it.get("note") or "").strip()[:MAX_NOTE_LEN]
+        if note:
+            name = f"{name} — {note}"
+        lines.append({"item_id": m["id"], "name": name, "price": price, "qty": it["qty"]})
     if not lines:
         raise OrderError("No items in order", 400)
     return lines, subtotal
@@ -163,6 +179,22 @@ def check_address(address: str | None, pincode: str | None,
     return False, None
 
 
+def _schedule_closed_reason(scheduled_at: str | None = None) -> str | None:
+    """Fixed weekly hours not covered by the manual store_status toggle —
+    currently just Monday's half day. Checks against `scheduled_at` (a
+    pre-order's requested time) when given, otherwise the current time.
+    Returns a customer-facing reason, or None if within hours."""
+    if scheduled_at:
+        when = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00")).astimezone(IST)
+    else:
+        when = datetime.now(IST)
+    if when.weekday() == 0:  # Monday
+        opens_at = datetime.strptime(MONDAY_OPENS_AT, "%H:%M").time()
+        if when.time() < opens_at:
+            return f"We're closed Monday mornings — back online at {MONDAY_OPENS_AT}"
+    return None
+
+
 def create_order(phone: str, name: str, order_type: str, items: list[dict],
                  address: str | None = None, km: float | None = None,
                  pincode: str | None = None,
@@ -171,6 +203,12 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                  lat: str | None = None, lng: str | None = None) -> dict:
     if order_type not in ("delivery", "pickup"):
         raise OrderError("Invalid order_type", 400)
+    store = db.get_store_status()
+    if not store["is_open"]:
+        raise OrderError(store["reason"] or "We're closed for online orders right now", 400)
+    schedule_reason = _schedule_closed_reason(scheduled_at)
+    if schedule_reason:
+        raise OrderError(schedule_reason, 400)
     _validate_scheduled_at(scheduled_at)
 
     lines, subtotal = build_lines(items)
@@ -215,6 +253,21 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
             notify_new_order(order_row)
     except Exception:
         pass
+
+    # Push to Petpooja POS — no-op until PETPOOJA_APP_KEY etc. are set (see
+    # app/petpooja/config.py); never blocks order creation on failure.
+    try:
+        from .petpooja.client import is_configured, save_order as petpooja_save_order
+        if is_configured():
+            from .config import TULSI_ADMIN_URL
+            from .petpooja.config import PETPOOJA_WEBHOOK_TOKEN
+            order_row = db.get_order(oid)
+            callback_url = f"{TULSI_ADMIN_URL}/webhook/petpooja/order-callback?t={PETPOOJA_WEBHOOK_TOKEN}"
+            result = petpooja_save_order(order_row, callback_url, GST_RATE)
+            db.update_order_petpooja(oid, result["petpooja_order_id"])
+    except Exception:
+        import logging
+        logging.getLogger("petpooja").exception("save_order push failed for order %s", oid)
 
     return {"order_id": oid, "status": "new", "subtotal": round(subtotal, 2),
             "packing_fee": packing_fee, "gst_amount": gst_amount,

@@ -42,6 +42,11 @@ PACKING_FEE_LARGE_ORDER = 40
 # GSTIN — shown on order confirmations/receipts once set. Blank until filled in.
 GSTIN = os.environ.get("GSTIN", "")
 
+# Monday is a half day — kitchen doesn't take online orders until the
+# afternoon. "Second half of the day" is a placeholder for 14:00 IST;
+# confirm the exact reopen time with mom and adjust if it's off.
+MONDAY_OPENS_AT = "14:00"
+
 ORDER_STATUSES = [
     "new",
     "preparing",

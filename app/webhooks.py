@@ -14,6 +14,7 @@ from fastapi.responses import PlainTextResponse
 
 from .config import WHATSAPP_APP_SECRET, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN, ADMIN_PHONE
 from .whatsapp import client, conversation, sessions
+from .petpooja.config import PETPOOJA_REST_ID, PETPOOJA_WEBHOOK_TOKEN
 
 log = logging.getLogger("webhook")
 router = APIRouter(prefix="/webhook", tags=["webhook"])
@@ -212,6 +213,7 @@ def _handle_borzo_delivery_status(order_id: int, status: str, delivery: dict) ->
     db.update_order_status(order_id, mapped)
     log.info("Order %s: %s → %s (Borzo delivery: %s)", order_id, current, mapped, status)
     _send_status_whatsapp_if_needed(o, mapped)
+    _relay_rider_status_to_petpooja(order_id, status)
 
 
 def _handle_borzo_order_status(order_id: int, status: str, order: dict) -> None:
@@ -241,3 +243,158 @@ def _send_status_whatsapp_if_needed(order: dict, status: str) -> None:
         return
     from .notify import notify_status
     notify_status(order, status)
+
+
+# ---- Borzo -> Petpooja rider status relay ----
+# Piggybacks on the existing Borzo webhook: whenever our courier's status
+# changes and this order was pushed to Petpooja POS, tell Petpooja too (their
+# "Rider Information" webhook), so the kitchen terminal shows live courier
+# status instead of just "dispatched". Best-effort — never blocks the primary
+# Borzo status handling above.
+_BORZO_TO_PETPOOJA_RIDER_STATUS = {
+    "courier_assigned": "rider-assigned",
+    "courier_arrived": "rider-arrived",
+    "courier_at_pickup": "rider-arrived",
+    "parcel_picked_up": "pickedup",
+    "finished": "delivered",
+}
+
+
+def _relay_rider_status_to_petpooja(order_id: int, borzo_status: str) -> None:
+    mapped = _BORZO_TO_PETPOOJA_RIDER_STATUS.get(borzo_status)
+    if not mapped:
+        return
+    try:
+        from . import db
+        from .petpooja.client import is_configured, push_rider_status
+        if not is_configured():
+            return
+        o = db.get_order(order_id)
+        if not o or not o.get("petpooja_order_id"):
+            return
+        push_rider_status(order_id, mapped)
+    except Exception:
+        log.exception("Petpooja rider status relay failed for order %s", order_id)
+
+
+# ---- Petpooja POS webhooks ----
+# Endpoints Petpooja calls (we host these, per the "Push Menu" / "Order
+# Callback" / stock+store status API docs). Petpooja's docs don't specify a
+# request-signing scheme for these, so we hand Petpooja these URLs with our
+# own shared-secret token baked in as ?t=... — verified below.
+
+def _check_petpooja_token(t: str | None) -> None:
+    if PETPOOJA_WEBHOOK_TOKEN and t != PETPOOJA_WEBHOOK_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid token")
+
+
+@router.post("/petpooja/order-callback")
+async def petpooja_order_callback(request: Request, t: str | None = Query(None)):
+    """Petpooja POS -> us: order status changed (accepted/dispatch/ready/delivered/cancelled)."""
+    _check_petpooja_token(t)
+    try:
+        body = json.loads(await request.body() or b"{}")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    from . import db
+    from .petpooja.mapping import petpooja_status_to_order_status
+
+    order_id_raw = body.get("orderID")
+    status_code = body.get("status")
+    if not order_id_raw or status_code is None:
+        return {"success": "0", "message": "Missing orderID or status"}
+
+    mapped = petpooja_status_to_order_status(status_code)
+    if not mapped:
+        log.info("Petpooja callback: unrecognised status %s for order %s", status_code, order_id_raw)
+        return {"success": "1", "message": "Ignored (unrecognised status)"}
+
+    try:
+        order_id = int(order_id_raw)
+    except (TypeError, ValueError):
+        return {"success": "0", "message": "Invalid orderID"}
+
+    o = db.get_order(order_id)
+    if not o:
+        return {"success": "0", "message": "Order not found"}
+    if o["status"] in ("delivered", "cancelled"):
+        return {"success": "1", "message": "No-op (order already closed)"}
+
+    db.update_order_status(order_id, mapped)
+    log.info("Order %s: %s -> %s (Petpooja callback: %s)", order_id, o["status"], mapped, status_code)
+    _send_status_whatsapp_if_needed(db.get_order(order_id), mapped)
+    return {"success": "1", "message": "Status updated"}
+
+
+@router.post("/petpooja/menu")
+async def petpooja_push_menu(request: Request, t: str | None = Query(None)):
+    """Petpooja POS -> us: menu changed. Cached only for now — NOT wired into
+    the live customer-facing menu (data/menu.json stays the source until the
+    item-id reconciliation described in app/petpooja/mapping.py is done and
+    someone deliberately flips the switch)."""
+    _check_petpooja_token(t)
+    try:
+        body = json.loads(await request.body() or b"{}")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    from .config import DATA_DIR
+    cache_file = DATA_DIR / "petpooja_menu_raw.json"
+    try:
+        cache_file.write_text(json.dumps(body, indent=2), encoding="utf-8")
+        log.info("Petpooja push-menu received and cached (%d bytes)", len(json.dumps(body)))
+    except Exception:
+        log.exception("Failed to cache Petpooja pushed menu")
+
+    return {"success": True, "message": "Menu received"}
+
+
+@router.post("/petpooja/stock")
+async def petpooja_update_stock(request: Request, t: str | None = Query(None)):
+    """Petpooja POS -> us: item/addon marked in/out of stock. Logged only for
+    now — see the item-id note in app/petpooja/mapping.py for why this isn't
+    wired into app.db.set_availability() yet."""
+    _check_petpooja_token(t)
+    try:
+        body = json.loads(await request.body() or b"{}")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    log.info("Petpooja stock toggle: %s", body)
+    return {"code": "200", "status": "success", "message": "Received"}
+
+
+@router.api_route("/petpooja/store-status", methods=["GET", "POST"])
+async def petpooja_get_store_status(t: str | None = Query(None)):
+    """Petpooja POS -> us: 'is the store open for online orders'."""
+    _check_petpooja_token(t)
+    from . import db
+    status = db.get_store_status()
+    return {
+        "restID": PETPOOJA_REST_ID,
+        "status": "success",
+        "store_status": "1" if status["is_open"] else "0",
+        "http_code": "200",
+        "message": "OK",
+    }
+
+
+@router.post("/petpooja/store-status/update")
+async def petpooja_update_store_status(request: Request, t: str | None = Query(None)):
+    """Petpooja POS -> us: merchant flipped store open/closed on the POS terminal.
+    Gates new order creation — see the store-status check in app/orders.py."""
+    _check_petpooja_token(t)
+    try:
+        body = json.loads(await request.body() or b"{}")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    from . import db
+    is_open = str(body.get("store_status")) == "1"
+    db.set_store_status(is_open, reason=body.get("reason"), turn_on_time=body.get("turn_on_time"))
+    log.info("Store status set to %s (reason: %s)", "open" if is_open else "closed", body.get("reason"))
+    return {
+        "http_code": 200,
+        "status": "success",
+        "message": f"Store Status updated successfully for store {body.get('restID', PETPOOJA_REST_ID)}",
+    }
