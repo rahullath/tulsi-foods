@@ -18,16 +18,17 @@ PETPOOJA_APP_SECRET = os.environ.get("PETPOOJA_APP_SECRET", "")
 PETPOOJA_ACCESS_TOKEN = os.environ.get("PETPOOJA_ACCESS_TOKEN", "")
 PETPOOJA_REST_ID = os.environ.get("PETPOOJA_REST_ID", "")
 
-# Outbound (we call Petpooja). Fetch Menu / Update Order Status / Rider webhook
-# share one API Gateway host in the docs; Save Order uses a different one —
-# that's documented, not a typo.
+# Outbound (we call Petpooja). All four staging endpoints share one API
+# Gateway host — confirmed against the sandbox dashboard's "Configuration -
+# Staging" page (Sep 2026); the save_order default previously pointed at a
+# different, unconfirmed host from the old Apiary docs.
 PETPOOJA_FETCH_MENU_URL = os.environ.get(
     "PETPOOJA_FETCH_MENU_URL",
     "https://qle1yy2ydc.execute-api.ap-southeast-1.amazonaws.com/V1/mapped_restaurant_menus",
 )
 PETPOOJA_SAVE_ORDER_URL = os.environ.get(
     "PETPOOJA_SAVE_ORDER_URL",
-    "https://47pfzh5sf2.execute-api.ap-southeast-1.amazonaws.com/V1/save_order",
+    "https://qle1yy2ydc.execute-api.ap-southeast-1.amazonaws.com/V1/save_order",
 )
 PETPOOJA_UPDATE_ORDER_STATUS_URL = os.environ.get(
     "PETPOOJA_UPDATE_ORDER_STATUS_URL",

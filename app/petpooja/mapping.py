@@ -1,9 +1,14 @@
 """Pure conversions between our order/menu shapes and Petpooja's payloads.
 
-Field names and nesting here match the worked example on the "Save Order"
-endpoint page at https://onlineorderingapisv210.docs.apiary.io (click into
-the 200 response — the flat field list on that page is summary prose and
-disagrees slightly on nesting; the JSON example is what's authoritative).
+Field names and nesting here follow the Sep 2026 "API Guide for Placing
+Orders on Petpooja POS" (temp/API Guide for Placing Orders on Petpooja
+POS.pdf), Petpooja's newer worked example, which disagrees in a couple of
+spots with the older Apiary docs at https://onlineorderingapisv210.docs.apiary.io
+— notably order-level `Tax.details` (required, was previously sent empty)
+and `addon_items` as a flat list (Apiary nests it as `AddonItem.details`).
+Went with the newer guide since it's what Petpooja pointed at for the
+current sandbox review; flip back to the Apiary shape if the sandbox
+rejects it.
 
 KNOWN GAP, not yet resolved: `OrderItem.id` below is our own menu item_id
 (from data/menu.json, sourced from Swiggy exports), not Petpooja's item id.
@@ -62,6 +67,21 @@ def _split_cgst_sgst(amount: float, rate_pct: float, tax_id_base: str) -> list[d
     ]
 
 
+def _order_level_tax_details(gst_amount: float, rate_pct: float) -> list[dict]:
+    """Order-level `Tax.details` — a separate, required breakdown from the
+    per-item `item_tax` above (see the "Tax & Discounts" section of the Sep
+    2026 Save Order API guide in temp/). restaurant_liable_amt mirrors the
+    tax amount since gst_liability is "restaurant" for every item here."""
+    half_amt = round(gst_amount / 2, 2)
+    half_rate = round(rate_pct / 2, 2)
+    return [
+        {"id": "1", "title": "CGST", "type": "P", "price": f"{half_rate}%",
+         "tax": f"{half_amt:.2f}", "restaurant_liable_amt": f"{half_amt:.2f}"},
+        {"id": "2", "title": "SGST", "type": "P", "price": f"{half_rate}%",
+         "tax": f"{half_amt:.2f}", "restaurant_liable_amt": f"{half_amt:.2f}"},
+    ]
+
+
 def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float) -> dict:
     """Build the `orderinfo` body for POST save_order from our `db.get_order()` row.
 
@@ -90,14 +110,24 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
             "tax_inclusive": False,
             "gst_liability": "restaurant",
             "item_tax": _split_cgst_sgst(item_gst, gst_rate * 100, str(it["item_id"])),
-            "item_discount": "0",
+            "tax_percentage": f"{gst_rate * 100:.2f}",
+            "item_discount": str(it.get("item_discount", "0")),
             "price": f"{float(it['price']):.2f}",
             "final_price": f"{line_total:.2f}",
             "quantity": str(it["qty"]),
             "description": "",
-            "variation_name": "",
-            "variation_id": "",
-            "AddonItem": {"details": []},
+            "variation_name": it.get("variation_name", ""),
+            "variation_id": str(it.get("variation_id", "")),
+            # Sent under BOTH keys: the flat "addon_items" key alone (new
+            # guide) was confirmed silently dropped on a real sandbox order
+            # (Sep 2026) — item saved fine but the addon never appeared on
+            # the receipt. Sending it nested under "AddonItem.details" too
+            # (the older Apiary shape) fixed it — receipt then showed the
+            # addon and the correct addon-inclusive total. Never isolated
+            # which key Petpooja's backend actually reads since both were
+            # sent together; harmless to keep sending both indefinitely.
+            "addon_items": it.get("addon_items", []),
+            "AddonItem": {"details": it.get("addon_items", [])},
         })
 
     order_details = {
@@ -118,13 +148,19 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         "payment_type": _PAYMENT_TYPE_CODE.get(payment_method, "COD"),
         "table_no": "",
         "no_of_persons": "0",
-        "discount_total": "0",
-        "discount_type": "F",
+        "discount_total": str(order.get("discount_total", "0")),
+        "discount_type": order.get("discount_type", "F"),
         "tax_total": f"{gst_amount:.2f}",
         "total": f"{total:.2f}",
         "description": order.get("instructions") or "",
         "created_on": order.get("created_at") or datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-        "enable_delivery": 1 if order_type == "delivery" else 0,
+        # 0 = third-party rider, 1 = restaurant's own rider — NOT "is this a
+        # delivery order". Every Tulsi Foods delivery goes through Borzo (a
+        # third-party courier, see app/delivery/), never restaurant staff,
+        # so this must always be 0. Confirmed the hard way: with the old
+        # `1 if order_type == "delivery" else 0` logic, every sandbox test
+        # order's receipt showed "Home Delivery (Self delivery)" — wrong.
+        "enable_delivery": 0,
         "min_prep_time": 20,
         "callback_url": callback_url,
         "collect_cash": f"{total:.2f}" if payment_method == "cod" else "0",
@@ -152,7 +188,7 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
             "Customer": {"details": customer_details},
             "Order": {"details": order_details},
             "OrderItem": {"details": item_lines},
-            "Tax": {"details": []},
+            "Tax": {"details": _order_level_tax_details(gst_amount, gst_rate * 100)},
             "Discount": {"details": []},
         }
     }

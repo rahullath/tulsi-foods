@@ -49,7 +49,11 @@ def is_configured() -> bool:
 def save_order(order: dict, callback_url: str, gst_rate: float) -> dict:
     """Push a confirmed order into Petpooja POS as Pending; kitchen accepts on the terminal.
 
-    Returns {"petpooja_order_id": str}. Raises PetpoojaError on failure.
+    Returns {"petpooja_order_id": str, "client_order_id": str, "message": str}.
+    petpooja_order_id (their `orderID`) comes back blank on the sandbox even on
+    success — confirmed against a real sandbox call (Sep 2026), not a bug here.
+    client_order_id (`clientOrderID`, == our own order id) is what's searchable
+    in the sandbox dashboard's Order Listing page. Raises PetpoojaError on failure.
     """
     payload = {
         **_auth_fields(),
@@ -66,8 +70,13 @@ def save_order(order: dict, callback_url: str, gst_rate: float) -> dict:
             raise PetpoojaError("save_order", payload, r.text)
         if str(data.get("success")) != "1":
             raise PetpoojaError("save_order", payload, data)
-    log.info("Petpooja save_order ok: our order %s -> petpooja order %s", order["id"], data.get("orderID"))
-    return {"petpooja_order_id": str(data.get("orderID", ""))}
+    log.info("Petpooja save_order ok: our order %s -> petpooja order %s (client order %s)",
+              order["id"], data.get("orderID"), data.get("clientOrderID"))
+    return {
+        "petpooja_order_id": str(data.get("orderID", "")),
+        "client_order_id": str(data.get("clientOrderID", "")),
+        "message": str(data.get("message", "")),
+    }
 
 
 def cancel_order(client_order_id: int, reason: str) -> dict:
