@@ -387,6 +387,13 @@ def update_order_status(order_id: int, status: str) -> None:
     conn.close()
 
 
+def mark_order_paid(order_id: int) -> None:
+    conn = get_conn()
+    conn.execute("UPDATE orders SET paid=1 WHERE id=?", (order_id,))
+    conn.commit()
+    conn.close()
+
+
 def update_order_petpooja(order_id: int, petpooja_order_id: str) -> None:
     """Record the Petpooja POS order id after a successful Save Order push."""
     from datetime import datetime

@@ -12,6 +12,7 @@ import logging
 import httpx
 
 from .config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, TULSI_ADMIN_URL
+from .order_actions import sign
 
 log = logging.getLogger("telegram")
 
@@ -31,7 +32,14 @@ def send_message(text: str, parse_mode: str = "HTML") -> bool:
     try:
         r = httpx.post(
             f"{API.format(token=TELEGRAM_BOT_TOKEN)}/sendMessage",
-            json={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": parse_mode},
+            json={
+                "chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": parse_mode,
+                # Telegram fetches every link in a message server-side to build a
+                # preview — with action links below that are GET requests that
+                # cancel an order or mark it paid, an un-disabled preview fetch
+                # would fire the action itself before Mom ever opens the chat.
+                "disable_web_page_preview": True,
+            },
             timeout=15,
         )
         data = r.json()
@@ -64,7 +72,13 @@ def notify_new_order(order: dict) -> bool:
         text += f"📍 {order['delivery_address']}\n"
     if order.get("delivery_pincode"):
         text += f"📮 {order['delivery_pincode']}\n"
-    text += f"<a href='{TULSI_ADMIN_URL}/?order={oid}'>Open order in admin →</a>"
+    text += f"<a href='{TULSI_ADMIN_URL}/?order={oid}'>Open order in admin →</a>\n"
+    text += (
+        f"<a href='{TULSI_ADMIN_URL}/order-actions/{oid}/paid?sig={sign(oid, 'paid')}'>"
+        f"💰 Mark Paid</a>  ·  "
+        f"<a href='{TULSI_ADMIN_URL}/order-actions/{oid}/cancel?sig={sign(oid, 'cancel')}'>"
+        f"❌ Cancel Order</a>"
+    )
     return send_message(text)
 
 

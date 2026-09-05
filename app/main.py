@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from pathlib import Path
 
@@ -22,6 +23,8 @@ from .config import (
 )
 from .config import UPI_PAYEE_NAME, UPI_VPA
 from .delivery.config import PICKUP_LAT, PICKUP_LNG
+
+log = logging.getLogger("main")
 
 app = FastAPI(title="Tulsi Foods Direct Ordering", version="0.2.0")
 
@@ -216,6 +219,7 @@ def robots_txt():
         "Disallow: /kitchen",
         "Disallow: /api/",
         "Disallow: /f",
+        "Disallow: /order-actions",
         "",
         f"Sitemap: {SITE_URL}/sitemap.xml",
     ]
@@ -526,6 +530,53 @@ def admin_update_order_status(order_id: int, body: StatusIn,
     db.update_order_status(order_id, target)
     _send_status_whatsapp(o, target)
     return {"ok": True, "order_id": order_id, "from": current, "to": target}
+
+
+def _action_page(heading: str) -> HTMLResponse:
+    return HTMLResponse(
+        "<html><body style='font-family:sans-serif;text-align:center;padding:70px 24px;"
+        f"font-size:20px'>{heading}</body></html>"
+    )
+
+
+@app.get("/order-actions/{order_id}/paid", response_class=HTMLResponse)
+def order_action_mark_paid(order_id: int, sig: str):
+    """One-tap link from Mom's Telegram order alert — no admin login, just a
+    signed link (see app/order_actions.py) since she won't use the admin UI."""
+    from .order_actions import verify
+    if not verify(order_id, "paid", sig):
+        raise HTTPException(403, "Invalid link")
+    o = db.get_order(order_id)
+    if not o:
+        raise HTTPException(404, "Order not found")
+    db.mark_order_paid(order_id)
+    return _action_page(f"✅ Order #{order_id} marked as paid.")
+
+
+@app.get("/order-actions/{order_id}/cancel", response_class=HTMLResponse)
+def order_action_cancel(order_id: int, sig: str):
+    """One-tap cancel link from Mom's Telegram alert — for orders she cancels
+    over a phone call/WhatsApp rather than through Petpooja's own terminal
+    (a terminal-side cancel already reaches us via the Petpooja order
+    callback and doesn't need this)."""
+    from .order_actions import verify
+    if not verify(order_id, "cancel", sig):
+        raise HTTPException(403, "Invalid link")
+    o = db.get_order(order_id)
+    if not o:
+        raise HTTPException(404, "Order not found")
+    if o["status"] in ("delivered", "cancelled"):
+        return _action_page(f"Order #{order_id} is already {o['status']} — nothing to cancel.")
+    db.update_order_status(order_id, "cancelled")
+    _send_status_whatsapp(o, "cancelled")
+    if o.get("petpooja_synced_at"):
+        try:
+            from .petpooja.client import cancel_order as petpooja_cancel_order, is_configured
+            if is_configured():
+                petpooja_cancel_order(order_id, "Cancelled by restaurant")
+        except Exception:
+            log.exception("Petpooja cancel relay failed for order %s", order_id)
+    return _action_page(f"❌ Order #{order_id} cancelled.")
 
 
 def _send_status_whatsapp(order: dict, status: str) -> None:
