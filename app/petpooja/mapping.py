@@ -101,9 +101,16 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
     taxable_base = subtotal + packing_fee
     item_lines = []
     for it in order["items"]:
-        line_total = float(it["price"]) * float(it["qty"])
+        unit_price = float(it["price"])
+        line_total = unit_price * float(it["qty"])
         share = (line_total / taxable_base) if taxable_base else 0
         item_gst = round(gst_amount * share, 2)
+        # price/final_price are per single unit, even at qty > 1 — the
+        # doc's worked example is explicit that quantity is NOT multiplied
+        # in here (the qty-scaled total is carried separately in the
+        # order-level `total` key). final_price = price - item_discount.
+        item_discount = float(it.get("item_discount") or 0)
+        final_price = unit_price - item_discount
         item_lines.append({
             "id": str(it["item_id"]),  # Petpooja catalog id TBD — see docstring
             "name": it["name"],
@@ -112,8 +119,8 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
             "item_tax": _split_cgst_sgst(item_gst, gst_rate * 100, str(it["item_id"])),
             "tax_percentage": f"{gst_rate * 100:.2f}",
             "item_discount": str(it.get("item_discount", "0")),
-            "price": f"{float(it['price']):.2f}",
-            "final_price": f"{line_total:.2f}",
+            "price": f"{unit_price:.2f}",
+            "final_price": f"{final_price:.2f}",
             "quantity": str(it["qty"]),
             "description": "",
             "variation_name": it.get("variation_name", ""),
@@ -130,10 +137,16 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
             "AddonItem": {"details": it.get("addon_items", [])},
         })
 
+    created_on = order.get("created_at") or datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    # advanced_order is always "N" (we don't support scheduled-ahead orders)
+    # — the doc is explicit that preorder_date/time must then mirror
+    # created_on, not be left blank.
+    preorder_date, _, preorder_time = created_on.partition(" ")
+
     order_details = {
         "orderID": str(order["id"]),
-        "preorder_date": "",
-        "preorder_time": "",
+        "preorder_date": preorder_date,
+        "preorder_time": preorder_time,
         "service_charge": "0",
         "sc_tax_amount": "0",
         "delivery_charges": f"{delivery_fee:.2f}",
@@ -153,7 +166,7 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         "tax_total": f"{gst_amount:.2f}",
         "total": f"{total:.2f}",
         "description": order.get("instructions") or "",
-        "created_on": order.get("created_at") or datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        "created_on": created_on,
         # 0 = third-party rider, 1 = restaurant's own rider — NOT "is this a
         # delivery order". Every Tulsi Foods delivery goes through Borzo (a
         # third-party courier, see app/delivery/), never restaurant staff,
