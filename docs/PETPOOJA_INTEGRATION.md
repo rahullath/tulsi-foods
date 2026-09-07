@@ -97,6 +97,14 @@ All in [mapping.py](../app/petpooja/mapping.py) unless noted:
   — this was §3.4 below; now resolved. (`dc_tax_percentage` staying `"0"`
   is *not* a bug — delivery is genuinely untaxed in our model, a Borzo
   pass-through outside the taxable base.)
+- **`AddonItem.details` entries were missing `group_name`/`group_id`**
+  entirely in `scripts/petpooja_test_orders.py`'s two addon scenarios (the
+  reference payload shows both as present, `group_id` explicitly as an int
+  not a string). Fixed 2026-09-07 with a placeholder `group_id` (real
+  Petpooja addon-group ids are blank in `data/petpooja_addons.csv`, same
+  reconciliation gap as item ids, §3.2) and the real `group_name` from that
+  CSV. Only affected the test script, not `mapping.py` — real orders never
+  carry addons (no addon feature exists in the live product).
 
 ## 3. Known gaps — must resolve before going live
 

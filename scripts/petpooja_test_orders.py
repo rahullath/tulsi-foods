@@ -75,7 +75,15 @@ SCENARIOS = {
         f"PPTEST-{_RUN}-2",
         [{
             "item_id": "1002", "name": "French Fries", "price": 180.0 + 70.0, "qty": 1,
-            "addon_items": [{"id": "2001", "name": "Thums Up (500 Ml)", "price": "70.00", "quantity": "1"}],
+            "addon_items": [{
+                "id": "2001", "name": "Thums Up (500 Ml)", "price": "70.00", "quantity": "1",
+                # group_name is the real Addon_Group_Name from data/petpooja_addons.csv
+                # ("Add Ons(optional)"); group_id is a synthetic placeholder (int, per the
+                # guide's explicit note it's not a string) — real Petpooja group ids are
+                # blank in that CSV export, same reconciliation gap as item_id (see
+                # mapping.py's module docstring).
+                "group_name": "Add Ons(optional)", "group_id": 4001,
+            }],
         }],
     ),
     "3_item_with_variation_and_tax": _order(
@@ -95,7 +103,10 @@ SCENARIOS = {
         [{
             "item_id": "1003", "name": "Soft Drinks", "price": 80.0 + 70.0, "qty": 1,
             "variation_id": "3001", "variation_name": "Full",
-            "addon_items": [{"id": "2001", "name": "Thums Up (500 Ml)", "price": "70.00", "quantity": "1"}],
+            "addon_items": [{
+                "id": "2001", "name": "Thums Up (500 Ml)", "price": "70.00", "quantity": "1",
+                "group_name": "Add Ons(optional)", "group_id": 4001,
+            }],
         }],
     ),
 }
