@@ -143,6 +143,20 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
     # created_on, not be left blank.
     preorder_date, _, preorder_time = created_on.partition(" ")
 
+    # Packing charge IS folded into our taxable base (see gst_for()'s
+    # docstring), so its share of gst_amount is real, not zero. Prorate the
+    # same way item_gst is prorated above — required field per the API
+    # guide, previously hardcoded to "0" (docs/PETPOOJA_INTEGRATION.md §3.4).
+    pc_tax_amount = round(gst_amount * (packing_fee / taxable_base), 2) if taxable_base else 0.0
+    order_discount = float(order.get("discount_total") or 0)
+    # Per the API guide: "Total = Item Final Price [- Order level Discount]
+    # + GST [if liable by restaurant] + Packing Charges. The 'Total' should
+    # only include the amount due to the restaurant" — delivery_charges is
+    # explicitly excluded since that money belongs to Borzo, not us. This is
+    # NOT the same number as our own order["total"] (which is the
+    # customer-facing grand total, used below for collect_cash).
+    restaurant_total = subtotal - order_discount + gst_amount + packing_fee
+
     order_details = {
         "orderID": str(order["id"]),
         "preorder_date": preorder_date,
@@ -150,11 +164,14 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         "service_charge": "0",
         "sc_tax_amount": "0",
         "delivery_charges": f"{delivery_fee:.2f}",
+        # Genuinely 0, not an oversight: gst_for() explicitly keeps delivery
+        # fee outside the taxable base (it's a Borzo pass-through, not a
+        # restaurant charge) — unlike pc_tax_percentage below, which isn't.
         "dc_tax_percentage": "0",
         "dc_tax_amount": "0",
         "packing_charges": f"{packing_fee:.2f}",
-        "pc_tax_percentage": "0",
-        "pc_tax_amount": "0",
+        "pc_tax_percentage": f"{gst_rate * 100:.2f}",
+        "pc_tax_amount": f"{pc_tax_amount:.2f}",
         "order_type": _ORDER_TYPE_CODE.get(order_type, "H"),
         "advanced_order": "N",
         "urgent_order": False,
@@ -164,7 +181,7 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         "discount_total": str(order.get("discount_total", "0")),
         "discount_type": order.get("discount_type", "F"),
         "tax_total": f"{gst_amount:.2f}",
-        "total": f"{total:.2f}",
+        "total": f"{restaurant_total:.2f}",
         "description": order.get("instructions") or "",
         "created_on": created_on,
         # 0 = third-party rider, 1 = restaurant's own rider — NOT "is this a
