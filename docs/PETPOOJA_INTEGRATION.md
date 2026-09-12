@@ -102,9 +102,13 @@ All in [mapping.py](../app/petpooja/mapping.py) unless noted:
   reference payload shows both as present, `group_id` explicitly as an int
   not a string). Fixed 2026-09-07 with a placeholder `group_id` (real
   Petpooja addon-group ids are blank in `data/petpooja_addons.csv`, same
-  reconciliation gap as item ids, §3.2) and the real `group_name` from that
-  CSV. Only affected the test script, not `mapping.py` — real orders never
-  carry addons (no addon feature exists in the live product).
+reconciliation gap as item ids, §3.2) and the real `group_name` from that
+   CSV. Only affected the test script, not `mapping.py` — real orders never
+   carry addons (no addon feature exists in the live product).
+- **`Discount.details` was always sent as `[]`.** The docs' Save Order example
+  carries the order-level discount there (mirroring `Order.details.discount_total`).
+  Fixed 2026-09-12: populate a `{id, title, type, price}` block whenever
+  `discount_total > 0`. Test scenario 4 now exercises it.
 
 ## 3. Known gaps — must resolve before going live
 
@@ -247,8 +251,13 @@ Notes:
 - **If `PETPOOJA_WEBHOOK_TOKEN` changes**, all URLs above must be updated too.
 
 Response formats (all endpoints) match the API spec's 200 OK section —
-verified and corrected 2026-09-11 (Push Menu `success` boolean, Stock toggle
-`code` numeric, Store Status `http_code` string).
+verified 2026-09-12 against the rendered Apiary examples: Push Menu returns
+`success: "1"` (string) + "Menu items are successfully listed.", Stock
+toggle returns numeric `code: 200` + "Stock status updated successfully",
+Get/Update Store Status return numeric `http_code: 200` with the documented
+messages, and Order Callback returns an **empty 200 body** (their documented
+response is `content-length: 0`). Get Store Status intentionally drops
+`restID` to match the docs example.
 
 ## 5. Go-live checklist (do in roughly this order)
 

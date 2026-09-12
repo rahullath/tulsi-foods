@@ -9,7 +9,7 @@ import hmac
 import json
 import logging
 
-from fastapi import APIRouter, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Header, HTTPException, Query, Request, Response
 from fastapi.responses import PlainTextResponse
 
 from .config import WHATSAPP_APP_SECRET, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN, ADMIN_PHONE
@@ -290,7 +290,13 @@ def _check_petpooja_token(t: str | None) -> None:
 
 @router.post("/petpooja/order-callback")
 async def petpooja_order_callback(request: Request, t: str | None = Query(None)):
-    """Petpooja POS -> us: order status changed (accepted/dispatch/ready/delivered/cancelled)."""
+    """Petpooja POS -> us: order status changed (accepted/dispatch/ready/delivered/cancelled).
+
+    Matches the docs' 200 OK response exactly — an empty body (their
+    backend tracks callbacks by HTTP status code only, sample response shows
+    content-length: 0). All per-request outcomes are logged; malformed
+    requests get a 400, bad token gets a 403.
+    """
     _check_petpooja_token(t)
     try:
         body = json.loads(await request.body() or b"{}")
@@ -303,28 +309,30 @@ async def petpooja_order_callback(request: Request, t: str | None = Query(None))
     order_id_raw = body.get("orderID")
     status_code = body.get("status")
     if not order_id_raw or status_code is None:
-        return {"success": "0", "message": "Missing orderID or status"}
+        raise HTTPException(status_code=400, detail="Missing orderID or status")
 
     mapped = petpooja_status_to_order_status(status_code)
     if not mapped:
         log.info("Petpooja callback: unrecognised status %s for order %s", status_code, order_id_raw)
-        return {"success": "1", "message": "Ignored (unrecognised status)"}
+        return Response(status_code=200, media_type="application/json")
 
     try:
         order_id = int(order_id_raw)
     except (TypeError, ValueError):
-        return {"success": "0", "message": "Invalid orderID"}
+        raise HTTPException(status_code=400, detail="Invalid orderID")
 
     o = db.get_order(order_id)
     if not o:
-        return {"success": "0", "message": "Order not found"}
+        log.info("Petpooja callback: order %s not found", order_id)
+        return Response(status_code=200, media_type="application/json")
     if o["status"] in ("delivered", "cancelled"):
-        return {"success": "1", "message": "No-op (order already closed)"}
+        log.info("Petpooja callback: no-op for order %s (already closed)", order_id)
+        return Response(status_code=200, media_type="application/json")
 
     db.update_order_status(order_id, mapped)
     log.info("Order %s: %s -> %s (Petpooja callback: %s)", order_id, o["status"], mapped, status_code)
     _send_status_whatsapp_if_needed(db.get_order(order_id), mapped)
-    return {"success": "1", "message": "Status updated"}
+    return Response(status_code=200, media_type="application/json")
 
 
 @router.post("/petpooja/menu")
@@ -347,7 +355,7 @@ async def petpooja_push_menu(request: Request, t: str | None = Query(None)):
     except Exception:
         log.exception("Failed to cache Petpooja pushed menu")
 
-    return {"success": True, "message": "Menu received"}
+    return {"success": "1", "message": "Menu items are successfully listed."}
 
 
 @router.post("/petpooja/stock")
@@ -371,11 +379,10 @@ async def petpooja_get_store_status(t: str | None = Query(None)):
     from . import db
     status = db.get_store_status()
     return {
-        "restID": PETPOOJA_REST_ID,
+        "http_code": 200,
         "status": "success",
         "store_status": "1" if status["is_open"] else "0",
-        "http_code": "200",
-        "message": "OK",
+        "message": "Store Delivery Status fetched successfully",
     }
 
 
@@ -394,7 +401,7 @@ async def petpooja_update_store_status(request: Request, t: str | None = Query(N
     db.set_store_status(is_open, reason=body.get("reason"), turn_on_time=body.get("turn_on_time"))
     log.info("Store status set to %s (reason: %s)", "open" if is_open else "closed", body.get("reason"))
     return {
-        "http_code": "200",
+        "http_code": 200,
         "status": "success",
         "message": f"Store Status updated successfully for store {body.get('restID', PETPOOJA_REST_ID)}",
     }

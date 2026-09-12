@@ -205,6 +205,19 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         "longitude": order.get("delivery_lng") or "",
     }
 
+    # Docs' Save Order example carries the order-level discount here as well as
+    # in Order.details.discount_total. Previously always sent `[]` even when
+    # discounted. `id` is a placeholder (same catalog-id reconciliation gap as
+    # item ids, see module docstring); price mirrors discount_total.
+    discount_lines = []
+    if order_discount > 0:
+        discount_lines.append({
+            "id": "0",
+            "title": "Discount",
+            "type": order.get("discount_type", "F"),
+            "price": str(order.get("discount_total", order_discount)),
+        })
+
     return {
         "OrderInfo": {
             "Restaurant": {
@@ -219,7 +232,7 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
             "Order": {"details": order_details},
             "OrderItem": {"details": item_lines},
             "Tax": {"details": _order_level_tax_details(gst_amount, gst_rate * 100)},
-            "Discount": {"details": []},
+            "Discount": {"details": discount_lines},
         }
     }
 
