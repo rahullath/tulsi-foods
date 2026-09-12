@@ -361,7 +361,7 @@ async def petpooja_update_stock(request: Request, t: str | None = Query(None)):
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid JSON")
     log.info("Petpooja stock toggle: %s", body)
-    return {"code": "200", "status": "success", "message": "Received"}
+    return {"code": 200, "status": "success", "message": "Stock status updated successfully"}
 
 
 @router.api_route("/petpooja/store-status", methods=["GET", "POST"])
@@ -394,7 +394,7 @@ async def petpooja_update_store_status(request: Request, t: str | None = Query(N
     db.set_store_status(is_open, reason=body.get("reason"), turn_on_time=body.get("turn_on_time"))
     log.info("Store status set to %s (reason: %s)", "open" if is_open else "closed", body.get("reason"))
     return {
-        "http_code": 200,
+        "http_code": "200",
         "status": "success",
         "message": f"Store Status updated successfully for store {body.get('restID', PETPOOJA_REST_ID)}",
     }

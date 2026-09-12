@@ -216,25 +216,64 @@ API endpoints themselves. Worth confirming explicitly with Petpooja before
 assuming production API calls from Railway will just work without any
 additional whitelisting step.
 
-## 4. Go-live checklist (do in roughly this order)
+## 4. Sandbox Dashboard — Endpoint Configuration
 
-1. Get Petpooja's review response on the 5 test scenario order IDs.
-2. Ask Petpooja support to clarify 3.2 (menu push timing/format) and 3.3
+Per Shivam's email (Sep 2026): configure the following URLs in the Petpooja
+sandbox dashboard under **Configuration → Endpoint**. The `Base URL` field
+should be set to `https://tulsifoods.app/webhook`, and each endpoint path is
+appended with the shared-secret token as a query param (`?t=...`).
+
+The `?t=` token authenticates inbound calls from Petpooja (our
+`_check_petpooja_token()` guard in `webhooks.py`). The token value is
+`PETPOOJA_WEBHOOK_TOKEN` in `.env` / Railway.
+
+| Dashboard field | Full URL |
+|-----------------|----------|
+| Base URL | `https://tulsifoods.app/webhook` |
+| Menu Sharing Endpoint URL | `https://tulsifoods.app/webhook/petpooja/menu?t=DzjxUqMROXJW--PlVd6i2jOx-EcvNbGK` |
+| Get Store Status Endpoint URL | `https://tulsifoods.app/webhook/petpooja/store-status?t=DzjxUqMROXJW--PlVd6i2jOx-EcvNbGK` |
+| Update Store Status Endpoint URL (Store On) | `https://tulsifoods.app/webhook/petpooja/store-status/update?t=DzjxUqMROXJW--PlVd6i2jOx-EcvNbGK` |
+| Update Store Status Endpoint URL (Store Off) | `https://tulsifoods.app/webhook/petpooja/store-status/update?t=DzjxUqMROXJW--PlVd6i2jOx-EcvNbGK` |
+| Item On Endpoint URL | `https://tulsifoods.app/webhook/petpooja/stock?t=DzjxUqMROXJW--PlVd6i2jOx-EcvNbGK` |
+| Item Off Endpoint URL | `https://tulsifoods.app/webhook/petpooja/stock?t=DzjxUqMROXJW--PlVd6i2jOx-EcvNbGK` |
+| Order Callback Endpoint URL | `https://tulsifoods.app/webhook/petpooja/order-callback?t=DzjxUqMROXJW--PlVd6i2jOx-EcvNbGK` |
+
+Notes:
+- Item On and Item Off share the same endpoint (the `inStock` boolean in the
+  request body distinguishes them — see the API docs).
+- Store On and Store Off also share the same endpoint (body has
+  `store_status: 1` or `0`).
+- Order Callback is already configured (tested end-to-end on order 15).
+- **If `PETPOOJA_WEBHOOK_TOKEN` changes**, all URLs above must be updated too.
+
+Response formats (all endpoints) match the API spec's 200 OK section —
+verified and corrected 2026-09-11 (Push Menu `success` boolean, Stock toggle
+`code` numeric, Store Status `http_code` string).
+
+## 5. Go-live checklist (do in roughly this order)
+
+1. **Configure dashboard endpoints** (§4 above) — give the URL table to
+   Shivam/Petpooja support to enter in the sandbox Configuration → Endpoint
+   page.
+2. Get Petpooja's review response on the 5 test scenario order IDs.
+3. Ask Petpooja support to clarify 3.2 (menu push timing/format) and 3.3
    (`is_modified` payload shape) — both are blocking unknowns, not things
    we can resolve by guessing.
-3. Fix 3.1 (wire admin cancel → `cancel_order()`) — straightforward, no
+4. Fix 3.1 (wire admin cancel → `cancel_order()`) — straightforward, no
    external dependency, should happen regardless of Petpooja's answers.
-4. Once Petpooja pushes/confirms a real menu: build the item/addon/variation
+5. Once Petpooja pushes/confirms a real menu: build the item/addon/variation
    ID reconciliation (3.2) and switch `order_to_save_order_payload()` over.
-5. Configure the dashboard's Item On/Off, Store On/Off, Menu Sharing
-   endpoints (3.5) and test each by triggering them from the dashboard.
-6. Fire one `push_rider_status()` and one `cancel_order()` call against the
+6. Test each endpoint by triggering from the dashboard (menu push, stock
+   toggle, store status toggle) and confirming our handlers return the
+   expected response format.
+7. Fire one `push_rider_status()` and one `cancel_order()` call against the
    sandbox manually to confirm they don't error before relying on them live.
-7. When Petpooja sends production credentials: swap `.env`/Railway vars,
-   re-run `scripts/petpooja_test_orders.py` (or equivalent) against
-   production endpoints before taking real customer orders through it.
+8. When Petpooja sends production credentials: swap `.env`/Railway vars,
+   update all endpoint URLs if production URLs differ, re-run
+   `scripts/petpooja_test_orders.py` against production endpoints before
+   taking real customer orders through it.
 
-## 5. Reference
+## 6. Reference
 
 - Petpooja's two guide PDFs live in `temp/`: `Petpooja Sandbox Guide for
   Integration Testing.pdf` and `API Guide for Placing Orders on Petpooja
