@@ -200,6 +200,11 @@ def privacy_page(request: Request):
     return templates.TemplateResponse(request, "privacy.html", {})
 
 
+@app.get("/refund-cancellation-policy", response_class=HTMLResponse)
+def refund_cancellation_policy_page(request: Request):
+    return templates.TemplateResponse(request, "refund-cancellation-policy.html", {})
+
+
 # ---- SEO: verification, robots, sitemap ----
 
 SITE_URL = "https://tulsifoods.app"
@@ -250,6 +255,7 @@ def llms_txt():
         f"- [Delivery]({SITE_URL}/delivery): delivery areas, fees and timing",
         f"- [About]({SITE_URL}/about): the kitchen's story, reviews, and frequently asked questions",
         f"- [Privacy policy]({SITE_URL}/privacy-policy)",
+        f"- [Refund &amp; cancellation policy]({SITE_URL}/refund-cancellation-policy)",
     ]
     return PlainTextResponse("\n".join(lines))
 
@@ -268,6 +274,7 @@ SITEMAP_TEMPLATES = {
     "/about": "about.html",
     "/bio": "bio.html",
     "/privacy-policy": "privacy.html",
+    "/refund-cancellation-policy": "refund-cancellation-policy.html",
 }
 
 
