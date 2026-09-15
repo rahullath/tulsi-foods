@@ -14,6 +14,7 @@ from . import catalog, db, menu, orders, reviews
 from .config import (
     ADMIN_TOKEN,
     DELIVERY_ZONES,
+    FREE_DELIVERY_ABOVE,
     GOOGLE_MAPS_JS_API_KEY,
     GOOGLE_REVIEW_LINK,
     GST_ENABLED,
@@ -132,7 +133,8 @@ def menu_page(request: Request):
          "packing_fee": PACKING_FEE, "packing_fee_large": PACKING_FEE_LARGE_ORDER,
          "packing_fee_threshold": PACKING_FEE_LARGE_ORDER_THRESHOLD,
          "gst_rate": GST_RATE, "gst_enabled": GST_ENABLED,
-         "upi_vpa": UPI_VPA, "upi_payee_name": UPI_PAYEE_NAME},
+         "upi_vpa": UPI_VPA, "upi_payee_name": UPI_PAYEE_NAME,
+         "free_delivery_above": FREE_DELIVERY_ABOVE},
     )
 
 @app.get("/delivery", response_class=HTMLResponse)

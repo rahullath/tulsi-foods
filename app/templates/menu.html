@@ -239,6 +239,9 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 (() => {
   const PICKUP_LAT = {{ pickup_lat }};
   const PICKUP_LNG = {{ pickup_lng }};
+  const ZONES = {{ zones | tojson }};
+  const FREE_DELIVERY_ABOVE = {{ free_delivery_above }};
+  const PICKUP_NOTE = "Pickup at 34 Murrays Gate Road, Alwarpet — ready in about 20\u201325 min.";
   const GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
   const PACKING_FEE = {{ packing_fee }};
   const PACKING_FEE_LARGE = {{ packing_fee_large }};
@@ -493,11 +496,63 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     const UPSELL_ITEMS = ["roasted-papad", "masala-chai", "masala-thumsup"];
     const UPSELL_THRESHOLD = 300;
 
+    // Live delivery quote: works out the straight-line distance from the pickup
+    // point to the dropped pin and finds the matching zone, so the customer sees
+    // the delivery fee (and the area's minimum order) BEFORE they place the order
+    // instead of only after. No pin yet = "unknown", still quoteable on submit.
+    function haversineKm(aLat, aLng, bLat, bLng) {
+      const R = 6371, toR = Math.PI / 180;
+      const dLat = (bLat - aLat) * toR, dLng = (bLng - aLng) * toR;
+      const s = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(aLat * toR) * Math.cos(bLat * toR) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      return 2 * R * Math.asin(Math.sqrt(s));
+    }
+
+    function quoteDelivery(subtotal) {
+      const lat = parseFloat(overlay.querySelector("#input-lat")?.value);
+      const lng = parseFloat(overlay.querySelector("#input-lng")?.value);
+      if (!isFinite(lat) || !isFinite(lng)) return null; // no pin yet
+      const km = haversineKm(lat, lng, PICKUP_LAT, PICKUP_LNG);
+      for (const z of ZONES) {
+        if (km <= z.max_km) {
+          return {
+            zone: z.name, km,
+            fee: subtotal >= FREE_DELIVERY_ABOVE ? 0 : z.fee,
+            min_order: z.min_order, outside: false,
+          };
+        }
+      }
+      return { zone: null, km, fee: null, min_order: null, outside: true };
+    }
+
     function refreshCheckoutSummary() {
       const currentIds = Object.keys(cart);
       const currentSubtotal = currentIds.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
       const packing = packingFeeFor(currentSubtotal);
       const gst = gstFor(currentSubtotal + packing);
+      const isDelivery = overlay.querySelector('[name=order_type]').value === "delivery";
+      const q = isDelivery ? quoteDelivery(currentSubtotal) : null;
+
+      let deliveryRow, deliveryNote;
+      if (isDelivery) {
+        if (q && q.outside) {
+          deliveryRow = `<div class="checkout-row" style="color:#B3261E"><span>Delivery</span><span>Outside our area — pickup instead</span></div>`;
+          deliveryNote = `<div class="checkout-row-note" style="color:#B3261E">We don't deliver ${q.km ? Math.round(q.km) + " km away" : "that far"}. Pickup is in Alwarpet.</div>`;
+        } else if (q) {
+          deliveryRow = `<div class="checkout-row"><span>Delivery (${q.zone}${q.km ? " · " + q.km.toFixed(1) + " km" : ""})</span><span>${q.fee ? "₹" + q.fee : "FREE"}</span></div>`;
+          deliveryNote = `${
+            q.fee ? (FREE_DELIVERY_ABOVE > 0 ? `Free over ₹${FREE_DELIVERY_ABOVE}.` : "") : "Delivery is free on this order."
+          }${currentSubtotal && currentSubtotal < q.min_order
+            ? `<span style="color:#B3261E"> Minimum order in this area is ₹${q.min_order}.</span>` : ""}`;
+        } else {
+          deliveryRow = `<div class="checkout-row"><span>Delivery</span><span>Drop a pin to see</span></div>`;
+          deliveryNote = "Drop a pin and the delivery fee shows here before you pay.";
+        }
+      } else {
+        deliveryNote = PICKUP_NOTE;
+      }
+
+      const deliveryFee = q && !q.outside ? q.fee : 0;
       overlay.querySelector(".checkout-summary").innerHTML =
         currentIds.map(id => `<div class="checkout-row"><span>${NAMES[id]} × ${cart[id]}</span><span>₹${(PRICES[id] || 0) * cart[id]}</span></div>`).join("")
         + (currentSubtotal > 0 ? `
@@ -505,8 +560,9 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           ${packing ? `<div class="checkout-row"><span>Packing charge</span><span>₹${packing}</span></div>` : ""}
           ${gst ? `<div class="checkout-row"><span>GST (${(GST_RATE * 100).toFixed(0)}%)</span><span>₹${gst.toFixed(2)}</span></div>` : ""}
         ` : "")
-        + `<div class="checkout-row total"><span>Total</span><span>₹${(currentSubtotal + packing + gst).toFixed(2)}</span></div>
-           <div class="checkout-row-note">+ delivery, shown before you pay</div>`;
+        + (deliveryRow ? deliveryRow : "")
+        + `<div class="checkout-row total"><span>Total</span><span>₹${(currentSubtotal + packing + gst + deliveryFee).toFixed(2)}</span></div>
+           <div class="checkout-row-note">${deliveryNote || "No hidden charges — this is the final total."}</div>`;
 
       const nudge = overlay.querySelector("#checkout-nudge");
       const candidates = UPSELL_ITEMS.filter(id => !cart[id] && PRICES[id] != null && AVAILABLE[id]);
@@ -567,6 +623,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         gMap.setZoom(16);
         gMarker.setPosition(pos);
       }
+      refreshCheckoutSummary();
     }
 
     async function ensureMap() {
@@ -617,6 +674,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       form.querySelector('[name=address]').required = isDelivery;
       form.querySelector('[name=landmark]').required = isDelivery;
       if (isDelivery) ensureMap();
+      refreshCheckoutSummary();
     });
     if (typeSelect.value === "delivery") ensureMap();
 
@@ -733,9 +791,30 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       e.preventDefault();
       const msg = overlay.querySelector("#checkout-msg");
       const btn = form.querySelector(".checkout-place");
+      const fd = new FormData(form);
+
+      // Block delivery orders that we already know can't be fulfilled — no
+      // point telling the customer the server rejected it after they typed
+      // everything. The server re-checks regardless (single source of truth).
+      if (fd.get("order_type") === "delivery") {
+        const subtotal = Object.keys(cart).reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
+        const q = quoteDelivery(subtotal);
+        if (q) {
+          if (q.outside) {
+            msg.style.color = "#B3261E";
+            msg.textContent = "We don't deliver that far — switch to pickup and we'll have it ready.";
+            return;
+          }
+          if (subtotal < q.min_order) {
+            msg.style.color = "#B3261E";
+            msg.textContent = `Minimum order for ${q.zone} is ₹${q.min_order} — add a little more.`;
+            return;
+          }
+        }
+      }
+      msg.textContent = "";
       btn.disabled = true;
       btn.textContent = "Placing…";
-      const fd = new FormData(form);
       const landmark = fd.get("landmark");
       const address = fd.get("address")
         ? fd.get("address") + (landmark ? ` (Landmark: ${landmark})` : "")

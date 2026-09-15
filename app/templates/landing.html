@@ -117,6 +117,22 @@ section[id] { scroll-margin-top: 76px; }
 .cta-btn { background: #fff; color: var(--g); border-radius: 12px; padding: 16px 30px; font-size: 16px; font-weight: 600; text-decoration: none; white-space: nowrap; display: inline-block; transition: transform .15s ease; }
 .cta-btn:hover { transform: translateY(-1px); }
 
+/* What is Tulsi Foods (definition answer) */
+.what { max-width: 1200px; margin: 0 auto; padding: 8px 40px 52px; }
+.what-answer { font-size: 17px; line-height: 1.7; color: #4A4F45; max-width: 760px; margin-top: 10px; }
+.what-facts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.what-facts span { font: 500 12px/1 'IBM Plex Mono', monospace; color: #5B6B45; background: #F0F3E8; border: 1px solid #DDE4CC; border-radius: 999px; padding: 8px 13px; }
+
+/* FAQ — question-form headings double as featured-snippet answer boxes */
+.faq { max-width: 1200px; margin: 0 auto; padding: 8px 40px 60px; }
+.faq-list { max-width: 800px; margin-top: 22px; display: flex; flex-direction: column; gap: 12px; }
+.faq-item { background: var(--card); border: 1px solid var(--border); border-radius: 14px; }
+.faq-item summary { font-size: 16px; font-weight: 600; padding: 16px 18px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: '+'; font-size: 20px; line-height: 1; color: var(--g); }
+.faq-item[open] summary::after { content: '–'; }
+.faq-item p { padding: 0 18px 16px; margin: 0; font-size: 14.5px; line-height: 1.7; color: #4A4F45; }
+
 /* Footer */
 .footer { padding: 26px 40px 34px; max-width: 1200px; margin: 0 auto; font-size: 13px; color: var(--sub); }
 .footer a { color: var(--g); text-decoration: none; }
@@ -138,6 +154,8 @@ section[id] { scroll-margin-top: 76px; }
   .awards { padding: 8px 18px 40px; }
   .story { grid-template-columns: 1fr; padding: 8px 18px 40px; gap: 24px; }
   .story-photo { height: 220px; order: -1; }
+  .what { padding: 8px 18px 36px; }
+  .faq { padding: 8px 18px 44px; }
   .cta-banner { flex-direction: column; text-align: center; padding: 36px 18px; }
   .footer { padding: 20px 18px 30px; }
   .footer-main { flex-direction: column; gap: 8px; }
@@ -178,6 +196,21 @@ section[id] { scroll-margin-top: 76px; }
     </div>
   </div>
   <div class="hero-photo"><img src="/static/img/landing-hero.jpg" alt="Pav bhaji, freshly made at Tulsi Foods" loading="lazy"></div>
+</section>
+
+<section class="what" id="what">
+  <div class="section-head reveal">
+    <div class="section-tag">About us</div>
+    <h2>What is Tulsi Foods?</h2>
+  </div>
+  <p class="what-answer reveal">Tulsi Foods is a pure vegetarian, home-style North Indian restaurant in Mylapore, Chennai, run by Kavita Lath since 2015. It cooks thalis, parathas, dal, sabzi, chaat and milkshakes the same day you order them, for delivery and pickup.</p>
+  <div class="what-facts reveal">
+    <span>100% pure veg</span>
+    <span>Since 2015</span>
+    <span>Cooked to order</span>
+    <span>30–60 min delivery</span>
+    <span>Mylapore · Alwarpet, Chennai</span>
+  </div>
 </section>
 
 <section class="stove" id="stove">
@@ -287,6 +320,35 @@ section[id] { scroll-margin-top: 76px; }
   </div>
 </section>
 
+<section class="faq" id="faq">
+  <div class="section-head reveal">
+    <div class="section-tag">Quick answers</div>
+    <h2>Frequently asked questions</h2>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item reveal" open>
+      <summary>What are Tulsi Foods' opening hours?</summary>
+      <p>Tulsi Foods is open Monday to Saturday from 9 AM to 9 PM, and Sunday from 11 AM to 9 PM. Monday is a half-day for online orders until 2 PM.</p>
+    </details>
+    <details class="faq-item reveal">
+      <summary>Does Tulsi Foods deliver, and what does it cost?</summary>
+      <p>Yes — anywhere within 7 km of the kitchen in Alwarpet: Mylapore, Alwarpet, Royapettah, Teynampet, R.A. Puram, Adyar, T. Nagar and Egmore. Delivery is ₹30 up to 3 km, ₹50 up to 5 km and ₹70 up to 7 km, free over ₹700.</p>
+    </details>
+    <details class="faq-item reveal">
+      <summary>Is Tulsi Foods pure vegetarian?</summary>
+      <p>Yes, 100 per cent. Everything on the menu is vegetarian, and Jain or no-onion-garlic versions are cooked separately on request, not just the onion left out.</p>
+    </details>
+    <details class="faq-item reveal">
+      <summary>How do I order from Tulsi Foods?</summary>
+      <p>Pick your dishes on the menu here and check out, or message the kitchen on WhatsApp at +91 99400 62840. Pay by UPI or cash on delivery.</p>
+    </details>
+    <details class="faq-item reveal">
+      <summary>Does Tulsi Foods cook food fresh to order?</summary>
+      <p>Yes. Thalis and parathas are cooked after you order, which is why delivery takes 30 to 60 minutes — nothing is pre-made and reheated.</p>
+    </details>
+  </div>
+</section>
+
 <div class="cta-banner reveal">
   <div>
     <div class="cta-text">Order from the menu — we'll confirm delivery time and payment on WhatsApp.</div>
@@ -358,6 +420,55 @@ section[id] { scroll-margin-top: 76px; }
     "https://www.swiggy.com/city/chennai/tulsi-foods-alwarpet-teynampet-rest28173",
     "http://zoma.to/r/18469730",
     "https://jsdl.in/DT-20UYMUME6EY"
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What are Tulsi Foods' opening hours?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Tulsi Foods is open Monday to Saturday from 9 AM to 9 PM, and Sunday from 11 AM to 9 PM. Monday is a half-day for online orders until 2 PM."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Tulsi Foods deliver, and what does it cost?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — anywhere within 7 km of the kitchen in Alwarpet: Mylapore, Alwarpet, Royapettah, Teynampet, R.A. Puram, Adyar, T. Nagar and Egmore. Delivery is ₹30 up to 3 km, ₹50 up to 5 km and ₹70 up to 7 km, free over ₹700."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Tulsi Foods pure vegetarian?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, 100 per cent. Everything on the menu is vegetarian, and Jain or no-onion-garlic versions are cooked separately on request."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I order from Tulsi Foods?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Pick your dishes on the menu here and check out, or message the kitchen on WhatsApp at +91 99400 62840. Pay by UPI or cash on delivery."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Tulsi Foods cook food fresh to order?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Thalis and parathas are cooked after you order, which is why delivery takes 30 to 60 minutes."
+      }
+    }
   ]
 }
 </script>

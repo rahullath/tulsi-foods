@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block meta %}
-<meta name="description" content="Track your Tulsi Foods order — live status and delivery updates.">
+<meta name="description" content="Track your Tulsi Foods order — live status, estimated arrival, payment and price breakdown.">
 <title>Tulsi Foods — Track Order #{{ order_id }}</title>
 {% endblock %}
 {% block body %}
@@ -31,6 +31,25 @@
   .btn { display: inline-block; margin-top: 18px; background: #4a7c2f; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 14px; }
   .btn:hover { background: #3d6828; }
   .fresh { margin-top: 18px; font-size: 12.5px; color: #889; text-align: center; }
+  .chip { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 5px 11px; margin-top: 8px; }
+  .chip.ready { background: #EDF6E2; color: #2C5A1E; }
+  .chip.pay { background: #F6F0E4; color: #7A5A12; }
+  .chip.done-pay { background: #EDF6E2; color: #2C5A1E; }
+  .chip.warn { background: #FDE8E4; color: #B3261E; }
+  .eta { margin: 2px 0 18px; font-size: 14px; color: #46732E; font-weight: 500; }
+  .meta { font-size: 14px; line-height: 1.7; }
+  .meta b { color: #1a1a1a; }
+  .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+  .row.total { font-weight: 700; border-top: 1px solid #EEF0E8; margin-top: 6px; padding-top: 8px; }
+  .row-note { font-size: 11.5px; color: #889; text-align: right; margin-top: 2px; }
+  .items { border-top: 1px solid #eef0e8; margin-top: 12px; padding-top: 12px; font-size: 14px; color: #444; }
+  .timeline { border-top: 1px solid #eef0e8; margin-top: 14px; padding-top: 12px; font-size: 13px; color: #555; display: flex; flex-direction: column; gap: 5px; }
+  .timeline div { display: flex; justify-content: space-between; gap: 12px; }
+  .pr-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .pr { display: inline-block; background: #fff; border: 1px solid #DDE2D4; border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; text-decoration: none; color: var(--ink, #1a1a1a); text-align: center; }
+  .pr.wa { background: #25D366; border-color: #25D366; color: #fff; }
+  .pr.phone { border-color: #E6E8E0; }
+  .empty { color: #889; font-size: 13px; }
 </style>
 <div class="wrap">
   <div class="top">
@@ -55,6 +74,34 @@
   const CANCELED = "cancelled";
   const ORDER_ID = {{ order_id }};
 
+  function toDate(s) {
+    if (!s) return null;
+    return new Date(s.includes("Z") || s.includes("+") ? s : s.replace(" ", "T") + "Z");
+  }
+  const timeFmt = { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" };
+  const dayFmt = { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Kolkata" };
+  const fullFmt = { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" };
+  const fmtTime = (s) => { const d = toDate(s); return d ? d.toLocaleString("en-IN", timeFmt) : ""; };
+  const fmtDay = (s) => { const d = toDate(s); return d ? d.toLocaleString("en-IN", dayFmt) : ""; };
+
+  function eta(o) {
+    if (o.status === "delivered" || o.status === CANCELED) return null;
+    if (o.scheduled_at) return "Scheduled — the kitchen aims to have it out at your chosen time.";
+    const pickup = o.order_type === "pickup";
+    const table = {
+      new: pickup ? "~20–25 min from now" : "~40–60 min from now",
+      preparing: pickup ? "~15–20 min" : "~30–45 min",
+      ready: pickup ? "Ready for pickup now" : "~20–30 min",
+      out_for_delivery: "~10–20 min, rider is already on the way",
+    };
+    return table[o.status] ? "Estimated arrival: " + table[o.status] : null;
+  }
+
+  function payLabel(o) {
+    if (o.payment_method === "upi") return o.paid ? "Paid by UPI ✓" : "UPI — awaiting confirmation";
+    return "Cash on delivery";
+  }
+
   async function refresh() {
     let o;
     try {
@@ -64,12 +111,22 @@
     } catch (e) { return; }
 
     const st = o.status || 'new';
-    document.getElementById('status-note').textContent =
-      st === CANCELED ? 'This order was cancelled.' : (STATUSES.find(s => s[0] === st) || [,'',''])[2];
+    const statusDesc = (STATUSES.find(s => s[0] === st) || [,'',''])[2];
+    const noteEl = document.getElementById('status-note');
+    if (st === CANCELED) {
+      noteEl.textContent = 'This order was cancelled.';
+    } else {
+      noteEl.textContent = statusDesc;
+    }
+    const etaText = eta(o);
+    document.getElementById('eta-line')?.remove();
+    if (etaText && st !== CANCELED) {
+      noteEl.insertAdjacentHTML('afterend', `<div class="eta" id="eta-line">${etaText}</div>`);
+    }
 
     let html = '';
     if (st === CANCELED) {
-      html += '<div class="err">This order was cancelled. If you were charged, we\'ll refund you right away.</div>';
+      html += '<div class="err">This order was cancelled. If you were charged, we\'ll refund you right away.</div><div class="chip warn" style="margin-top:12px">Status: Cancelled</div>';
     } else {
       html += '<div class="stepper">';
       for (const [key, lbl, desc] of STATUSES) {
@@ -82,21 +139,45 @@
     }
 
     html += '<div class="meta">';
-    html += `<div class="row"><span>Order type</span><b>${o.order_type === 'pickup' ? 'Pickup' : 'Delivery'}</b></div>`;
-    html += `<div class="row"><span>Items</span><b>${o.items ? o.items.length : 0}</b></div>`;
-    html += `<div class="row"><span>Total</span><b>₹${(+o.total).toFixed(0)}</b></div>`;
-    if (o.order_type === 'delivery' && o.delivery_address) html += `<div class="row"><span>Deliver to</span><b>${o.delivery_address}</b></div>`;
+    html += `<div class="row"><span>Order type</span><b>${o.order_type === 'pickup' ? 'Pickup · Alwarpet' : 'Delivery'}</b></div>`;
+    if (o.scheduled_at) {
+      const d = toDate(o.scheduled_at);
+      html += `<div class="row"><span>Scheduled for</span><b>${d ? d.toLocaleString("en-IN", fullFmt) : fmtDay(o.scheduled_at)}</b></div>`;
+    } else {
+      html += `<div class="row"><span>Placed at</span><b>${fmtTime(o.created_at)}</b></div>`;
+    }
+    if (st === "out_for_delivery" || st === "delivered") {
+      html += `<div class="row"><span>Left the kitchen</span><b>${fmtTime(o.dispatched_at) || "—"}</b></div>`;
+    }
+    html += `<div class="row"><span>Payment</span><b>${payLabel(o)}</b></div>`;
+    if (o.order_type === 'delivery' && o.delivery_address) html += `<div class="row"><span>Deliver to</span><b>${o.delivery_address.replace(/ \(Landmark:.*\)$/, "")}</b></div>`;
+    html += '</div>';
+
+    const subtotal = +o.subtotal || 0, packing = +o.packing_fee || 0;
+    const gst = +o.gst_amount || 0, fee = +o.delivery_fee || 0, total = +o.total || 0;
+    html += '<div class="timeline">';
+    html += `<div><span>Subtotal</span><span>₹${subtotal.toFixed(0)}</span></div>`;
+    if (packing) html += `<div><span>Packing</span><span>₹${packing.toFixed(0)}</span></div>`;
+    if (gst) html += `<div><span>GST (5%)</span><span>₹${gst.toFixed(0)}</span></div>`;
+    if (fee) html += `<div><span>${o.order_type === 'pickup' ? 'Packing/delivery' : 'Delivery'}</span><span>₹${fee.toFixed(0)}</span></div>`;
+    html += `<div style="font-weight:600;color:#1a1a1a"><span>Total</span><span>₹${total.toFixed(0)}</span></div>`;
     html += '</div>';
 
     if (o.items && o.items.length) {
       html += '<div class="items">' + o.items.map(i => `<div class="row"><span>${i.name} × ${i.qty}</span><span>₹${(+i.price * +i.qty).toFixed(0)}</span></div>`).join('') + '</div>';
     }
 
+    html += '<div class="pr-list">';
     if (o.tracking_url || o.sr_tracking_url) {
-      html += `<a class="btn" href="${o.sr_tracking_url || o.tracking_url}" target="_blank">Track rider live 🛵</a>`;
-    } else if (st === 'out_for_delivery' || st === 'delivered') {
-      html += '<p class="sub" style="margin-top:14px">Rider tracking will appear here once available.</p>';
+      html += `<a class="pr" href="${o.sr_tracking_url || o.tracking_url}" target="_blank" rel="noopener">Track rider live 🛵</a>`;
+    } else if ((st === "out_for_delivery" || st === "delivered") && !o.sr_tracking_url && !o.tracking_url) {
+      html += '<div class="empty">Rider tracking will appear here once available.</div>';
     }
+    html += `<a class="pr wa" href="https://wa.me/919940062840?text=${encodeURIComponent('Hi Tulsi Foods, I have a question about order #' + ORDER_ID)}" target="_blank" rel="noopener">Message us on WhatsApp</a>`;
+    if (o.order_type === "pickup") {
+      html += '<div class="empty" style="margin-top:2px">Pickup: 34 Murrays Gate Road, Alwarpet</div>';
+    }
+    html += '</div>';
 
     document.getElementById('content').innerHTML = html;
   }
