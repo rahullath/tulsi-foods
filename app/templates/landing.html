@@ -227,6 +227,26 @@ section[id] { scroll-margin-top: 76px; }
   </div>
 </section>
 
+<section class="stove" id="fresh">
+  <div class="stove-head reveal">
+    <div>
+      <div class="section-tag">Fresh from the kitchen</div>
+      <h2>Latest updates</h2>
+    </div>
+    <a class="stove-link" href="/updates">All updates &rarr;</a>
+  </div>
+  <div class="stove-grid">
+    {% for u in latest_updates %}
+    <a class="stove-card reveal" href="/updates">
+      <div class="stove-body">
+        <div class="stove-name">{{ u.title }}</div>
+        <div class="stove-desc">{{ u.kind_label }} · {{ u.date_display }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
 <section class="story" id="story">
   <div class="story-body reveal">
     <div class="section-tag">The kitchen</div>
@@ -336,7 +356,7 @@ section[id] { scroll-margin-top: 76px; }
   <div class="footer-main">
     <span>Tulsi Foods · 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
     <span>{% for c in categories %}<a href="/category/{{ c.slug }}">{{ c.name }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</span>
-    <span><a href="/menu">Menu</a> · <a href="/delivery">Delivery areas</a> · <a href="/track">Track your order</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/privacy-policy">Privacy</a> · <a href="/refund-cancellation-policy">Refund policy</a></span>
+    <span><a href="/menu">Menu</a> · <a href="/delivery">Delivery areas</a> · <a href="/track">Track your order</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/updates">Kitchen updates</a> · <a href="/privacy-policy">Privacy</a> · <a href="/refund-cancellation-policy">Refund policy</a></span>
   </div>
   <div class="footer-aka">
     Also known as Tulasi Foods, Thulasi Restaurant · Also on

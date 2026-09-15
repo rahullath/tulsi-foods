@@ -1,6 +1,7 @@
+import json
 import logging
 import re
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import quote
 
@@ -9,6 +10,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Res
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from xml.sax.saxutils import escape as xml_escape
 from pydantic import BaseModel, Field
 
 from . import catalog, db, faqs, menu, orders, reviews
@@ -77,6 +79,51 @@ def all_categories() -> list[dict]:
     ]
 
 
+UPDATES_FILE = Path("data/updates.json")
+
+UPDATE_KIND_LABELS = {
+    "instagram": "Instagram", "whatsapp": "WhatsApp status", "update": "Kitchen update",
+    "offer": "Offer", "milestone": "Milestone",
+}
+
+
+def _display_date(iso: str) -> str:
+    try:
+        return datetime.strptime(iso, "%Y-%m-%d").strftime("%d %b %Y").lstrip("0")
+    except ValueError:
+        return iso
+
+
+def load_updates() -> list[dict]:
+    """Compilation of Instagram/WhatsApp posts + kitchen announcements for the
+    /updates page. File-backed so Mom adds entries without code changes;
+    photo/dish references are validated so a typo can't break the page."""
+    try:
+        raw = json.loads(UPDATES_FILE.read_text())
+    except (OSError, ValueError):
+        return []
+    photos = dish_photo_ids()
+    entries = []
+    for e in raw.get("entries", []):
+        if not e.get("date") or not e.get("title") or not e.get("text"):
+            continue
+        dishes = [d for d in (e.get("dishes") or []) if menu.get_item(d)]
+        entries.append({
+            "date": e["date"],
+            "date_display": _display_date(e["date"]),
+            "kind": e.get("kind") or "update",
+            "kind_label": UPDATE_KIND_LABELS.get(e.get("kind") or "update", "Update"),
+            "title": e["title"],
+            "text": e["text"],
+            "photo": e["photo"] if e.get("photo") in photos else None,
+            "dishes": [{"id": d, "name": menu.get_item(d)["name"]} for d in dishes],
+            "source": e.get("source") or None,
+            "source_label": e.get("source_label") or "See the original",
+        })
+    entries.sort(key=lambda e: e["date"], reverse=True)
+    return entries
+
+
 CATEGORY_BLURBS: dict[str, str] = {
     "Thalis & Combos": "The whole meal on one plate — phulka, dal, sabzi, rice, curd, salad and a sweet, assembled fresh the moment you order. The North Indian Thali is the restaurant's signature; the Mini Thali is the same idea, half the size.",
     "Parathas & Breads": "Hand-rolled parathas off the tawa, served with curd and pickle. Punjab-style, stuffed parathas, and plain variants that sit beside any sabzi.",
@@ -122,7 +169,7 @@ def landing_page(request: Request):
         request, "landing.html",
         {"picks": picks, "google_stats": google_stats, "google_review_link": GOOGLE_REVIEW_LINK,
          "faqs": faqs.landing_faqs(DELIVERY_ZONES, FREE_DELIVERY_ABOVE, price_range, bool(UPI_VPA)),
-         "categories": all_categories()},
+         "categories": all_categories(), "latest_updates": load_updates()[:3]},
     )
 
 
@@ -371,6 +418,58 @@ def bio_page(request: Request):
     return templates.TemplateResponse(request, "bio.html", {"recommendations": recommendations, "categories": all_categories()})
 
 
+@app.get("/updates", response_class=HTMLResponse)
+def updates_page(request: Request):
+    """Fresh from the Kitchen — compilation of Instagram/WhatsApp posts and
+    kitchen announcements. File-backed (data/updates.json) so new entries land
+    without code changes; gives crawlers fresh indexable content to chew on."""
+    updates = load_updates()
+    json_ld = {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "name": "Fresh from the Kitchen — Tulsi Foods kitchen updates",
+        "url": f"{SITE_URL}/updates",
+        "blogPost": [
+            {
+                "@type": "BlogPosting",
+                "headline": u["title"],
+                "datePublished": u["date"],
+                "articleBody": u["text"],
+                **({"image": f"{SITE_URL}/static/img/dishes/{u['photo']}.jpg"} if u["photo"] else {}),
+                "author": {"@type": "Organization", "name": "Tulsi Foods"},
+            }
+            for u in updates
+        ],
+    }
+    return templates.TemplateResponse(
+        request, "updates.html",
+        {"updates": updates, "categories": all_categories(), "updates_json_ld": json_ld},
+    )
+
+
+@app.get("/updates.xml")
+def updates_rss():
+    """RSS feed of the same compilation — one more recrawl trigger for bots."""
+    items = []
+    for u in load_updates():
+        link = u["source"] or f"{SITE_URL}/updates"
+        items.append(
+            f"  <item>\n    <title>{xml_escape(u['title'])}</title>\n"
+            f"    <link>{xml_escape(link)}</link>\n"
+            f"    <guid>{xml_escape(link)}#{u['date']}</guid>\n"
+            f"    <pubDate>{u['date']}T06:00:00+05:30</pubDate>\n"
+            f"    <description>{xml_escape(u['text'])}</description>\n  </item>"
+        )
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n<channel>\n'
+        f"  <title>Fresh from the Kitchen — Tulsi Foods</title>\n"
+        f"  <link>{SITE_URL}/updates</link>\n"
+        "  <description>Instagram posts, WhatsApp statuses and kitchen announcements from Tulsi Foods, Mylapore.</description>\n"
+        + "\n".join(items) + "\n</channel>\n</rss>"
+    )
+    return Response(content=body, media_type="application/rss+xml")
+
+
 @app.get("/admin", response_class=HTMLResponse)
 def admin_page(request: Request):
     return templates.TemplateResponse(
@@ -457,6 +556,7 @@ def llms_txt():
         f"- [Track your order]({SITE_URL}/track): look up an order by tracking reference or phone",
         f"- [Delivery]({SITE_URL}/delivery): delivery areas, fees and timing",
         f"- [About]({SITE_URL}/about): the kitchen's story, reviews, and frequently asked questions",
+        f"- [Kitchen updates]({SITE_URL}/updates): Instagram posts, WhatsApp statuses and kitchen announcements",
         f"- [Privacy policy]({SITE_URL}/privacy-policy)",
         f"- [Refund &amp; cancellation policy]({SITE_URL}/refund-cancellation-policy)",
         "",
@@ -492,6 +592,14 @@ SITEMAP_TEMPLATES = {
     "/refund-cancellation-policy": "refund-cancellation-policy.html",
     "/track": "track-landing.html",
     "/404": "404.html",
+    "/updates": "updates.html",
+}
+
+
+# Sitemap freshness for data-backed pages: lastmod follows the newest of the
+# template and its data file, so new entries bump the date without a deploy.
+SITEMAP_DATA_FILES = {
+    "/updates": UPDATES_FILE,
 }
 
 
@@ -513,10 +621,15 @@ def sitemap_xml():
     entries = []
     for path in paths:
         lastmod_tag = ""
+        mtimes = []
         template_name = SITEMAP_TEMPLATES.get(path)
         if template_name:
-            mtime = (template_dir / template_name).stat().st_mtime
-            lastmod_tag = f"\n    <lastmod>{date.fromtimestamp(mtime).isoformat()}</lastmod>"
+            mtimes.append((template_dir / template_name).stat().st_mtime)
+        data_file = SITEMAP_DATA_FILES.get(path)
+        if data_file and data_file.exists():
+            mtimes.append(data_file.stat().st_mtime)
+        if mtimes:
+            lastmod_tag = f"\n    <lastmod>{date.fromtimestamp(max(mtimes)).isoformat()}</lastmod>"
         entries.append(f"  <url>\n    <loc>{SITE_URL}{path}</loc>{lastmod_tag}\n  </url>")
     menu_mtime = (Path("data/menu.json")).stat().st_mtime
     menu_items = [m for m in menu.load_menu() if not m["id"].endswith(menu.HALF_SUFFIX)]

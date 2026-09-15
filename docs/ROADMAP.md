@@ -73,17 +73,17 @@ include with ordered link groups (Order: Menu/Categories; Help: Track, Delivery,
 FAQs; Company: Our story, Contact, Privacy, Refund; Legal) + address/hours.
 Build on the base.html include approach from R2-2.
 
-### R2-4. Daily "journal / feed" page (Instagram repost for recrawl) — `[ ]`
-A `/journal` (or `/updates`) page that embeds/posts the day's Instagram content
-+ monthly offers — nobody has to read it, but it changes daily and forces a
-re-index, and it should look nice (it's also a social-proof surface).
-- Decide engine: manual (mom posts → we paste a link/photo in an admin textarea)
-  vs semi-automated (jsonl entries via admin form). Keep it dead-simple; a
-  file-backed `data/journal.json` with date, image, caption, offer.
-- Template mirrors the landing style; add `?p=1`-style pagination + RSS/atom + a
-  `<link rel=alternate type=application/rss+xml>` in base for the bots.
-- Emergency: if hero image (R2-5) isn't ready, this page can host kitchen
-  everyday shots.
+### R2-4. "Fresh from the Kitchen" compilation page (`/updates`) — `[x]`
+Not a diary (nobody will update it daily) — a compilation of Instagram posts,
+WhatsApp statuses and kitchen announcements that makes the site look deeper
+to crawlers: `data/updates.json` (date, kind, title, text, optional dish photo,
+dish links, source URL) renders cards with `Blog`/`BlogPosting` JSON-LD,
+internal links to dishes and pages, plus `/updates.xml` RSS and sitemap
+lastmod that follows the data file so new entries bump freshness without a
+deploy. Seeded with 4 honest entries from shipped facts (11 years, direct
+ordering, windows, tracking). Linked from the landing "Latest updates" teaser
++ every footer + llms.txt. To add a post: append one JSON entry, done — photo
+and dish references are validated so typos can't break the page.
 
 ### R2-5. Hero image → Mom & staff / restaurant interior — `[ ]`
 Needs a real photo asset (not available yet). Wire once supplied: replace

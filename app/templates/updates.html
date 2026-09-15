@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block meta %}
+<meta name="description" content="Fresh from the Kitchen — Instagram posts, WhatsApp statuses and announcements from Tulsi Foods, Mylapore: 11 years, direct ordering, live courier tracking, Lunch and Dinner windows.">
+<title>Fresh from the Kitchen — Updates | Tulsi Foods, Mylapore Chennai</title>
+<link rel="alternate" type="application/rss+xml" title="Fresh from the Kitchen — Tulsi Foods" href="https://tulsifoods.app/updates.xml">
+<script type="application/ld+json">{{ updates_json_ld | tojson }}</script>
+{% endblock %}
+{% block canonical %}<link rel="canonical" href="https://tulsifoods.app/updates">{% endblock %}
+{% block styles %}{% endblock %}
+{% block body %}
+<style>
+:root { --g: #0E7A45; --sf: #E08A1E; --bg: #FBF8F2; --card: #fff; --border: #E7E1D6; --ink: #171A14; --sub: #6F7468; --line2: #EFEBE3; }
+* { box-sizing: border-box; margin: 0; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+
+.page { max-width: 760px; margin: 0 auto; padding: 48px 40px 64px; }
+.page-tag { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--g); letter-spacing: .05em; text-transform: uppercase; }
+.page h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(30px, 4vw, 42px); margin: 12px 0 0; line-height: 1.08; }
+.page-sub { margin: 16px 0 0; font-size: 16px; line-height: 1.65; color: #43483F; max-width: 620px; }
+.page-sub a { color: var(--g); font-weight: 600; text-decoration: none; }
+.follow { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+.follow a { font-size: 14px; font-weight: 600; color: var(--g); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 10px 18px; text-decoration: none; }
+.follow a:hover { border-color: var(--g); }
+
+.feed { margin-top: 34px; display: flex; flex-direction: column; gap: 20px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.card-photo { aspect-ratio: 16 / 9; background: #F0F3E8; }
+.card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-body { padding: 20px 22px 22px; }
+.card-meta { display: flex; align-items: center; gap: 10px; font: 500 11px/1 'IBM Plex Mono', monospace; }
+.card-kind { color: #fff; background: var(--g); border-radius: 999px; padding: 5px 11px; letter-spacing: .05em; text-transform: uppercase; }
+.card-kind.kind-offer { background: var(--sf); }
+.card-kind.kind-milestone { background: #5B6B45; }
+.card-date { color: var(--sub); }
+.card h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 21px; margin: 12px 0 0; line-height: 1.25; }
+.card p { margin: 10px 0 0; font-size: 15px; line-height: 1.7; color: #43483F; }
+.card-related { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+.card-related a { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--g); background: #EDF6E2; border: 1px solid #DDE4CC; border-radius: 999px; padding: 9px 14px; text-decoration: none; }
+.card-related a:hover { border-color: var(--g); }
+.card-source { display: inline-block; margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--g); text-decoration: none; }
+.card-source:hover { text-decoration: underline; }
+
+.footer { padding: 26px 40px 34px; font-size: 13px; color: var(--sub); max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+.footer a { color: var(--g); text-decoration: none; }
+
+@media (max-width: 768px) {
+  .page { padding: 32px 18px 48px; }
+  .card-body { padding: 16px 18px 18px; }
+  .footer { padding: 20px 18px 30px; }
+}
+</style>
+
+<div class="page">
+  <div class="page-tag">Kitchen updates</div>
+  <h1>Fresh from the Kitchen</h1>
+  <p class="page-sub">Our Instagram posts, WhatsApp statuses and kitchen announcements, gathered in one place — milestones, offers and the occasional change to how ordering works.</p>
+  <div class="follow">
+    <a href="https://www.instagram.com/tulsi.foods_chennai/" target="_blank" rel="noopener">Instagram — tulsi.foods_chennai</a>
+    <a href="https://wa.me/919940062840?text=Hi%2C%20I%20want%20to%20place%20an%20order." target="_blank" rel="noopener">WhatsApp us</a>
+  </div>
+
+  <div class="feed">
+    {% for u in updates %}
+    <article class="card">
+      {% if u.photo %}
+      <div class="card-photo"><img src="/static/img/dishes/{{ u.photo }}.jpg" alt="{{ u.title }}, Tulsi Foods Mylapore" loading="lazy"></div>
+      {% endif %}
+      <div class="card-body">
+        <div class="card-meta"><span class="card-kind kind-{{ u.kind }}">{{ u.kind_label }}</span><span class="card-date">{{ u.date_display }}</span></div>
+        <h2>{{ u.title }}</h2>
+        <p>{{ u.text }}</p>
+        {% if u.dishes %}
+        <div class="card-related">
+          {% for d in u.dishes %}<a href="/menu/{{ d.id }}">{{ d.name }} &rarr;</a>{% endfor %}
+        </div>
+        {% endif %}
+        {% if u.source %}
+        <a class="card-source" href="{{ u.source }}" {% if u.source.startswith('http') %}target="_blank" rel="noopener"{% endif %}>{{ u.source_label }} &rarr;</a>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="footer">
+  <span><a href="/menu">Menu</a> · <a href="/delivery">Delivery areas</a> · <a href="/track">Track your order</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/updates">Kitchen updates</a> · <a href="/privacy-policy">Privacy</a> · <a href="/refund-cancellation-policy">Refund policy</a></span>
+  <span>Tulsi Foods · 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
+</div>
+{% endblock %}

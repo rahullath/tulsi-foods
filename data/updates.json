@@ -1,0 +1,45 @@
+{
+  "_note": "Fresh from the Kitchen — compilation of Instagram posts, WhatsApp statuses and kitchen announcements. To add one: append an entry with date (YYYY-MM-DD), kind (instagram|whatsapp|update|offer|milestone), title, text (1-3 sentences), optional photo (a dish id from app/static/img/dishes, e.g. mini-thali), optional dishes (menu item ids to link), optional source URL + label. Newest first is automatic (sorted by date). No code changes needed — the page, sitemap date and RSS rebuild from this file.",
+  "instagram_profile": "https://www.instagram.com/tulsi.foods_chennai/",
+  "entries": [
+    {
+      "date": "2026-09-13",
+      "kind": "update",
+      "title": "Live courier tracking on every delivery",
+      "text": "Every delivery order now comes with its own tracking reference on WhatsApp — follow your food from our Alwarpet kitchen to your door, with live rider tracking once dispatched. No app to install, just a link.",
+      "photo": "chola-bhatura",
+      "dishes": ["chola-bhatura"],
+      "source": "https://tulsifoods.app/track",
+      "source_label": "Track your order"
+    },
+    {
+      "date": "2026-09-12",
+      "kind": "update",
+      "title": "Lunch and Dinner windows instead of rigid slots",
+      "text": "You can now order for the Lunch window (12:00–2:30 PM) or Dinner window (6:30–9:30 PM) instead of committing to an exact minute — the kitchen cooks to land inside your window. Or pick As Soon As Possible and eat within the hour.",
+      "photo": "mini-thali",
+      "dishes": ["mini-thali", "north-indian-thali"],
+      "source": "https://tulsifoods.app/menu",
+      "source_label": "See today's menu"
+    },
+    {
+      "date": "2026-09-08",
+      "kind": "update",
+      "title": "Order direct — no aggregator commission on your food",
+      "text": "Every order placed here or on WhatsApp goes straight to our kitchen, so nothing is lost to platform commissions and prices stay fair. You can even pay the delivery rider directly and keep the fee off your bill.",
+      "dishes": [],
+      "source": "https://tulsifoods.app/delivery",
+      "source_label": "How delivery works"
+    },
+    {
+      "date": "2026-09-05",
+      "kind": "milestone",
+      "title": "11 years of Tulsi Foods",
+      "text": "Since September 2015 our Mylapore kitchen has cooked home-style North Indian food — pure veg, Jain and no-onion-garlic on request — for the neighbourhood. Eleven years in, this website is how we keep it direct: our menu, our riders, our prices.",
+      "photo": "masala-chai",
+      "dishes": ["masala-chai"],
+      "source": "https://tulsifoods.app/about",
+      "source_label": "Read our story"
+    }
+  ]
+}
