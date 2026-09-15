@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
-from . import db, menu, orders, reviews
+from . import catalog, db, menu, orders, reviews
 from .config import (
     ADMIN_TOKEN,
     DELIVERY_ZONES,
@@ -203,6 +203,13 @@ def privacy_page(request: Request):
 @app.get("/refund-cancellation-policy", response_class=HTMLResponse)
 def refund_cancellation_policy_page(request: Request):
     return templates.TemplateResponse(request, "refund-cancellation-policy.html", {})
+
+
+@app.get("/whatsapp-catalog.csv", response_class=PlainTextResponse)
+def whatsapp_catalog_csv():
+    return Response(content=catalog.catalog_csv(), media_type="text/csv", headers={
+        "Content-Disposition": "attachment; filename=tulsi-foods-catalog.csv",
+    })
 
 
 # ---- SEO: verification, robots, sitemap ----

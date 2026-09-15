@@ -1,0 +1,182 @@
+Tulsi Foods - WhatsApp catalog manual entry (form order: Name | Price | Sale price | Description | Link | Item code | Country=India)
+Sale price: leave blank. Hide item: keep OFF. (HALF) rows are half-portion SKUs.
+Images: 37 of 141 items have photos - pick from phone gallery for those; add images for the rest when ready.
+
+
+===== CHAATS & SNACKS =====
+Aloo Pakoda | price 104 | code aloo-pakoda | NO-PHOTO
+Aloo Sandwich | price 104 | code aloo-sandwich | NO-PHOTO
+Aloo Tikki (2pcs) | price 111 | code aloo-tikki-2pcs | HAS-PHOTO
+Bhel Puri | price 112 | code bhel-puri | NO-PHOTO
+Bread Chat | price 111 | code bread-chat | NO-PHOTO
+Chilli Cheeesetoast | price 112 | code chilli-cheeesetoast | NO-PHOTO
+Chola Tikki (2pcs) | price 168 | code chola-tikki-2pcs | HAS-PHOTO
+Churmur Chat | price 100 | code churmur-chat | NO-PHOTO
+Corn Aloo Tikki (2pcs) | price 139 | code corn-aloo-tikki-2pcs | NO-PHOTO
+Corn Cheese Sandwich | price 141 | code corn-cheese-sandwich | HAS-PHOTO
+Cutlet (2pcs) | price 100 | code cutlet-2pcs | NO-PHOTO
+Dahi Aloo Tikki (2pcs) | price 144 | code dahi-aloo-tikki-2pcs | NO-PHOTO
+Dahi Papdi Chat (6pcs) | price 148 | code dahi-papdi-chat-6pcs | NO-PHOTO
+Dahi Puri (6pcs) | price 146 | code dahi-puri-6pcs | NO-PHOTO
+Dhokla | price 111 | code dhokla | HAS-PHOTO
+Dhokla Chat | price 112 | code dhokla-chat | NO-PHOTO
+Extra Pav | price 20 | code extra-pav | NO-PHOTO
+Fruit Chaat | price 120 | code fruit-chaat | NO-PHOTO
+Garlic Bread (Cheese) | price 151 | code garlic-bread-cheese | HAS-PHOTO
+Grilled Sandwich | price 160 | code grilled-sandwich | HAS-PHOTO
+Jhal Puri | price 112 | code jhal-puri | HAS-PHOTO
+Masala Papad | price 60 | code masala-papad | HAS-PHOTO
+Mini Samosa | price 20 | code mini-samosa | NO-PHOTO
+Onion Pakoda | price 105 | code onion-pakoda | NO-PHOTO
+Paneer Sandwich | price 144 | code paneer-sandwich | NO-PHOTO
+Pani Puri | price 81 | code pani-puri | HAS-PHOTO
+Papdi Chat (6pcs) | price 100 | code papdi-chat-6pcs | HAS-PHOTO
+Pav Bhaji | price 152 | code pav-bhaji | HAS-PHOTO
+Poha | price 104 | code poha | NO-PHOTO
+Raita / Extra Curd | price 20 | code raita-extra-curd | NO-PHOTO
+Roasted Papad | price 40 | code roasted-papad | NO-PHOTO
+Sabudana Vada (2pcs) | price 142 | code sabudana-vada-2pcs | HAS-PHOTO
+Samosa (2pcs) | price 78 | code samosa-2pcs | HAS-PHOTO
+Samosa Chat | price 101 | code samosa-chat | NO-PHOTO
+Vada Pav | price 144 | code vada-pav | HAS-PHOTO
+Vegetable Sandwich | price 101 | code vegetable-sandwich | NO-PHOTO
+
+===== CHAI & BEVERAGES =====
+Badam Milkshake | price 121 | code badam-milkshake | NO-PHOTO
+Banana Milkshake | price 120 | code banana-milkshake | NO-PHOTO
+Blue Lagoon | price 100 | code blue-lagoon | NO-PHOTO
+Buttermilk | price 61 | code buttermilk | NO-PHOTO
+Cafe Latte | price 60 | code cafe-latte | NO-PHOTO
+Chocolate Milkshake | price 120 | code chocolate-milkshake | NO-PHOTO
+Cold Coffee | price 120 | code cold-coffee | NO-PHOTO
+Lassi | price 102 | code lassi | NO-PHOTO
+Lemon Tea | price 50 | code lemon-tea | NO-PHOTO
+Lemonade | price 80 | code lemonade | NO-PHOTO
+Mango Juice | price 120 | code mango-juice | NO-PHOTO
+Masala Chai | price 51 | code masala-chai | HAS-PHOTO
+Masala Thumsup | price 90 | code masala-thumsup | NO-PHOTO
+Mint Mojito | price 80 | code mint-mojito | HAS-PHOTO
+Mosambi Juice | price 121 | code mosambi-juice | NO-PHOTO
+Orange Juice | price 126 | code orange-juice | NO-PHOTO
+Oreo Milkshake | price 120 | code oreo-milkshake | NO-PHOTO
+Rose Milkshake | price 120 | code rose-milkshake | NO-PHOTO
+Tea | price 41 | code tea | HAS-PHOTO
+Vanilla Milkshake | price 120 | code vanilla-milkshake | NO-PHOTO
+Water Bottle(300 Ml) | price 10 | code water-bottle-300-ml | NO-PHOTO
+Watermelon Juice | price 101 | code watermelon-juice | NO-PHOTO
+
+===== DESSERTS =====
+Chocolate Ice Cream | price 100 | code chocolate-ice-cream | NO-PHOTO
+Gulab Jamun (2Pcs) | price 100 | code gulab-jamun-2pcs | HAS-PHOTO
+Kulfi | price 120 | code kulfi | NO-PHOTO
+Mango Ice Cream | price 120 | code mango-ice-cream | NO-PHOTO
+Moong Dal Halwa | price 120 | code moong-dal-halwa | NO-PHOTO
+Rabdi | price 220 | code rabdi | NO-PHOTO
+Vanilla Ice Cream | price 120 | code vanilla-ice-cream | NO-PHOTO
+
+===== ITALIAN =====
+Cheese Pasta | price 251 | code cheese-pasta | NO-PHOTO
+Mini Pizza | price 60 | code mini-pizza | NO-PHOTO
+Mixed Sauce Pasta | price 244 | code mixed-sauce-pasta | NO-PHOTO
+Penne Arrabiata | price 205 | code penne-arrabiata | NO-PHOTO
+Regular Pizza | price 182 | code regular-pizza | HAS-PHOTO
+Vegetable Hakka Noodles | price 179 | code vegetable-hakka-noodles | NO-PHOTO
+White Sauce Pasta | price 203 | code white-sauce-pasta | NO-PHOTO
+
+===== PARATHAS & BREADS =====
+Aloo Paratha | price 113 | code aloo-paratha | HAS-PHOTO
+Baby Cheese Naan (2pcs) | price 123 | code baby-cheese-naan-2pcs | NO-PHOTO
+Butter Naan | price 87 | code butter-naan | NO-PHOTO
+Chola Bhatura | price 253 | code chola-bhatura | HAS-PHOTO
+Extra Bhatura | price 52 | code extra-bhatura | NO-PHOTO
+Garlic Naan | price 91 | code garlic-naan | NO-PHOTO
+Gobi Paratha | price 123 | code gobi-paratha | HAS-PHOTO
+Kadai Ki Puri | price 21 | code kadai-ki-puri | NO-PHOTO
+Masala Kulcha | price 120 | code masala-kulcha | NO-PHOTO
+Mini Kulcha | price 35 | code mini-kulcha | NO-PHOTO
+Naan | price 72 | code naan | NO-PHOTO
+Paneer Paratha | price 123 | code paneer-paratha | NO-PHOTO
+Peas Paratha | price 124 | code peas-paratha | NO-PHOTO
+Phulka | price 41 | code phulka | HAS-PHOTO
+Plain Kulcha | price 80 | code plain-kulcha | NO-PHOTO
+Plain Paratha | price 50 | code plain-paratha | NO-PHOTO
+Plain Roti | price 52 | code plain-roti | NO-PHOTO
+Tandoori Roti | price 122 | code tandoori-roti | HAS-PHOTO
+
+===== SABZI =====
+Aloo Dum | price 334 | code aloo-dum | NO-PHOTO
+   Aloo Dum (HALF) | price 200 | code aloo-dum-half
+Aloo Gobi | price 283 | code aloo-gobi | NO-PHOTO
+   Aloo Gobi (HALF) | price 170 | code aloo-gobi-half
+Aloo Sabzi | price 273 | code aloo-sabzi | NO-PHOTO
+   Aloo Sabzi (HALF) | price 160 | code aloo-sabzi-half
+Bhindi Ki Sabzi | price 205 | code bhindi-ki-sabzi | NO-PHOTO
+   Bhindi Ki Sabzi (HALF) | price 120 | code bhindi-ki-sabzi-half
+Channa Masala | price 306 | code channa-masala | HAS-PHOTO
+   Channa Masala (HALF) | price 180 | code channa-masala-half
+Dal Makhani | price 364 | code dal-makhani | HAS-PHOTO
+   Dal Makhani (HALF) | price 220 | code dal-makhani-half
+Dal Tadka | price 304 | code dal-tadka | NO-PHOTO
+   Dal Tadka (HALF) | price 180 | code dal-tadka-half
+Gobi Masala | price 214 | code gobi-masala | NO-PHOTO
+   Gobi Masala (HALF) | price 130 | code gobi-masala-half
+Kadi | price 210 | code kadi | NO-PHOTO
+   Kadi (HALF) | price 130 | code kadi-half
+Malai Kofta | price 354 | code malai-kofta | NO-PHOTO
+   Malai Kofta (HALF) | price 210 | code malai-kofta-half
+Mixed Vegetable | price 369 | code mixed-vegetable | HAS-PHOTO
+   Mixed Vegetable (HALF) | price 220 | code mixed-vegetable-half
+Mutter Paneer | price 335 | code mutter-paneer | NO-PHOTO
+   Mutter Paneer (HALF) | price 200 | code mutter-paneer-half
+Pakodi Ki Kadi | price 200 | code pakodi-ki-kadi | NO-PHOTO
+   Pakodi Ki Kadi (HALF) | price 120 | code pakodi-ki-kadi-half
+Palak Paneer | price 313 | code palak-paneer | NO-PHOTO
+   Palak Paneer (HALF) | price 190 | code palak-paneer-half
+Paneer Butter Masala | price 365 | code paneer-butter-masala | HAS-PHOTO
+   Paneer Butter Masala (HALF) | price 220 | code paneer-butter-masala-half
+Peas Masala | price 338 | code peas-masala | NO-PHOTO
+   Peas Masala (HALF) | price 200 | code peas-masala-half
+Vegetable Kofta | price 343 | code vegetable-kofta | NO-PHOTO
+   Vegetable Kofta (HALF) | price 210 | code vegetable-kofta-half
+
+===== SOUPS & RICE =====
+Curd Rice | price 155 | code curd-rice | NO-PHOTO
+Jeera Rice | price 183 | code jeera-rice | NO-PHOTO
+Kaju Vegetable Pulao | price 350 | code kaju-vegetable-pulao | NO-PHOTO
+Peas Pulao | price 243 | code peas-pulao | HAS-PHOTO
+Plain Rice | price 131 | code plain-rice | NO-PHOTO
+Sweet Corn Soup | price 222 | code sweet-corn-soup | NO-PHOTO
+Tomato Soup | price 201 | code tomato-soup | HAS-PHOTO
+Veg Briyani | price 252 | code veg-briyani | NO-PHOTO
+Veg Fried Rice | price 215 | code veg-fried-rice | NO-PHOTO
+Vegetable Pulao | price 201 | code vegetable-pulao | NO-PHOTO
+Vegetable Soup | price 201 | code vegetable-soup | NO-PHOTO
+
+===== SPECIALITIES =====
+Club Kachori (6pcs) | price 196 | code club-kachori-6pcs | NO-PHOTO
+Raita (250ml) | price 100 | code raita-250ml | NO-PHOTO
+
+===== STARTERS =====
+Cheese Balls | price 221 | code cheese-balls | NO-PHOTO
+Cheesy Disc (2pcs) | price 132 | code cheesy-disc-2pcs | HAS-PHOTO
+Corn Cheese Bun (2pcs) | price 100 | code corn-cheese-bun-2pcs | HAS-PHOTO
+Crispy Chilly Corn | price 252 | code crispy-chilly-corn | HAS-PHOTO
+Crispy Chilly Paneer | price 300 | code crispy-chilly-paneer | NO-PHOTO
+Crispy Chilly Potato | price 227 | code crispy-chilly-potato | NO-PHOTO
+French Fries | price 181 | code french-fries | NO-PHOTO
+Garlic Bread | price 83 | code garlic-bread | NO-PHOTO
+Gobi Manchurian | price 284 | code gobi-manchurian | NO-PHOTO
+Kathi Roll | price 138 | code kathi-roll | HAS-PHOTO
+Nachos | price 225 | code nachos | NO-PHOTO
+Paneer Tikka | price 257 | code paneer-tikka | HAS-PHOTO
+Veg Burger | price 94 | code veg-burger | NO-PHOTO
+
+===== THALIS & COMBOS =====
+Add On Sabzi | price 10 | code add-on-sabzi | NO-PHOTO
+Classic Dal Rice | price 232 | code classic-dal-rice | NO-PHOTO
+Dal Makhani Rice Bowl | price 268 | code dal-makhani-rice-bowl | NO-PHOTO
+Executive Combo | price 281 | code executive-combo | NO-PHOTO
+Mini Thali | price 188 | code mini-thali | HAS-PHOTO
+North Indian Thali | price 248 | code north-indian-thali | HAS-PHOTO
+Paneer Butter Masala Rice Bowl | price 268 | code paneer-butter-masala-rice-bowl | NO-PHOTO
+Rajasthani Thali | price 599 | code rajasthani-thali | NO-PHOTO
