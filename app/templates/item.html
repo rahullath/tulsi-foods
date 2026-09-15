@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block meta %}
-<meta name="description" content="{{ item_description }} — {{ item.price }} INR, pure vegetarian, home-style, Mylapore Chennai. Order direct on WhatsApp, no platform fees.">
+<meta name="description" content="{{ item_description }} — {{ item.price }} INR, pure vegetarian, home-style, Mylapore Chennai. Order online on this site, no platform fees.">
 <title>{{ item.name }} @ ₹{{ item.price }} | Tulsi Foods, Mylapore</title>
 <meta property="og:type" content="product">
 <meta property="og:title" content="{{ item.name }} | Tulsi Foods, Mylapore">
@@ -68,8 +68,18 @@
       {% if half %}<span class="half-inline">· ₹{{ half }} (half)</span>{% endif %}
     </div>
 
-    <a class="cta wa" href="{{ wa_link }}" target="_blank" rel="noopener">Order on WhatsApp →</a>
-    <a class="cta menu" href="/menu">Order online — see full menu</a>
+    <div class="order-box" id="order-box"
+         data-id="{{ item.id }}" data-name="{{ item.name }}"
+         data-price="{{ item.price }}" data-available="{{ '1' if available else '0' }}">
+      <div class="stepper" aria-label="Quantity">
+        <button type="button" class="step" id="qty-minus" aria-label="Decrease quantity">−</button>
+        <span class="qty" id="qty-val">1</span>
+        <button type="button" class="step" id="qty-plus" aria-label="Increase quantity">+</button>
+      </div>
+      <button class="cta add" id="add-btn">Add to cart</button>
+      <div class="add-state" id="add-state"></div>
+      <a class="alt" href="/menu#checkout">See the full menu &amp; checkout →</a>
+    </div>
   </main>
 
   <section class="about">
@@ -81,9 +91,9 @@
   <section class="ordering">
     <h2>Order {{ item.name }} today</h2>
     <ul>
-      <li><b>Order on WhatsApp</b> — {{ ordering.whatsapp }}. Fastest, and we usually deliver in about 40 minutes within Mylapore.</li>
+      <li><b>Online</b> — add it to your cart above and check out straight on this site.</li>
+      <li><b>WhatsApp</b> — message {{ ordering.whatsapp }} for help or a large / catering order.</li>
       <li><b>By phone</b> — {{ ordering.phone }}.</li>
-      <li><b>Online</b> — use the menu, add to cart and check out on this site.</li>
       <li><b>Pickup</b> — {{ ordering.address }}.</li>
       <li><b>Delivery</b> — {{ ordering.zones }}.</li>
       <li><b>Hours</b> — {{ ordering.hours }}.</li>
@@ -166,9 +176,19 @@ h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; line-heigh
 .half-inline { font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--sub); }
 
 .cta { display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 12px; padding: 14px; margin-top: 14px; }
-.cta.wa { background: var(--g); color: #fff; }
-.cta.menu { background: #fff; color: var(--g); border: 1px solid var(--border); }
-.cta.menu:hover { border-color: var(--g); }
+.cta.add { background: var(--g); color: #fff; border: none; width: 100%; cursor: pointer; }
+.cta.add.done { background: #25D366; }
+.cta.add:disabled { background: #B9B2A2; cursor: not-allowed; }
+
+.order-box { margin-top: 18px; }
+.stepper { display: flex; align-items: center; justify-content: center; gap: 18px; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px; }
+.step { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: #fff; color: var(--g); font-size: 22px; line-height: 1; cursor: pointer; }
+.step:hover { border-color: var(--g); }
+.qty { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; font-weight: 700; min-width: 28px; text-align: center; }
+.add-state { font-size: 13px; color: var(--g); margin-top: 10px; text-align: center; min-height: 18px; }
+.add-state a { color: var(--g); font-weight: 600; }
+.alt { display: block; text-align: center; font-size: 13px; color: var(--sub); margin-top: 8px; text-decoration: none; }
+.alt:hover { color: var(--g); text-decoration: underline; }
 
 section { padding: 22px 18px 0; }
 section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; margin-bottom: 8px; line-height: 1.2; }
@@ -210,4 +230,48 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
 
 <script type="application/ld+json">{{ item_schema | tojson }}</script>
 <script type="application/ld+json">{{ breadcrumb_schema | tojson }}</script>
+<script>
+(function () {
+  const CART_KEY = "tulsi_menu_cart";
+  const box = document.getElementById("order-box");
+  if (!box) return;
+  const id = box.dataset.id;
+  const price = Number(box.dataset.price);
+  const available = box.dataset.available === "1";
+  const qtyEl = document.getElementById("qty-val");
+  const minus = document.getElementById("qty-minus");
+  const plus = document.getElementById("qty-plus");
+  const addBtn = document.getElementById("add-btn");
+  const stateEl = document.getElementById("add-state");
+
+  let cart = {};
+  try { cart = JSON.parse(localStorage.getItem(CART_KEY) || "{}"); } catch (_) { cart = {}; }
+  let qty = Math.min(Math.max(cart[id] > 0 ? cart[id] : 1, 1), 20);
+  qtyEl.textContent = qty;
+
+  if (!available) {
+    addBtn.disabled = true;
+    addBtn.textContent = "Not available today";
+    return;
+  }
+  if (cart[id] > 0) {
+    stateEl.innerHTML = 'In your cart' + (cart[id] > 1 ? '(<b>' + cart[id] + '</b>)' : '') + ' — <a href="/menu#checkout">checkout &amp; pay →</a>';
+  }
+
+  const save = () => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (_) {} };
+
+  minus.addEventListener("click", () => { if (qty > 1) { qty--; qtyEl.textContent = qty; } });
+  plus.addEventListener("click", () => { if (qty < 20) { qty++; qtyEl.textContent = qty; } });
+  addBtn.addEventListener("click", () => {
+    cart[id] = qty;
+    save();
+    qtyEl.textContent = qty;
+    addBtn.classList.add("done");
+    addBtn.textContent = "✓ Added to cart";
+    stateEl.style.color = "#16a34a";
+    stateEl.innerHTML = 'Added — <a href="/menu#checkout">checkout &amp; pay →</a>';
+    setTimeout(() => { addBtn.classList.remove("done"); addBtn.textContent = "Add more"; }, 1800);
+  });
+})();
+</script>
 {% endblock %}

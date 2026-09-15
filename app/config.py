@@ -47,6 +47,17 @@ GSTIN = os.environ.get("GSTIN", "")
 # confirm the exact reopen time with mom and adjust if it's off.
 MONDAY_OPENS_AT = "14:00"
 
+# Store identity — single source of truth for FAQ answers and page copy, so
+# hours/address/phone can never drift between the visible page and schema.
+STORE_NAME = "Tulsi Foods"
+STORE_ADDRESS = "34 Murrays Gate Road, Alwarpet, Chennai 600018"
+STORE_PICKUP_LINE = "34 Murrays Gate Road, Alwarpet"
+STORE_WHATSAPP = "+91 99400 62840"
+OPENING_HOURS = {
+    "mon_sat": ("09:00", "21:00"),
+    "sunday": ("11:00", "21:00"),
+}
+
 ORDER_STATUSES = [
     "new",
     "preparing",

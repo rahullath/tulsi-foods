@@ -537,16 +537,15 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       if (isDelivery) {
         if (q && q.outside) {
           deliveryRow = `<div class="checkout-row" style="color:#B3261E"><span>Delivery</span><span>Outside our area — pickup instead</span></div>`;
-          deliveryNote = `<div class="checkout-row-note" style="color:#B3261E">We don't deliver ${q.km ? Math.round(q.km) + " km away" : "that far"}. Pickup is in Alwarpet.</div>`;
+          deliveryNote = `<span style="color:#B3261E">We don't deliver ${q.km ? Math.round(q.km) + " km away" : "that far"}. Pickup is in Alwarpet.</span>`;
         } else if (q) {
-          deliveryRow = `<div class="checkout-row"><span>Delivery (${q.zone}${q.km ? " · " + q.km.toFixed(1) + " km" : ""})</span><span>${q.fee ? "₹" + q.fee : "FREE"}</span></div>`;
-          deliveryNote = `${
-            q.fee ? (FREE_DELIVERY_ABOVE > 0 ? `Free over ₹${FREE_DELIVERY_ABOVE}.` : "") : "Delivery is free on this order."
-          }${currentSubtotal && currentSubtotal < q.min_order
-            ? `<span style="color:#B3261E"> Minimum order in this area is ₹${q.min_order}.</span>` : ""}`;
+          deliveryRow = `<div class="checkout-row"><span>Delivery (est.)</span><span>${q.fee ? "~₹" + q.fee : "FREE (est.)"}</span></div>`;
+          deliveryNote = `Estimated from your area. ${FREE_DELIVERY_ABOVE > 0 && q.fee ? `Free over ₹${FREE_DELIVERY_ABOVE}. ` : ""}Kitchen confirms the exact fee.${
+            currentSubtotal && currentSubtotal < q.min_order
+            ? ` <span style="color:#B3261E">Minimum order here is ₹${q.min_order}.</span>` : ""}`;
         } else {
-          deliveryRow = `<div class="checkout-row"><span>Delivery</span><span>Drop a pin to see</span></div>`;
-          deliveryNote = "Drop a pin and the delivery fee shows here before you pay.";
+          deliveryRow = `<div class="checkout-row"><span>Delivery (est.)</span><span>~₹30–₹70</span></div>`;
+          deliveryNote = "Estimated from your area — the kitchen confirms the exact fee on WhatsApp.";
         }
       } else {
         deliveryNote = PICKUP_NOTE;
@@ -844,27 +843,57 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Order failed");
+        const placedItems = ids
+          .map(id => ({ name: NAMES[id], price: PRICES[id], qty: cart[id] }))
+          .filter(i => i.qty > 0);
         Object.keys(cart).forEach(k => delete cart[k]);
         updateCart();
         document.querySelectorAll(".card-stepper .qty").forEach(el => el.textContent = "0");
         document.querySelectorAll(".card-note").forEach(el => el.value = "");
         const isDelivery = payload.order_type === "delivery" && payload.address;
         const isUpi = payload.payment_method === "upi" && UPI_VPA;
+        const when = payload.scheduled_at
+          ? new Date(payload.scheduled_at).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+          : "As soon as possible";
+        const confirmLines = [
+          `Hi Tulsi Foods, please confirm my order #${data.order_id}:`,
+          "",
+          ...placedItems.map(i => `${i.qty} × ${i.name} — ₹${Math.round(i.price * i.qty)}`),
+          "",
+          `Subtotal ₹${data.subtotal}`,
+          ...(data.packing_fee ? [`Packing ₹${data.packing_fee}`] : []),
+          ...(data.gst_amount ? [`GST ₹${data.gst_amount}`] : []),
+          ...(data.delivery_fee ? [`Delivery ~₹${data.delivery_fee} (estimate)`] : []),
+          `Total: ₹${data.total}`,
+          "",
+          isDelivery ? `Deliver to: ${payload.address}` : "Pickup at 34 Murrays Gate Road, Alwarpet",
+          `Name: ${payload.name} · ${payload.phone}`,
+          `When: ${when}`,
+          `Payment: ${payload.payment_method === "upi" ? "UPI" : "Cash on delivery"}`,
+          ...(payload.instructions ? [`Note: ${payload.instructions}`] : []),
+          "",
+          "Please confirm my delivery time and share your payment QR.",
+        ];
+        const confirmHref = "https://wa.me/919940062840?text=" + encodeURIComponent(confirmLines.join("\n"));
         overlay.querySelector(".checkout-panel").innerHTML = `
           <button class="checkout-close" id="checkout-close-2">✕</button>
           <div class="checkout-success">
             <div class="checkout-success-icon">${isUpi ? "₹" : "✓"}</div>
-            <div class="checkout-title">${isUpi ? "Pay to confirm your order" : "Order placed!"}</div>
-            <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}<br>
-              ${isUpi ? "Pay now — we start cooking once it's confirmed." : "Track it live — no app needed."}</p>
-            <a class="checkout-place" target="_blank" rel="noopener"
-               id="wa-confirm" style="text-decoration:none;display:inline-block;margin-bottom:10px;background:#25D366;color:#fff"
-               href="https://wa.me/919940062840?text=${encodeURIComponent(`Hi Tulsi Foods, I've placed order #${data.order_id} for ₹${data.total} on your website menu. Please confirm the expected delivery time and share your payment QR code.`)}">Tell Tulsi Foods on WhatsApp →</a>
-            <p style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
-              Your order is placed. Tapping this one button tells the kitchen to confirm your delivery time and send the payment QR — nothing to type.</p>
+            <div class="checkout-title">${isUpi ? "One last step — confirm & pay" : "Order placed — one tap to confirm"}</div>
+            <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}.<br>
+              Your order is in; send the kitchen the details below so nothing is missed.</p>
+
+            <div class="confirm-step">
+              <div class="confirm-step-no">Step 1 · Confirm your order</div>
+              <a class="checkout-place" target="_blank" rel="noopener"
+                 id="wa-confirm" style="text-decoration:none;display:inline-block;margin-bottom:10px;background:#25D366;color:#fff"
+                 href="${confirmHref}">Confirm on WhatsApp →</a>
+              <p class="confirm-state" id="wa-confirm-state" style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
+                One tap sends your full order, address and total above to the kitchen — nothing to type.</p>
+            </div>
             ${isUpi ? `
               <a class="checkout-place" id="upi-pay-now" style="text-decoration:none;display:inline-block;margin-bottom:10px"
-                 href="${upiLink(data.total, data.order_id)}">Pay ₹${data.total} with UPI app →</a>
+                 href="${upiLink(data.total, data.order_id)}">Step 2 · Pay ₹${data.total} with UPI →</a>
               <p style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
                 Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Your UPI app will open pre-filled.
                 We confirm the payment, then start your order.</p>
@@ -880,6 +909,11 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         const closeAndReset = () => overlay.remove();
         overlay.querySelector("#checkout-close-2").addEventListener("click", closeAndReset);
         overlay.querySelector("#checkout-continue").addEventListener("click", closeAndReset);
+        overlay.querySelector("#wa-confirm").addEventListener("click", () => {
+          const st = overlay.querySelector("#wa-confirm-state");
+          st.textContent = "✓ Sent! The kitchen confirms your time & payment QR there — tracking is live.";
+          st.style.color = "#16a34a";
+        });
 
         if (isDelivery) {
           const editWindow = overlay.querySelector("#edit-window");
@@ -937,6 +971,10 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         btn.textContent = "Place order";
       }
     });
+  }
+  if (location.hash === "#checkout" && Object.keys(cart).some(id => (cart[id] || 0) > 0)) {
+    const cc = document.getElementById("cart-checkout");
+    if (cc) cc.click();
   }
 })();
 </script>

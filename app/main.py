@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
-from . import catalog, db, menu, orders, reviews
+from . import catalog, db, faqs, menu, orders, reviews
 from .config import (
     ADMIN_TOKEN,
     DELIVERY_ZONES,
@@ -73,9 +73,12 @@ def landing_page(request: Request):
         if len(picks) == 4:
             break
     google_stats = reviews.get_platform_stats().get("google")
+    prices = [it["price"] for it in menu.load_menu() if isinstance(it.get("price"), (int, float))]
+    price_range = (min(prices), max(prices)) if prices else (60, 350)
     return templates.TemplateResponse(
         request, "landing.html",
-        {"picks": picks, "google_stats": google_stats, "google_review_link": GOOGLE_REVIEW_LINK},
+        {"picks": picks, "google_stats": google_stats, "google_review_link": GOOGLE_REVIEW_LINK,
+         "faqs": faqs.landing_faqs(DELIVERY_ZONES, FREE_DELIVERY_ABOVE, price_range, bool(UPI_VPA))},
     )
 
 
@@ -139,7 +142,11 @@ def menu_page(request: Request):
 
 @app.get("/delivery", response_class=HTMLResponse)
 def delivery_page(request: Request):
-    return templates.TemplateResponse(request, "delivery.html", {"zones": DELIVERY_ZONES})
+    return templates.TemplateResponse(
+        request, "delivery.html",
+        {"zones": DELIVERY_ZONES,
+         "faqs": faqs.delivery_faqs(DELIVERY_ZONES, FREE_DELIVERY_ABOVE)},
+    )
 
 
 @app.get("/menu/{item_id}", response_class=HTMLResponse)

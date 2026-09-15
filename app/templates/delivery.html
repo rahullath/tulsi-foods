@@ -94,8 +94,8 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
   <p class="page-sub">We deliver from the kitchen on Murrays Gate Road, Alwarpet. Riders are ours or from Borzo, so the food goes straight to you and does not sit at a hub.</p>
 
   <div class="snippet">
-    <h2>How much does Tulsi Foods delivery cost?</h2>
-    <p>Tulsi Foods charges ₹30 for delivery within 3 km, ₹50 up to 5 km and ₹70 up to 7 km from the kitchen in Alwarpet, Chennai. Delivery is free on orders over ₹700. You see the exact charge on the checkout before you pay.</p>
+    <h2>{{ faqs[0].q }}</h2>
+    <p>{{ faqs[0].a }}</p>
   </div>
 
   <table class="zone-table">
@@ -128,31 +128,17 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
       </tr>
     </tbody>
   </table>
-  <div class="zone-note">Delivery is charged at whatever the rider costs for your distance — we do not add anything on top, and you see the exact figure before you pay. There is no minimum order.</div>
+  <div class="zone-note">Delivery is estimated from the rider's cost for your distance — we do not add anything on top, and the kitchen confirms the exact fee while confirming your order on WhatsApp.</div>
 
   <div class="snippet faq-list">
     <h2 style="margin-top:36px">Delivery questions, answered</h2>
 
+    {% for f in faqs[1:] %}
     <div class="faq-item">
-      <h2>How long does Tulsi Foods delivery take?</h2>
-      <p>Thirty to sixty minutes, depending on the dish and how busy the kitchen is. Thalis and parathas are cooked after you order, not held. Orders placed ahead for a set time leave the kitchen for that hour.</p>
+      <h2>{{ f.q }}</h2>
+      <p>{{ f.a }}</p>
     </div>
-    <div class="faq-item">
-      <h2>Does Tulsi Foods deliver to my area?</h2>
-      <p>Tulsi Foods delivers anywhere within 7 km of the Murrays Gate Road kitchen in Alwarpet — covering Mylapore, Alwarpet, Royapettah, Teynampet, Nandanam, R.A. Puram, Adyar, T. Nagar and Egmore. Farther than 7 km is pickup or catering by arrangement.</p>
-    </div>
-    <div class="faq-item">
-      <h2>How does ordering ahead work?</h2>
-      <p>Tell us a time and the food leaves the kitchen for it. Lunch and dinner get busy, so an hour's notice means it reaches you hot. Orders can be placed up to two weeks in advance.</p>
-    </div>
-    <div class="faq-item">
-      <h2>How can I pay at Tulsi Foods?</h2>
-      <p>UPI when you order, or cash to the rider. The total you see at checkout already includes the delivery charge, so nothing is added at the door.</p>
-    </div>
-    <div class="faq-item">
-      <h2>Is there a minimum order for delivery?</h2>
-      <p>There is no set menu minimum, just a small one per delivery area — ₹250 within 3 km, ₹300 up to 5 km and ₹350 up to 7 km — so a short rider hop stays worth the trip. The checkout shows you exactly what your area needs before you submit.</p>
-    </div>
+    {% endfor %}
   </div>
 
   <div class="page-cta">
@@ -171,54 +157,13 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
+    {% for f in faqs %}
     {
       "@type": "Question",
-      "name": "How much does Tulsi Foods delivery cost?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Tulsi Foods charges ₹30 for delivery within 3 km, ₹50 up to 5 km and ₹70 up to 7 km from the kitchen in Alwarpet, Chennai. Delivery is free on orders over ₹700."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How long does Tulsi Foods delivery take?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Thirty to sixty minutes, depending on the dish and how busy the kitchen is. Thalis and parathas are cooked after you order, not held."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does Tulsi Foods deliver to my area?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Tulsi Foods delivers anywhere within 7 km of the Murrays Gate Road kitchen in Alwarpet — Mylapore, Alwarpet, Royapettah, Teynampet, Nandanam, R.A. Puram, Adyar, T. Nagar and Egmore."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How does ordering ahead work at Tulsi Foods?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Tell us a time and the food leaves the kitchen for it. Orders can be placed up to two weeks in advance."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How can I pay at Tulsi Foods?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "UPI when you order, or cash to the rider. The total at checkout already includes the delivery charge."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Is there a minimum order for delivery at Tulsi Foods?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "₹250 within 3 km, ₹300 up to 5 km and ₹350 up to 7 km. The checkout shows the minimum for your area before you submit."
-      }
-    }
+      "name": {{ f.q | tojson }},
+      "acceptedAnswer": { "@type": "Answer", "text": {{ f.a | tojson }} }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
   ]
 }
 </script>

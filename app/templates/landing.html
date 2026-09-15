@@ -326,26 +326,12 @@ section[id] { scroll-margin-top: 76px; }
     <h2>Frequently asked questions</h2>
   </div>
   <div class="faq-list">
-    <details class="faq-item reveal" open>
-      <summary>What are Tulsi Foods' opening hours?</summary>
-      <p>Tulsi Foods is open Monday to Saturday from 9 AM to 9 PM, and Sunday from 11 AM to 9 PM. Monday is a half-day for online orders until 2 PM.</p>
+    {% for f in faqs %}
+    <details class="faq-item reveal"{% if loop.first %} open{% endif %}>
+      <summary>{{ f.q }}</summary>
+      <p>{{ f.a }}</p>
     </details>
-    <details class="faq-item reveal">
-      <summary>Does Tulsi Foods deliver, and what does it cost?</summary>
-      <p>Yes — anywhere within 7 km of the kitchen in Alwarpet: Mylapore, Alwarpet, Royapettah, Teynampet, R.A. Puram, Adyar, T. Nagar and Egmore. Delivery is ₹30 up to 3 km, ₹50 up to 5 km and ₹70 up to 7 km, free over ₹700.</p>
-    </details>
-    <details class="faq-item reveal">
-      <summary>Is Tulsi Foods pure vegetarian?</summary>
-      <p>Yes, 100 per cent. Everything on the menu is vegetarian, and Jain or no-onion-garlic versions are cooked separately on request, not just the onion left out.</p>
-    </details>
-    <details class="faq-item reveal">
-      <summary>How do I order from Tulsi Foods?</summary>
-      <p>Pick your dishes on the menu here and check out, or message the kitchen on WhatsApp at +91 99400 62840. Pay by UPI or cash on delivery.</p>
-    </details>
-    <details class="faq-item reveal">
-      <summary>Does Tulsi Foods cook food fresh to order?</summary>
-      <p>Yes. Thalis and parathas are cooked after you order, which is why delivery takes 30 to 60 minutes — nothing is pre-made and reheated.</p>
-    </details>
+    {% endfor %}
   </div>
 </section>
 
@@ -429,46 +415,13 @@ section[id] { scroll-margin-top: 76px; }
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
+    {% for f in faqs %}
     {
       "@type": "Question",
-      "name": "What are Tulsi Foods' opening hours?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Tulsi Foods is open Monday to Saturday from 9 AM to 9 PM, and Sunday from 11 AM to 9 PM. Monday is a half-day for online orders until 2 PM."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does Tulsi Foods deliver, and what does it cost?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes — anywhere within 7 km of the kitchen in Alwarpet: Mylapore, Alwarpet, Royapettah, Teynampet, R.A. Puram, Adyar, T. Nagar and Egmore. Delivery is ₹30 up to 3 km, ₹50 up to 5 km and ₹70 up to 7 km, free over ₹700."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Is Tulsi Foods pure vegetarian?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes, 100 per cent. Everything on the menu is vegetarian, and Jain or no-onion-garlic versions are cooked separately on request."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How do I order from Tulsi Foods?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Pick your dishes on the menu here and check out, or message the kitchen on WhatsApp at +91 99400 62840. Pay by UPI or cash on delivery."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does Tulsi Foods cook food fresh to order?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. Thalis and parathas are cooked after you order, which is why delivery takes 30 to 60 minutes."
-      }
-    }
+      "name": {{ f.q | tojson }},
+      "acceptedAnswer": { "@type": "Answer", "text": {{ f.a | tojson }} }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
   ]
 }
 </script>
