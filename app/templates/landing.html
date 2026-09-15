@@ -69,7 +69,7 @@ section[id] { scroll-margin-top: 76px; }
 .stove-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 24px; }
 .stove-link { font-size: 14px; font-weight: 600; color: var(--g); text-decoration: none; white-space: nowrap; }
 .stove-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-.stove-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: box-shadow .2s ease, transform .2s ease; }
+.stove-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: box-shadow .2s ease, transform .2s ease; display: block; color: inherit; text-decoration: none; }
 .stove-card:hover { box-shadow: 0 8px 24px rgba(23,26,20,.08); transform: translateY(-2px); }
 .stove-photo { aspect-ratio: 4/3; position: relative; background: repeating-linear-gradient(135deg, var(--line2) 0 10px, #E6E1D7 10px 20px); }
 .stove-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -154,11 +154,11 @@ section[id] { scroll-margin-top: 76px; }
     <a href="/delivery">Delivery</a>
     <a href="/about">Our story</a>
     <a href="/about#contact">Contact</a>
-    <a href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank" class="nav-cta">Order on WhatsApp</a>
+    <a href="/menu" class="nav-cta">Order online</a>
   </div>
 </nav>
 
-<a class="float-wa" id="float-wa" href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank" aria-label="Order on WhatsApp">
+<a class="float-wa" id="float-wa" href="https://wa.me/919940062840?text=Hi%2C%20I%20want%20to%20place%20an%20order." target="_blank" aria-label="Order on WhatsApp">
   <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.14h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.26-8.24 2.21 0 4.28.86 5.84 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.55-3.7 8.25-8.25 8.25zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.97-.14.16-.29.18-.53.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.24-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.47-.01a.9.9 0 0 0-.65.31c-.23.24-.86.85-.86 2.06 0 1.22.88 2.4 1 2.56.12.16 1.73 2.64 4.19 3.7.59.25 1.04.4 1.4.52.59.19 1.12.16 1.54.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.08.14-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
 </a>
 
@@ -168,8 +168,8 @@ section[id] { scroll-margin-top: 76px; }
     <h1>North Indian food, cooked the way it is at home.</h1>
     <p class="hero-sub">Kavita Lath has run this kitchen in Mylapore since 2015. Thalis, hot parathas, dal, sabzi, chaat — pure vegetarian, cooked the same day you eat it.</p>
     <div class="hero-actions">
-      <a class="btn-wa" href="https://wa.me/919940062840?text=Hi%20Tulsi%2C%20I%27d%20like%20today%27s%20menu" target="_blank">Order on WhatsApp</a>
-      <a class="btn-menu" href="/menu">See today's menu</a>
+      <a class="btn-wa" href="/menu">Order from the menu</a>
+      <a class="btn-menu" href="https://wa.me/919940062840?text=Hi%2C%20I%20want%20to%20place%20an%20order." target="_blank">Message us instead</a>
     </div>
     <div class="hero-info">
       <span>Cooked to order, at your door in 30 to 60 minutes</span>
@@ -190,7 +190,7 @@ section[id] { scroll-margin-top: 76px; }
   </div>
   <div class="stove-grid">
     {% for d in picks %}
-    <div class="stove-card reveal">
+    <a class="stove-card reveal" href="/menu/{{ d.id }}">
       <div class="stove-photo">
         {% if d.has_photo %}<img src="/static/img/dishes/{{ d.id }}.jpg" alt="{{ d.name }}" loading="lazy">{% endif %}
         {% if d.tag %}<span class="stove-tag">{{ d.tag|upper }}</span>{% endif %}
@@ -200,7 +200,7 @@ section[id] { scroll-margin-top: 76px; }
         {% if d.desc %}<div class="stove-desc">{{ d.desc }}</div>{% endif %}
         <div class="stove-price">₹{{ d.price }}</div>
       </div>
-    </div>
+    </a>
     {% endfor %}
   </div>
 </section>
@@ -289,10 +289,10 @@ section[id] { scroll-margin-top: 76px; }
 
 <div class="cta-banner reveal">
   <div>
-    <div class="cta-text">Send a "Hi". Kavita will take it from there.</div>
-    <p class="cta-sub">Today's dishes, your last order and payment all happen in the same chat.</p>
+    <div class="cta-text">Order from the menu — we'll confirm delivery time and payment on WhatsApp.</div>
+    <p class="cta-sub">Add dishes on the site, check out, and send us a message to lock in your order.</p>
   </div>
-  <a class="cta-btn" href="https://wa.me/919940062840?text=Hi%20Tulsi" target="_blank">wa.me/919940062840</a>
+  <a class="cta-btn" href="https://wa.me/919940062840?text=Hi%2C%20I%20want%20to%20place%20an%20order." target="_blank">Place an order on WhatsApp</a>
 </div>
 
 <div class="footer">
