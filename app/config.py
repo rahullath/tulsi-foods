@@ -27,6 +27,14 @@ FREE_DELIVERY_ABOVE = 700  # optional: free delivery over this amount
 # fees over FREE_DELIVERY_ABOVE get waived again ("free over ₹700").
 FREE_DELIVERY_ENABLED = False
 
+# Order windows instead of a rigid single slot. The kitchen commits to *arrive
+# by* the end of the chosen window; scheduled_at stores the window's reference
+# time (mid) so sorting/kitchen order stays sane. Tweak the times freely.
+DELIVERY_WINDOWS = [
+    {"id": "lunch",  "label": "Lunch window",  "text": "12:00 – 2:30 PM", "ref": (13, 0)},
+    {"id": "dinner", "label": "Dinner window", "text": "6:30 – 9:30 PM",  "ref": (19, 45)},
+]
+
 # GST for direct (non-aggregator) orders. Swiggy data shows a consistent 5%
 # charged on every order (the standard non-ITC restaurant rate) — aggregators
 # remit that themselves under Section 9(5), which doesn't cover direct sales,

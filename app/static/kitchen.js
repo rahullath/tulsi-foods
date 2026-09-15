@@ -72,9 +72,9 @@
 
     let payHTML = "";
     if (o.payment_method === "cod") {
-      payHTML = `<div class="k-pay k-cod">💰 Collect ${money(o.total)} cash</div>`;
+      payHTML = `<div class="k-pay k-cod">💰 Collect ${money(o.total)} cash${o.pay_courier_direct ? " · rider collects the ₹" + Math.round(o.delivery_fee || 0) + " delivery fee" : ""}</div>`;
     } else if (o.payment_method === "upi") {
-      payHTML = `<div class="k-pay k-upi">📱 UPI — confirm ${money(o.total)} received</div>`;
+      payHTML = `<div class="k-pay k-upi">📱 UPI — confirm ${money(o.total)} received${o.pay_courier_direct ? " · rider collects the delivery fee" : ""}</div>`;
     }
 
     let actionsHTML = "";

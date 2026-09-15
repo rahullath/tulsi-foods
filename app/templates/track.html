@@ -87,7 +87,9 @@
 
   function eta(o) {
     if (o.status === "delivered" || o.status === CANCELED) return null;
-    if (o.scheduled_at) return "Scheduled — the kitchen aims to have it out at your chosen time.";
+    if (o.scheduled_at) return o.scheduled_window
+      ? `Scheduled for the ${o.scheduled_window === "lunch" ? "Lunch" : "Dinner"} window — the kitchen aims to have it out in that window.`
+      : "Scheduled — the kitchen aims to have it out at your chosen time.";
     const pickup = o.order_type === "pickup";
     const table = {
       new: pickup ? "~20–25 min from now" : "~40–60 min from now",
@@ -99,8 +101,9 @@
   }
 
   function payLabel(o) {
-    if (o.payment_method === "upi") return o.paid ? "Paid by UPI ✓" : "UPI — awaiting confirmation";
-    return "Cash on delivery";
+    const rider = o.pay_courier_direct ? " · rider gets the delivery fee" : "";
+    if (o.payment_method === "upi") return (o.paid ? "Paid by UPI ✓" : "UPI — awaiting confirmation") + rider;
+    return "Cash on delivery" + rider;
   }
 
   async function refresh() {
@@ -143,7 +146,9 @@
     html += `<div class="row"><span>Order type</span><b>${o.order_type === 'pickup' ? 'Pickup · Alwarpet' : 'Delivery'}</b></div>`;
     if (o.scheduled_at) {
       const d = toDate(o.scheduled_at);
-      html += `<div class="row"><span>Scheduled for</span><b>${d ? d.toLocaleString("en-IN", fullFmt) : fmtDay(o.scheduled_at)}</b></div>`;
+      const windowText = o.scheduled_window === "lunch" ? "Lunch window (12:00 – 2:30 PM)"
+        : o.scheduled_window === "dinner" ? "Dinner window (6:30 – 9:30 PM)" : null;
+      html += `<div class="row"><span>Scheduled for</span><b>${windowText ? windowText + " · " + fmtDay(o.scheduled_at) : (d ? d.toLocaleString("en-IN", fullFmt) : fmtDay(o.scheduled_at))}</b></div>`;
     } else {
       html += `<div class="row"><span>Placed at</span><b>${fmtTime(o.created_at)}</b></div>`;
     }
@@ -160,7 +165,7 @@
     html += `<div><span>Subtotal</span><span>₹${subtotal.toFixed(0)}</span></div>`;
     if (packing) html += `<div><span>Packing</span><span>₹${packing.toFixed(0)}</span></div>`;
     if (gst) html += `<div><span>GST (5%)</span><span>₹${gst.toFixed(0)}</span></div>`;
-    if (fee) html += `<div><span>${o.order_type === 'pickup' ? 'Packing/delivery' : 'Delivery'}</span><span>₹${fee.toFixed(0)}</span></div>`;
+    if (fee) html += `<div><span>${o.pay_courier_direct ? 'Delivery — pay the rider directly' : (o.order_type === 'pickup' ? 'Packing/delivery' : 'Delivery')}</span><span>₹${fee.toFixed(0)}</span></div>`;
     html += `<div style="font-weight:600;color:#1a1a1a"><span>Total</span><span>₹${total.toFixed(0)}</span></div>`;
     html += '</div>';
 

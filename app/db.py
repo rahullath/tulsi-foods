@@ -163,6 +163,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE orders ADD COLUMN petpooja_synced_at TEXT")
     if not _has_col("orders", "tracking_token"):
         conn.execute("ALTER TABLE orders ADD COLUMN tracking_token TEXT")
+    if not _has_col("orders", "scheduled_window"):
+        conn.execute("ALTER TABLE orders ADD COLUMN scheduled_window TEXT")
+    if not _has_col("orders", "pay_courier_direct"):
+        conn.execute("ALTER TABLE orders ADD COLUMN pay_courier_direct INTEGER NOT NULL DEFAULT 0")
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_tracking_token ON orders(tracking_token)")
     # Backfill a token for any older orders that predate this column, so every
     # order — new and old — gets a guess-proof tracking reference.
@@ -324,18 +328,21 @@ def create_order(customer_id: int, order_type: str, subtotal: float,
                  address_flag_reason: str | None = None,
                  packing_fee: float = 0.0,
                  gst_amount: float = 0.0,
-                 tracking_token: str | None = None) -> int:
+                 tracking_token: str | None = None,
+                 scheduled_window: str | None = None,
+                 pay_courier_direct: bool = False) -> int:
     conn = get_conn()
     cur = conn.execute(
         "INSERT INTO orders(customer_id, status, order_type, subtotal, delivery_fee, "
         "packing_fee, gst_amount, total, payment_method, instructions, delivery_address, "
         "delivery_pincode, delivery_lat, delivery_lng, scheduled_at, address_flagged, "
-        "address_flag_reason, tracking_token) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "address_flag_reason, tracking_token, scheduled_window, pay_courier_direct) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (customer_id, "new", order_type, subtotal, delivery_fee, packing_fee, gst_amount,
          total, payment_method, instructions, delivery_address, delivery_pincode,
          delivery_lat, delivery_lng, scheduled_at,
-         1 if address_flagged else 0, address_flag_reason, tracking_token),
+         1 if address_flagged else 0, address_flag_reason, tracking_token,
+         scheduled_window, 1 if pay_courier_direct else 0),
     )
     oid = cur.lastrowid
     conn.executemany(
@@ -423,7 +430,8 @@ def get_orders_by_phone(phone: str, limit: int = 5) -> list[dict]:
     conn = get_conn()
     rows = conn.execute(
         "SELECT o.id, o.tracking_token, o.status, o.total, o.created_at, "
-        "       o.scheduled_at, o.order_type "
+        "       o.scheduled_at, o.scheduled_window, o.order_type, "
+        "       o.delivery_fee, o.pay_courier_direct "
         "FROM orders o JOIN customers c ON c.id=o.customer_id "
         "WHERE c.phone=? AND o.status != 'cancelled' "
         "ORDER BY o.id DESC LIMIT ?",

@@ -447,10 +447,12 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             <select id="schedule-date" class="schedule-date-select"></select>
             <div class="time-pills" id="time-pills">
               <button type="button" class="time-pill active" data-preset="asap">As soon as possible</button>
-              <button type="button" class="time-pill" data-preset="lunch">Lunch, 12:30</button>
-              <button type="button" class="time-pill" data-preset="dinner">Dinner, 8:00</button>
+              <button type="button" class="time-pill" data-preset="lunch">Lunch (12:00 – 2:30 PM)</button>
+              <button type="button" class="time-pill" data-preset="dinner">Dinner (6:30 – 9:30 PM)</button>
             </div>
+            <div style="font-size:11px;color:#6F7468;margin-top:4px;">Pick a window — no exact minute needed. For today's orders "As soon as possible" means within the hour.</div>
             <input type="hidden" name="scheduled_at" id="input-scheduled">
+            <input type="hidden" name="scheduled_window" id="input-window">
           </div>
           <div class="checkout-field" id="saved-addr-field" hidden>
             <label>You have ordered here before</label>
@@ -477,6 +479,14 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             <option value="cod">Cash on delivery</option>
             {% if upi_vpa %}<option value="upi">Pay by UPI</option>{% endif %}
           </select></div>
+          <div class="checkout-field" id="fee-mode-field" hidden>
+            <label>Delivery fee</label>
+            <select name="pay_courier_direct" id="fee-mode">
+              <option value="0">Include delivery in my total</option>
+              <option value="1">Pay the rider directly</option>
+            </select>
+            <div style="font-size:11px;color:#6F7468;margin-top:4px;">"Pay the rider directly" keeps the fee off your order total — the kitchen still records it so nothing is lost.</div>
+          </div>
           {% if upi_vpa %}
           <div class="checkout-field" id="upi-pay-field" hidden>
             <div class="checkout-row"><span>UPI</span><span>Pay after placing — we'll show you the exact amount.</span></div>
@@ -569,6 +579,9 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       const gst = gstFor(currentSubtotal + packing);
       const isDelivery = overlay.querySelector('[name=order_type]').value === "delivery";
       const q = isDelivery ? quoteDelivery(currentSubtotal) : null;
+      const feeModeField = overlay.querySelector("#fee-mode-field");
+      const feeModeSel = overlay.querySelector("#fee-mode");
+      const payDirect = isDelivery && !feeModeField.hidden && feeModeSel && feeModeSel.value === "1";
 
       let deliveryRow, deliveryNote;
       if (isDelivery) {
@@ -578,20 +591,27 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           deliveryNote = `<span style="color:#B3261E">We don't deliver ${eff.km ? Math.round(eff.km) + " km away" : "that far"}. Pickup is in Alwarpet.</span>`;
         } else if (eff) {
           const liveFee = Number(eff.fee) || 0;
-          deliveryRow = `<div class="checkout-row"><span>Delivery (est.)</span><span>${liveFee ? "~₹" + Math.round(liveFee) : "FREE (est.)"}</span></div>`;
+          deliveryRow = payDirect
+            ? `<div class="checkout-row"><span>Delivery — you pay the rider</span><span>~₹${Math.round(liveFee)}</span></div>`
+            : `<div class="checkout-row"><span>Delivery (est.)</span><span>${liveFee ? "~₹" + Math.round(liveFee) : "FREE (est.)"}</span></div>`;
           deliveryNote = `${liveQuote ? "Live courier rate. " : "Estimated from your area. "}Kitchen confirms the exact fee on WhatsApp.${
+            payDirect ? " Pay the rider directly and it stays off your total." : ""}${
             currentSubtotal && currentSubtotal < eff.min_order
             ? ` <span style="color:#B3261E">Minimum order here is ₹${eff.min_order}.</span>` : ""}`;
         } else {
           deliveryRow = `<div class="checkout-row"><span>Delivery</span><span>Live rate</span></div>`;
           deliveryNote = "Enter your delivery address for a live courier rate. Until then delivery is excluded from the total — the kitchen confirms the exact fee on WhatsApp.";
         }
+        feeModeField.hidden = !(eff && !eff.outside);
       } else {
         deliveryNote = PICKUP_NOTE;
+        feeModeField.hidden = true;
+        if (feeModeSel) feeModeSel.value = "0";
       }
 
       const effQuote = (liveQuote && liveQuote.serviceable) ? liveQuote : q;
-      const deliveryFee = effQuote && !effQuote.outside ? (Number(effQuote.fee) || 0) : 0;
+      const rawFee = effQuote && !effQuote.outside ? (Number(effQuote.fee) || 0) : 0;
+      const deliveryFee = payDirect ? 0 : rawFee;
       overlay.querySelector(".checkout-summary").innerHTML =
         currentIds.map(id => `<div class="checkout-row"><span>${NAMES[id]} × ${cart[id]}</span><span>₹${(PRICES[id] || 0) * cart[id]}</span></div>`).join("")
         + (currentSubtotal > 0 ? `
@@ -781,9 +801,17 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     function updateScheduledAt() {
       const dayOffset = Number(dateSelect.value);
       const preset = overlay.querySelector(".time-pill.active")?.dataset.preset || "asap";
-      if (preset === "lunch") scheduledInput.value = dateAtOffset(dayOffset, 12, 30).toISOString();
-      else if (preset === "dinner") scheduledInput.value = dateAtOffset(dayOffset, 20, 0).toISOString();
-      else scheduledInput.value = "";
+      const windowInput = overlay.querySelector("#input-window");
+      if (preset === "lunch") {
+        windowInput.value = "lunch";
+        scheduledInput.value = dateAtOffset(dayOffset, 13, 0).toISOString();
+      } else if (preset === "dinner") {
+        windowInput.value = "dinner";
+        scheduledInput.value = dateAtOffset(dayOffset, 19, 45).toISOString();
+      } else {
+        windowInput.value = "";
+        scheduledInput.value = "";
+      }
     }
 
     dateSelect.addEventListener("change", () => {
@@ -801,6 +829,16 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         overlay.querySelectorAll(".time-pill").forEach(p => p.classList.remove("active"));
         pill.classList.add("active");
         updateScheduledAt();
+        // If the picked window has already passed today, quietly fall back to
+        // ASAP rather than letting the server reject on submit.
+        if (dateSelect.value === "0" && scheduledInput.value) {
+          const when = new Date(scheduledInput.value);
+          if (when.getTime() < Date.now()) {
+            overlay.querySelectorAll(".time-pill").forEach(p => p.classList.remove("active"));
+            asapPill.classList.add("active");
+            updateScheduledAt();
+          }
+        }
       });
     });
 
@@ -870,6 +908,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         payment_method: fd.get("payment_method"),
         instructions: fd.get("instructions") || null,
         scheduled_at: fd.get("scheduled_at") || null,
+        scheduled_window: fd.get("scheduled_window") || null,
+        pay_courier_direct: fd.get("pay_courier_direct") === "1",
         items: ids.map(id => {
           const noteEl = document.querySelector(`.card-note[data-id="${id}"]`);
           const note = noteEl ? noteEl.value.trim() : "";
@@ -893,9 +933,11 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         document.querySelectorAll(".card-note").forEach(el => el.value = "");
         const isDelivery = payload.order_type === "delivery" && payload.address;
         const isUpi = payload.payment_method === "upi" && UPI_VPA;
-        const when = payload.scheduled_at
-          ? new Date(payload.scheduled_at).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
-          : "As soon as possible";
+        const when = data.schedule_label
+          ? data.schedule_label
+          : payload.scheduled_at
+            ? new Date(payload.scheduled_at).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+            : "As soon as possible";
         const confirmLines = [
           `Hi Tulsi Foods, please confirm my order #${data.order_id}:`,
           "",
@@ -904,13 +946,15 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           `Subtotal ₹${data.subtotal}`,
           ...(data.packing_fee ? [`Packing ₹${data.packing_fee}`] : []),
           ...(data.gst_amount ? [`GST ₹${data.gst_amount}`] : []),
-          ...(data.delivery_fee ? [`Delivery ~₹${data.delivery_fee} (estimate)`] : []),
+          ...(data.delivery_fee ? (payload.pay_courier_direct
+            ? [`Delivery ~₹${data.delivery_fee} — I'll pay the rider directly`]
+            : [`Delivery ~₹${data.delivery_fee} (estimate)`]) : []),
           `Total: ₹${data.total}`,
           "",
           isDelivery ? `Deliver to: ${payload.address}` : "Pickup at 34 Murrays Gate Road, Alwarpet",
           `Name: ${payload.name} · ${payload.phone}`,
           `When: ${when}`,
-          `Payment: ${payload.payment_method === "upi" ? "UPI" : "Cash on delivery"}`,
+          `Payment: ${payload.payment_method === "upi" ? "UPI" : "Cash on delivery"}${payload.pay_courier_direct ? " (+ rider fee)" : ""}`,
           ...(payload.instructions ? [`Note: ${payload.instructions}`] : []),
           "",
           `Your tracking reference: ${data.tracking_token}`,

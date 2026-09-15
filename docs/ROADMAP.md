@@ -34,18 +34,21 @@ Shipped this round (commit `ede04c1` + follow-ups):
 - `[x]` Repo junk: removed tracked `spec.v1.bak.md`; moved `pay/cashfree-agent-skills.md`
   → `docs/`. `media/`, `design/`, `seo/`, CSVs, DBs already gitignored.
 
-### R2-1. Finalize the delivery flow (testing phase) — `[ ]`
-- **Lunch / Dinner windows, not rigid 12:30.** Repace the single scheduled time
-  with two order windows (e.g. Lunch 11–2, Dinner 6–9:30) in checkout + confirm.
-  Touch: `app/orders.py` `MAX_SCHEDULE_AHEAD`/`scheduled_at` handling, menu.html
-  time picker, admin/kitchen display, config `OPENING_HOURS`.
-- **Pay-courier-direct option.** Separate "Order total" (food + packing + GST)
-  from "Delivery fee", let customer choose pay-rider-in-cash (delivery_fee not
-  added to total, still recorded on the order for reconciliation) vs pay-us.
-  Confirm message must say "pay the rider ₹X directly".
-- **Test pass over the whole order path**: quote → order create → confirm msg →
-  rider dispatch → track statuses → delivered. Fix edge cases found (e.g. quote
-  cache key, pin-drag re-quote).
+### R2-1. Finalize the delivery flow (testing phase) — `[~]`
+- `[x]` **Lunch / Dinner windows, not rigid 12:30.** Checkout now offers a window
+  (Lunch 12:00–2:30 PM, Dinner 6:30–9:30 PM) plus "As soon as possible"; the
+  pill sets a reference time (`scheduled_at`) and stores `scheduled_window` on
+  the order. Confirm message, Telegram kitchen alert, tracking page, and `ensure
+  it's labelled by window`. Monday morning rejects the Lunch window (opens 14:00)
+  and points people to Dinner. Parser hardened against `Z`/offset combos.
+- `[~]` **Pay-courier-direct option.** `pay_courier_direct` on the order:
+  delivery-fee quote is recorded but excluded from the total the customer owes
+  us; checkout shows "pay the rider directly", confirm line says so, kitchen.js
+  card states "rider collects the ₹X delivery fee", tracking page flags it.
+  Remaining: reconcile with Mom's actual rider practice + the test pass.
+- `[ ]` **Test pass over the whole order path**: quote → order create → confirm
+  msg → rider dispatch → track statuses → delivered. Fix edge cases found (e.g.
+  quote cache key, pin-drag re-quote).
 
 ### R2-2. Mobile navigation — `[ ]`
 No nav on mobile at all (all navs are `display:none` under 768px). The fixed

@@ -35,12 +35,19 @@ def _new_tracking_token() -> str:
 _LANDMARK_RE = re.compile(r"\s*\(Landmark:\s*(.*?)\)\s*$", re.IGNORECASE)
 
 
+def _parse_iso(scheduled_at: str) -> datetime:
+    s = scheduled_at
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    return datetime.fromisoformat(s).replace(tzinfo=None)
+
+
 def _validate_scheduled_at(scheduled_at: str | None) -> None:
     """scheduled_at arrives as a UTC ISO string (JS Date.toISOString())."""
     if not scheduled_at:
         return
     try:
-        when = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00")).replace(tzinfo=None)
+        when = _parse_iso(scheduled_at)
     except ValueError:
         raise OrderError("Invalid scheduled time", 400)
     now = datetime.utcnow()
@@ -48,6 +55,30 @@ def _validate_scheduled_at(scheduled_at: str | None) -> None:
         raise OrderError("That time has already passed", 400)
     if when > now + MAX_SCHEDULE_AHEAD:
         raise OrderError("We only take orders up to 2 weeks ahead", 400)
+
+
+def _validate_scheduled_window(scheduled_window: str | None, scheduled_at: str | None) -> None:
+    from .config import DELIVERY_WINDOWS
+    if not scheduled_window:
+        return
+    if scheduled_window not in {w["id"] for w in DELIVERY_WINDOWS}:
+        raise OrderError("Unknown delivery window", 400)
+    if not scheduled_at:
+        raise OrderError("A scheduled window needs a time", 400)
+
+
+def _window_label(scheduled_window: str | None, scheduled_at: str | None) -> str:
+    """Human label for confirm/tracking pages: window name + times + day,
+    falling back to the exact time for legacy custom-scheduled orders."""
+    from .config import DELIVERY_WINDOWS
+    win = next((w for w in DELIVERY_WINDOWS if w["id"] == scheduled_window), None)
+    when = _parse_iso(scheduled_at).astimezone(IST) if scheduled_at else None
+    day = when.strftime("%a, %d %b") if when else ""
+    if win:
+        return f"{win['label']} ({win['text']}), {day}".strip(", ")
+    if when:
+        return when.strftime("%a, %d %b, %I:%M %p")
+    return "As soon as possible"
 
 
 def _split_landmark(address: str) -> tuple[str, str | None]:
@@ -191,18 +222,21 @@ def check_address(address: str | None, pincode: str | None,
     return False, None
 
 
-def _schedule_closed_reason(scheduled_at: str | None = None) -> str | None:
+def _schedule_closed_reason(scheduled_at: str | None = None,
+                            scheduled_window: str | None = None) -> str | None:
     """Fixed weekly hours not covered by the manual store_status toggle —
     currently just Monday's half day. Checks against `scheduled_at` (a
     pre-order's requested time) when given, otherwise the current time.
     Returns a customer-facing reason, or None if within hours."""
     if scheduled_at:
-        when = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00")).astimezone(IST)
+        when = _parse_iso(scheduled_at).astimezone(IST)
     else:
         when = datetime.now(IST)
     if when.weekday() == 0:  # Monday
         opens_at = datetime.strptime(MONDAY_OPENS_AT, "%H:%M").time()
         if when.time() < opens_at:
+            if scheduled_window == "lunch":
+                return f"We're closed Monday mornings — the Lunch window is unavailable, choose Dinner instead"
             return f"We're closed Monday mornings — back online at {MONDAY_OPENS_AT}"
     return None
 
@@ -212,16 +246,19 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                  pincode: str | None = None,
                  payment_method: str = "cod", instructions: str | None = None,
                  scheduled_at: str | None = None,
-                 lat: str | None = None, lng: str | None = None) -> dict:
+                 lat: str | None = None, lng: str | None = None,
+                 scheduled_window: str | None = None,
+                 pay_courier_direct: bool = False) -> dict:
     if order_type not in ("delivery", "pickup"):
         raise OrderError("Invalid order_type", 400)
     store = db.get_store_status()
     if not store["is_open"]:
         raise OrderError(store["reason"] or "We're closed for online orders right now", 400)
-    schedule_reason = _schedule_closed_reason(scheduled_at)
+    _validate_scheduled_at(scheduled_at)
+    _validate_scheduled_window(scheduled_window, scheduled_at)
+    schedule_reason = _schedule_closed_reason(scheduled_at, scheduled_window)
     if schedule_reason:
         raise OrderError(schedule_reason, 400)
-    _validate_scheduled_at(scheduled_at)
 
     lines, subtotal = build_lines(items)
 
@@ -252,7 +289,9 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
 
     packing_fee = packing_fee_for(subtotal)
     gst_amount = gst_for(subtotal + packing_fee)
-    total = subtotal + packing_fee + gst_amount + delivery_fee
+    # When the customer pays the rider directly, the quoted delivery fee is
+    # recorded for reconciliation but excluded from the amount they owe us.
+    total = subtotal + packing_fee + gst_amount + (0 if pay_courier_direct else delivery_fee)
     flagged, flag_reason = check_address(address, pincode, lat, lng)
     cid = db.upsert_customer(phone, name, address, pincode)
     oid = db.create_order(cid, order_type, subtotal, delivery_fee, total,
@@ -262,7 +301,9 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                           scheduled_at=scheduled_at,
                           address_flagged=flagged, address_flag_reason=flag_reason,
                           packing_fee=packing_fee, gst_amount=gst_amount,
-                          tracking_token=tracking_token)
+                          tracking_token=tracking_token,
+                          scheduled_window=scheduled_window,
+                          pay_courier_direct=pay_courier_direct)
     if order_type == "delivery" and address:
         base_address, landmark = _split_landmark(address)
         try:
@@ -297,7 +338,9 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
     return {"order_id": oid, "status": "new", "subtotal": round(subtotal, 2),
             "packing_fee": packing_fee, "gst_amount": gst_amount,
             "delivery_fee": delivery_fee, "total": round(total, 2),
-            "tracking_token": tracking_token}
+            "tracking_token": tracking_token,
+            "scheduled_window": scheduled_window, "pay_courier_direct": pay_courier_direct,
+            "schedule_label": _window_label(scheduled_window, scheduled_at)}
 
 
 def edit_address(order_id: int, address: str, pincode: str | None = None,

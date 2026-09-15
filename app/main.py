@@ -899,6 +899,8 @@ class OrderIn(BaseModel):
     payment_method: str = "cod"   # cod | upi
     instructions: str | None = None
     scheduled_at: str | None = None
+    scheduled_window: str | None = None  # lunch | dinner (else None = asap/custom)
+    pay_courier_direct: bool = False      # customer pays the delivery rider directly
     items: list[OrderItemIn]
 
 
@@ -911,6 +913,8 @@ def create_order(order: OrderIn):
             lat=order.lat, lng=order.lng,
             payment_method=order.payment_method, instructions=order.instructions,
             scheduled_at=order.scheduled_at,
+            scheduled_window=order.scheduled_window,
+            pay_courier_direct=order.pay_courier_direct,
             items=[{"item_id": it.item_id, "qty": it.qty, "note": it.note} for it in order.items],
         )
         return result

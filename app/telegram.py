@@ -62,12 +62,23 @@ def notify_new_order(order: dict) -> bool:
     extra = "" if n_items <= 8 else f"\n… and {n_items - 8} more"
     order_type = "Pickup" if order.get("order_type") == "pickup" else "Delivery"
     pay = (order.get("payment_method") or "cod").upper()
-    text = (
-        f"🛎 <b>New Order #{oid}</b> — {order_type}\n"
-        f"👤 {customer}\n"
-        f"💳 {pay} · ₹{total}\n"
-        f"{lines}{extra}\n"
-    )
+    when = (order.get("scheduled_window") or "").capitalize()
+    if when:
+        text = (
+            f"🛎 <b>New Order #{oid}</b> — {order_type} · {when} window\n"
+            f"👤 {customer}\n"
+            f"💳 {pay} · ₹{total}\n"
+            f"{lines}{extra}\n"
+        )
+    else:
+        text = (
+            f"🛎 <b>New Order #{oid}</b> — {order_type}\n"
+            f"👤 {customer}\n"
+            f"💳 {pay} · ₹{total}\n"
+            f"{lines}{extra}\n"
+        )
+    if order.get("pay_courier_direct"):
+        text += f"🛵 Rider collects the delivery fee (₹{order.get('delivery_fee') or 0}) directly\n"
     if order_type == "Delivery" and order.get("delivery_address"):
         text += f"📍 {order['delivery_address']}\n"
     if order.get("delivery_pincode"):
