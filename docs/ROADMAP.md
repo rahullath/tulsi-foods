@@ -132,13 +132,15 @@ repeatedly asked, where "logistical friction" hides. Capture into a living
 doc (`docs/CUSTOMER_FLOW_NOTES.md`) feeding the checkout/confirm/menu copy.
 No code until observations exist.
 
-### R2-11. SEO as standing practice, not ad-hoc — `[ ]`
-The recurring ask "why do I have to think of this?" is fair: build a checklist
-doc (`docs/SEO_PLAYBOOK.md`) that each page/feature must pass by default
-(canonical, h1-unique, meta-desc, breadcrumb, JSON-LD type, sitemap entry,
-inbound links — no orphans). Reviews the new /journal, category, and 404 pages
-against it; extend with keyword intents ("Tulsi Foods menu price", "pav bhaji
-near Mylapore", "Jain food Mylapore").
+### R2-11. SEO as standing practice, not ad-hoc — `[x]`
+`docs/SEO_PLAYBOOK.md` is now the law: per-page checklist (title, meta desc,
+canonical, one unique h1, parsing JSON-LD, sitemap, no orphans, img alt,
+breadcrumbs, robots, llms.txt, mobile), hard rules (`| tojson` for all JSON-LD
+values; shared partials carry their own CSS), keyword-intent → page map, and a
+runnable re-audit script. The first full audit already paid off — fixed: broken
+ItemList JSON-LD on all 10 category pages (Python ternary pasted into markup),
+missing h1 on `/menu` ("Today's menu") and `/bio` (div → h1). Verified green
+across 21 pages: unique titles/descs/h1s, all JSON-LD parses, all imgs have alt.
 
 ### R2-12. Repo restructure — `[ ]`
 Done so far: junk removal + `docs/` home for agent/misc notes. Deeper rebuild

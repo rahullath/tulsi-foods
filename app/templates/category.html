@@ -130,7 +130,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  "name": "{{ group }} at Tulsi Foods",
+  "name": {{ (group ~ " at Tulsi Foods") | tojson }},
   "url": {{ category_url | tojson }},
   "numberOfItems": {{ count }},
   "itemListElement": [
@@ -144,7 +144,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
         "@type": "Offer",
         "price": {{ item.price | tojson }},
         "priceCurrency": "INR",
-        "availability": "https://schema.org/InStock" if item.available else "https://schema.org/OutOfStock"
+        "availability": {{ ("https://schema.org/InStock" if item.available else "https://schema.org/OutOfStock") | tojson }}
       }
     }{% if not loop.last %},{% endif %}
     {% endfor %}
