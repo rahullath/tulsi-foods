@@ -1,6 +1,7 @@
 import logging
 from datetime import date
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
@@ -94,6 +95,7 @@ def build_menu_schema(groups: list[dict]) -> dict:
                     {
                         "@type": "MenuItem",
                         "name": it["name"],
+                        "url": f"{SITE_URL}/menu/{it['id'].split('__')[0]}",
                         "offers": {
                             "@type": "Offer",
                             "price": str(it["price"]),
@@ -136,6 +138,69 @@ def menu_page(request: Request):
 @app.get("/delivery", response_class=HTMLResponse)
 def delivery_page(request: Request):
     return templates.TemplateResponse(request, "delivery.html", {"zones": DELIVERY_ZONES})
+
+
+@app.get("/menu/{item_id}", response_class=HTMLResponse)
+def menu_item_page(request: Request, item_id: str):
+    """One page per dish — each WhatsApp catalog item links here instead of the
+    generic /menu. Half-portion ids (`<id>__half`) point at the same dish page."""
+    base_id = menu._base_id(item_id) if item_id.endswith(menu.HALF_SUFFIX) else item_id
+    item = menu.get_item(base_id)
+    if not item:
+        raise HTTPException(404, "Dish not found")
+    item = dict(item)
+    item["photo_id"] = item.get("photo_id") or base_id
+    photos = dish_photo_ids()
+    has_photo = item["photo_id"] in photos
+    day = menu.today()
+    available = menu.is_available(base_id, day)
+    reason = menu._specialities_reason(item, day)
+
+    related = []
+    for g in menu.grouped(day):
+        if g["group"] == item["group"]:
+            related = [it for it in g["items"]
+                       if it["id"] != base_id and not it["id"].endswith(menu.HALF_SUFFIX)]
+            related = related[:6]
+            break
+
+    item_url = f"{SITE_URL}/menu/{base_id}"
+    photo_url = f"{SITE_URL}/static/img/dishes/{item['photo_id']}.jpg" if has_photo else ""
+    desc = item.get("description") or f"{item['name']}, a {item['group'].lower()} from Tulsi Foods."
+    wa_link = "https://wa.me/919940062840?text=" + quote(
+        f"Hi Tulsi Foods, I'd like to order {item['name']} (₹{item['price']})."
+    )
+    item_schema = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": item["name"],
+        "description": desc + " Pure vegetarian, home-style, Mylapore Chennai.",
+        "url": item_url,
+        "category": item["group"],
+        "brand": {"@type": "Brand", "name": "Tulsi Foods"},
+        "suitableForDiet": "https://schema.org/VegetarianDiet",
+        "offers": {
+            "@type": "Offer",
+            "priceCurrency": "INR",
+            "price": str(item["price"]),
+            "url": item_url,
+            "itemCondition": "https://schema.org/NewCondition",
+            "availability": ("https://schema.org/InStock" if available
+                             else "https://schema.org/OutOfStock"),
+        },
+    }
+    if photo_url:
+        item_schema["image"] = photo_url
+
+    return templates.TemplateResponse(
+        request,
+        "item.html",
+        {"item": item, "has_photo": has_photo, "photo_url": photo_url,
+         "available": available, "unavailable_reason": reason,
+         "half": item.get("half_price"), "related": related,
+         "dish_photos": photos, "wa_link": wa_link, "item_url": item_url,
+         "item_description": desc, "item_schema": item_schema},
+    )
 
 
 @app.get("/track/{order_id}", response_class=HTMLResponse)
@@ -259,6 +324,7 @@ def llms_txt():
         "",
         f"- [Home]({SITE_URL}/): overview, story, how ordering works",
         f"- [Menu]({SITE_URL}/menu): today's dishes, prices and availability, order online",
+        f"- Each dish has its own page, e.g. [Paneer Butter Masala]({SITE_URL}/menu/paneer-butter-masala) — any menu item id at {SITE_URL}/menu/&lt;id&gt;",
         f"- [Delivery]({SITE_URL}/delivery): delivery areas, fees and timing",
         f"- [About]({SITE_URL}/about): the kitchen's story, reviews, and frequently asked questions",
         f"- [Privacy policy]({SITE_URL}/privacy-policy)",
@@ -308,6 +374,12 @@ def sitemap_xml():
             mtime = (template_dir / template_name).stat().st_mtime
             lastmod_tag = f"\n    <lastmod>{date.fromtimestamp(mtime).isoformat()}</lastmod>"
         entries.append(f"  <url>\n    <loc>{SITE_URL}{path}</loc>{lastmod_tag}\n  </url>")
+    menu_mtime = (Path("data/menu.json")).stat().st_mtime
+    for m in menu.load_menu():
+        if m["id"].endswith(menu.HALF_SUFFIX):
+            continue
+        lastmod_tag = f"\n    <lastmod>{date.fromtimestamp(menu_mtime).isoformat()}</lastmod>"
+        entries.append(f"  <url>\n    <loc>{SITE_URL}/menu/{m['id']}</loc>{lastmod_tag}\n  </url>")
     body = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'

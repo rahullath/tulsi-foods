@@ -13,7 +13,8 @@ from pathlib import Path
 
 from . import menu
 
-MENU_LINK = "https://tulsifoods.app/menu"
+SITE_URL = "https://tulsifoods.app"
+MENU_LINK = f"{SITE_URL}/menu"
 BRAND = "Tulsi Foods"
 GOOGLE_CAT = "Food, Beverages & Tobacco > Food"
 HALF_SUFFIX = "-half"
@@ -63,6 +64,13 @@ def _description(item: dict) -> str:
     return desc
 
 
+def _link(item: dict) -> str:
+    # Half SKUs get the id <base>-half inside the feed; point both at the
+    # base dish page (only one canonical page per dish).
+    base = item["id"][: -len(HALF_SUFFIX)] if item["id"].endswith(HALF_SUFFIX) else item["id"]
+    return f"{SITE_URL}/menu/{base}"
+
+
 def _row(item: dict, photos: set[str]) -> list[str]:
     image = ""
     photo_id = item.get("photo_id") or item["id"]
@@ -70,7 +78,7 @@ def _row(item: dict, photos: set[str]) -> list[str]:
         image = f"https://tulsifoods.app/static/img/dishes/{photo_id}.jpg"
     return [
         item["id"], item["name"], _description(item), "in stock", "new",
-        MENU_LINK, image, BRAND, f"{item['price']} INR", GOOGLE_CAT, "", "",
+        _link(item), image, BRAND, f"{item['price']} INR", GOOGLE_CAT, "", "",
         "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
         "", "",
     ]

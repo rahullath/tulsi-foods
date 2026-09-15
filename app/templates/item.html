@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block meta %}
+<meta name="description" content="{{ item_description }}">
+<title>{{ item.name }} | Tulsi Foods, Mylapore</title>
+{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ item_url }}">{% endblock %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+{% endblock %}
+{% block styles %}{% endblock %}
+{% block body %}
+<div id="item-app">
+  <header class="mh">
+    <a class="mh-brand" href="/">
+      <img src="/static/logo.png" alt="" class="mh-logo">
+      <div>
+        <div class="mh-name">Tulsi Foods</div>
+        <div class="mh-sub"><span class="veg-mark" aria-hidden="true"></span>Mylapore · 100% pure veg</div>
+      </div>
+    </a>
+  </header>
+
+  <main>
+    <a class="back" href="/menu">← full menu</a>
+
+    {% if has_photo %}
+    <div class="photo">
+      <img src="{{ photo_url }}" alt="{{ item.name }}">
+    </div>
+    {% endif %}
+
+    <div class="title-row">
+      <h1>{{ item.name }}</h1>
+      {% if item.popular %}<span class="pop">popular</span>{% endif %}
+    </div>
+    <div class="cat"><span class="veg-mark" aria-hidden="true"></span>{{ item.group }} · pure veg</div>
+    {% if item.description %}<p class="desc">{{ item.description }}</p>{% endif %}
+
+    <div class="status">
+      {% if available %}
+      <span class="av">Available now</span>
+      {% else %}
+      <span class="sold">{{ unavailable_reason or "Finished for today" }}</span>
+      {% endif %}
+    </div>
+
+    <div class="price">₹{{ item.price }}</div>
+    {% if half %}
+    <div class="half">Half portion also available — <b>₹{{ half }}</b></div>
+    {% endif %}
+
+    <a class="cta wa" href="{{ wa_link }}" target="_blank" rel="noopener">Order on WhatsApp →</a>
+    <a class="cta menu" href="/menu">Browse the full menu</a>
+  </main>
+
+  {% if related %}
+  <section class="related">
+    <h2>From the {{ item.group|lower }} menu</h2>
+    {% for r in related %}
+    <a class="rel-card" href="/menu/{{ r.id.split('__')[0] }}">
+      {% if r.photo_id in dish_photos %}
+      <div class="rel-photo"><img src="/static/img/dishes/{{ r.photo_id }}.jpg" alt="{{ r.name }}" loading="lazy"></div>
+      {% endif %}
+      <div class="rel-body">
+        <div class="rel-name"><span class="veg-mark" aria-hidden="true"></span>{{ r.name }}</div>
+        <div class="rel-sub">₹{{ r.price }}</div>
+      </div>
+      <span class="rel-arrow">→</span>
+    </a>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <footer class="mf">
+    <a href="/">← Tulsi Foods home</a>
+    <span class="mf-sep">·</span>
+    <a href="/delivery">Delivery areas</a>
+    <span class="mf-sep">·</span>
+    <a href="/privacy-policy">Privacy policy</a>
+    <span class="mf-sep">·</span>
+    <a href="/refund-cancellation-policy">Refund policy</a>
+  </footer>
+</div>
+
+<style>
+:root {
+  --g: #0E7A45; --g2: #6FBF3F; --sf: #E08A1E;
+  --bg: #FBF8F2; --card: #fff; --border: #E7E1D6; --ink: #171A14;
+  --sub: #6F7468; --line2: #EFEBE3;
+}
+* { box-sizing: border-box; margin: 0; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+
+#item-app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+
+.mh { background: var(--g); color: #fff; padding: 16px 18px 18px; }
+.mh-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+.mh-logo { width: 36px; height: 36px; background: #fff; border-radius: 50%; padding: 4px; object-fit: contain; }
+.mh-name { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; line-height: 1.1; }
+.mh-sub { font-size: 11px; opacity: .85; margin-top: 2px; }
+
+main { flex: 1; padding: 16px 18px; }
+
+.back { display: inline-block; font: 500 13px 'IBM Plex Mono', monospace; color: var(--g); text-decoration: none; margin-bottom: 12px; }
+.back:hover { text-decoration: underline; }
+
+.photo { width: 100%; aspect-ratio: 4/3; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: #fff; margin-bottom: 16px; }
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; line-height: 1.15; }
+.pop { background: #EDF6E2; color: #3F5B1F; font-size: 11px; padding: 3px 9px; border-radius: 999px; font-weight: 600; }
+
+.cat { font-size: 12px; color: var(--sub); margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+
+.veg-mark { flex: none; display: inline-block; width: 12px; height: 12px; border: 1.5px solid var(--g); border-radius: 2px; position: relative; }
+.veg-mark::after { content: ''; position: absolute; width: 6px; height: 6px; background: var(--g); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+.desc { font-size: 14px; line-height: 1.6; color: #3C4137; margin-top: 12px; }
+
+.status { margin-top: 14px; }
+.av { font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--g); }
+.sold { font: 600 12px/1 'IBM Plex Mono', monospace; color: #B3261E; }
+
+.price { font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px; font-weight: 700; margin-top: 14px; }
+.half { font-size: 13px; color: var(--sub); margin-top: 6px; }
+.half b { color: var(--ink); }
+
+.cta { display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 12px; padding: 14px; margin-top: 14px; }
+.cta.wa { background: var(--g); color: #fff; }
+.cta.menu { background: #fff; color: var(--g); border: 1px solid var(--border); }
+.cta.menu:hover { border-color: var(--g); }
+
+.related { padding: 6px 18px 24px; }
+.related h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; margin-bottom: 12px; }
+.rel-card { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; text-decoration: none; color: var(--ink); margin-bottom: 10px; }
+.rel-photo { width: 48px; height: 48px; flex: 0 0 auto; border-radius: 10px; overflow: hidden; }
+.rel-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rel-body { flex: 1; }
+.rel-name { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.rel-name .veg-mark { width: 10px; height: 10px; }
+.rel-name .veg-mark::after { width: 5px; height: 5px; }
+.rel-sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.rel-arrow { color: var(--g); font-size: 16px; }
+
+.mf { padding: 18px 14px 32px; text-align: center; font-size: 12px; color: var(--sub); border-top: 1px solid var(--line2); }
+.mf a { color: var(--g); text-decoration: none; }
+.mf a:hover { text-decoration: underline; }
+.mf-sep { margin: 0 6px; }
+
+@media (min-width: 600px) {
+  #item-app { max-width: 720px; }
+  main { max-width: 640px; margin: 0 auto; }
+}
+</style>
+
+<script type="application/ld+json">{{ item_schema | tojson }}</script>
+{% endblock %}
