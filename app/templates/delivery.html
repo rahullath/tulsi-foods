@@ -16,16 +16,6 @@
 * { box-sizing: border-box; margin: 0; }
 body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
 
-.nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--line2); position: sticky; top: 0; z-index: 30; background: var(--bg); }
-.nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-.nav-brand img { width: 40px; height: 40px; object-fit: contain; }
-.nav-brand span { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: var(--ink); }
-.nav-links { display: flex; align-items: center; gap: 28px; font-size: 14px; }
-.nav-links a { color: #4A4F45; text-decoration: none; }
-.nav-links a:hover { color: var(--ink); }
-.nav-links a.current { color: var(--ink); font-weight: 600; }
-.nav-cta { background: var(--g); color: #fff; border-radius: 999px; padding: 11px 20px; font-weight: 600; text-decoration: none; }
-
 .page { max-width: 880px; margin: 0 auto; padding: 48px 40px 64px; }
 .page-tag { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--g); letter-spacing: .05em; text-transform: uppercase; }
 .page h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(30px, 4vw, 42px); margin: 12px 0 0; line-height: 1.08; }
@@ -61,8 +51,6 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .footer a { color: var(--g); text-decoration: none; }
 
 @media (max-width: 768px) {
-  .nav { padding: 16px 18px; }
-  .nav-links { display: none; }
   .page { padding: 32px 18px 48px; }
   .zone-table th:first-child, .zone-table td:first-child { border-top-left-radius: 10px; }
   .zone-table th, .zone-table td { display: block; border-top: 1px solid #F3F0EA; }
@@ -73,21 +61,6 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
   .footer { flex-direction: column; gap: 8px; padding: 20px 18px 30px; }
 }
 </style>
-
-<nav class="nav">
-  <a class="nav-brand" href="/">
-    <img src="/static/logo.png" alt="Tulsi Foods">
-    <span>Tulsi Foods</span>
-  </a>
-  <div class="nav-links">
-    <a href="/menu">Menu</a>
-    <a href="/delivery" class="current">Delivery</a>
-    <a href="/track">Track your order</a>
-    <a href="/about">Our story</a>
-    <a href="/about#contact">Contact</a>
-    <a href="https://wa.me/919940062840?text=Hi%2C%20I%20want%20to%20place%20an%20order." target="_blank" class="nav-cta">Order on WhatsApp</a>
-  </div>
-</nav>
 
 <div class="page">
   <div class="page-tag">Delivery</div>

@@ -18,17 +18,6 @@ html { scroll-behavior: smooth; }
 body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
 section[id] { scroll-margin-top: 76px; }
 
-/* Nav */
-.nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--line2); position: sticky; top: 0; z-index: 30; background: var(--bg); }
-.nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-.nav-brand img { width: 40px; height: 40px; object-fit: contain; }
-.nav-brand span { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: var(--ink); }
-.nav-links { display: flex; align-items: center; gap: 28px; font-size: 14px; }
-.nav-links a { color: #4A4F45; text-decoration: none; }
-.nav-links a:hover { color: var(--ink); }
-.nav-cta { background: var(--g); color: #fff; border-radius: 999px; padding: 11px 20px; font-weight: 600; text-decoration: none; transition: opacity .15s ease, transform .15s ease; }
-.nav-cta:hover { opacity: .9; transform: translateY(-1px); }
-
 /* Floating mobile WhatsApp button */
 .float-wa { position: fixed; right: 18px; bottom: 18px; z-index: 40; width: 56px; height: 56px; border-radius: 50%; background: var(--g); color: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; box-shadow: 0 6px 20px rgba(14,122,69,.35); opacity: 0; transform: translateY(14px); pointer-events: none; transition: opacity .2s ease, transform .2s ease; }
 .float-wa.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
@@ -133,15 +122,6 @@ section[id] { scroll-margin-top: 76px; }
 .faq-item[open] summary::after { content: '–'; }
 .faq-item p { padding: 0 18px 16px; margin: 0; font-size: 14.5px; line-height: 1.7; color: #4A4F45; }
 
-/* Categories dropdown (desktop nav) */
-.nav-drop { position: relative; }
-.nav-drop-menu { position: absolute; top: calc(100% + 12px); left: 50%; transform: translateX(-50%); background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 12px 30px rgba(20, 30, 15, .12); padding: 8px; min-width: 220px; display: none; z-index: 50; }
-.nav-drop-menu::before { content: ''; position: absolute; top: -7px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 12px; height: 12px; background: #fff; border-left: 1px solid var(--border); border-top: 1px solid var(--border); }
-.nav-drop-menu a { display: block; padding: 9px 12px; font-size: 14px; color: var(--g); text-decoration: none; border-radius: 8px; white-space: nowrap; }
-.nav-drop-menu a:hover { background: var(--card); }
-.nav-drop-menu .nav-drop-all { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 10px; font-weight: 600; }
-.nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu { display: block; }
-
 /* Footer */
 .footer { padding: 26px 40px 34px; max-width: 1200px; margin: 0 auto; font-size: 13px; color: var(--sub); }
 .footer a { color: var(--g); text-decoration: none; }
@@ -149,8 +129,6 @@ section[id] { scroll-margin-top: 76px; }
 .footer-aka { margin-top: 10px; font-size: 12px; }
 
 @media (max-width: 768px) {
-  .nav { padding: 16px 18px; }
-  .nav-links { display: none; }
   .hero { grid-template-columns: 1fr; padding: 32px 18px; }
   .hero-photo { height: 240px; }
   .stove { padding: 0 18px 40px; }
@@ -170,28 +148,6 @@ section[id] { scroll-margin-top: 76px; }
   .footer-main { flex-direction: column; gap: 8px; }
 }
 </style>
-
-<nav class="nav">
-  <a class="nav-brand" href="/">
-    <img src="/static/logo.png" alt="Tulsi Foods">
-    <span>Tulsi Foods</span>
-  </a>
-  <div class="nav-links">
-    <span class="nav-drop">
-      <a href="/menu" aria-haspopup="true">Categories <small style="opacity:.6">▾</small></a>
-      <div class="nav-drop-menu" role="menu">
-        {% for c in categories %}<a href="/category/{{ c.slug }}" role="menuitem">{{ c.name }}</a>{% endfor %}
-        <a href="/menu" class="nav-drop-all">View full menu &rarr;</a>
-      </div>
-    </span>
-    <a href="/menu">Menu</a>
-    <a href="/delivery">Delivery order</a>
-    <a href="/track">Track your order</a>
-    <a href="/about">Our story</a>
-    <a href="/about#contact">Contact</a>
-    <a href="/menu" class="nav-cta">Order online</a>
-  </div>
-</nav>
 
 <a class="float-wa" id="float-wa" href="https://wa.me/919940062840?text=Hi%2C%20I%20want%20to%20place%20an%20order." target="_blank" aria-label="Order on WhatsApp">
   <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.14h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.26-8.24 2.21 0 4.28.86 5.84 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.55-3.7 8.25-8.25 8.25zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.97-.14.16-.29.18-.53.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.24-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.47-.01a.9.9 0 0 0-.65.31c-.23.24-.86.85-.86 2.06 0 1.22.88 2.4 1 2.56.12.16 1.73 2.64 4.19 3.7.59.25 1.04.4 1.4.52.59.19 1.12.16 1.54.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.08.14-1.18-.06-.11-.22-.17-.47-.29z"/></svg>

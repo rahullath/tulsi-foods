@@ -55,15 +55,17 @@ Shipped this round (commit `ede04c1` + follow-ups):
   msg → rider dispatch → track statuses → delivered. Fix edge cases found (e.g.
   quote cache key, pin-drag re-quote).
 
-### R2-2. Mobile navigation — `[ ]`
-No nav on mobile at all (all navs are `display:none` under 768px). The fixed
-cartbar helped, but browsing to categories/track/delivery from a phone is still
-awkward.
-- Add a compact top nav visible on mobile: brand + burger → panel with Menu,
-  Categories dropdown, Delivery, Track, About, Contact, Order.
-- Each template duplicates its nav — extract a shared `app/templates/_nav.html`
-  include + `_nav.css` block in `base.html` once, then have every page use it
-  (removes the 8 copy-paste navs). Same for the footer (R2-3).
+### R2-2. Mobile navigation — `[x]`
+One shared `_nav.html` partial rendered from `base.html`: canonical desktop
+links (Categories dropdown global — `categories` added to every public route
+context; single "Order online" CTA) + burger button opening a panel with the
+same links + category list on ≤768px. Deleted the 6 copy-paste nav blocks and
+their inline CSS (nav CSS now lives in the partial itself, since most pages
+skip `style.css`); stripped the duplicated brand rows on /menu (search kept)
+and item pages. Kitchen/admin pass `hide_nav`. Drive-bys: category pages link
+/track, 404 links Our story. Active page highlighted via `request.url.path`.
+Verified: 23 pages render, burger present everywhere public and absent on
+tools, inline JS clean, link-graph shows every page reaches the core links.
 
 ### R2-3. Footer reformat — `[ ]`
 Footers are per-template and slightly different. Unify: one `_footer.html`

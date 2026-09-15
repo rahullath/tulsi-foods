@@ -193,7 +193,8 @@ def delivery_page(request: Request):
     return templates.TemplateResponse(
         request, "delivery.html",
         {"zones": DELIVERY_ZONES,
-         "faqs": faqs.delivery_faqs(DELIVERY_ZONES, FREE_DELIVERY_ABOVE)},
+         "faqs": faqs.delivery_faqs(DELIVERY_ZONES, FREE_DELIVERY_ABOVE),
+         "categories": all_categories()},
     )
 
 
@@ -314,7 +315,7 @@ def _item_product_schema(item: dict, item_url: str, photo_url: str,
 def track_landing_page(request: Request):
     """SEO entry point for order tracking. From here a customer finds their
     order by tracking reference or phone and lands on /track/{ref}."""
-    return templates.TemplateResponse(request, "track-landing.html", {})
+    return templates.TemplateResponse(request, "track-landing.html", {"categories": all_categories()})
 
 
 @app.get("/track/{ref}", response_class=HTMLResponse)
@@ -328,7 +329,8 @@ def track_page(request: Request, ref: str):
     token = o.get("tracking_token") or ref
     if not ref.isdigit():
         return templates.TemplateResponse(
-            request, "track.html", {"order_id": o["id"], "tracking_token": token}
+            request, "track.html", {"order_id": o["id"], "tracking_token": token,
+                                    "categories": all_categories()}
         )
     return RedirectResponse(f"/track/{token}", status_code=301)
 
@@ -343,6 +345,7 @@ def about_page(request: Request):
             "platform_stats": reviews.get_platform_stats(),
             "order_count": reviews.get_order_count_display(),
             "google_review_link": GOOGLE_REVIEW_LINK,
+            "categories": all_categories(),
         },
     )
 
@@ -365,13 +368,13 @@ def bio_page(request: Request):
         item = menu.get_item(item_id)
         if item:
             recommendations.append({**item, "tag": tag, "has_photo": item_id in photos})
-    return templates.TemplateResponse(request, "bio.html", {"recommendations": recommendations})
+    return templates.TemplateResponse(request, "bio.html", {"recommendations": recommendations, "categories": all_categories()})
 
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin_page(request: Request):
     return templates.TemplateResponse(
-        request, "admin.html", {"groups": menu.grouped()}
+        request, "admin.html", {"groups": menu.grouped(), "hide_nav": True}
     )
 
 
@@ -379,17 +382,17 @@ def admin_page(request: Request):
 def kitchen_page(request: Request):
     # Stripped-down, one-purpose order screen for a kitchen tablet — no tabs,
     # no menu/chat/reviews, just live orders with one big action button each.
-    return templates.TemplateResponse(request, "kitchen.html", {})
+    return templates.TemplateResponse(request, "kitchen.html", {"hide_nav": True})
 
 
 @app.get("/privacy-policy", response_class=HTMLResponse)
 def privacy_page(request: Request):
-    return templates.TemplateResponse(request, "privacy.html", {})
+    return templates.TemplateResponse(request, "privacy.html", {"categories": all_categories()})
 
 
 @app.get("/refund-cancellation-policy", response_class=HTMLResponse)
 def refund_cancellation_policy_page(request: Request):
-    return templates.TemplateResponse(request, "refund-cancellation-policy.html", {})
+    return templates.TemplateResponse(request, "refund-cancellation-policy.html", {"categories": all_categories()})
 
 
 @app.get("/whatsapp-catalog.csv", response_class=PlainTextResponse)

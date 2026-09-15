@@ -16,15 +16,6 @@
 * { box-sizing: border-box; margin: 0; }
 body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
 
-.nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--line2); position: sticky; top: 0; z-index: 30; background: var(--bg); }
-.nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-.nav-brand img { width: 40px; height: 40px; object-fit: contain; }
-.nav-brand span { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: var(--ink); }
-.nav-links { display: flex; align-items: center; gap: 28px; font-size: 14px; }
-.nav-links a { color: #4A4F45; text-decoration: none; }
-.nav-links a:hover { color: var(--ink); }
-.nav-cta { background: var(--g); color: #fff; border-radius: 999px; padding: 11px 20px; font-weight: 600; text-decoration: none; }
-
 .page { max-width: 720px; margin: 0 auto; padding: 72px 40px 60px; text-align: center; }
 .code { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(90px, 14vw, 150px); line-height: 1; color: var(--line2); }
 .page-tag { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--sf); letter-spacing: .08em; margin-top: -20px; }
@@ -45,25 +36,10 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .footer a { color: var(--g); text-decoration: none; }
 
 @media (max-width: 768px) {
-  .nav { padding: 16px 18px; }
-  .nav-links { display: none; }
   .page { padding: 56px 18px 48px; }
   .footer { padding: 20px 18px 30px; }
 }
 </style>
-
-<nav class="nav">
-  <a class="nav-brand" href="/">
-    <img src="/static/logo.png" alt="Tulsi Foods">
-    <span>Tulsi Foods</span>
-  </a>
-  <div class="nav-links">
-    <a href="/menu">Menu</a>
-    <a href="/delivery">Delivery</a>
-    <a href="/track">Track your order</a>
-    <a href="/menu" class="nav-cta">Order online</a>
-  </div>
-</nav>
 
 <div class="page">
   <div class="code">404</div>
