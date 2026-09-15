@@ -36,6 +36,8 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .price-range span { font: 500 12px/1 'IBM Plex Mono', monospace; color: #5B6B45; background: #F0F3E8; border: 1px solid #DDE4CC; border-radius: 999px; padding: 8px 13px; }
 
 .items { margin-top: 34px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
+.bestsellers { margin-top: 26px; }
+.bestsellers .sib-links a { background: #EDF6E2; border-color: #DDE4CC; color: #2C5A1E; }
 .item-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit; display: block; transition: transform .15s ease, box-shadow .15s ease; }
 .item-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(20, 30, 15, .08); }
 .item-photo { aspect-ratio: 4 / 3; background: #F0F3E8; }
@@ -96,13 +98,21 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
   <div class="crumb"><a href="/">Home</a> &rarr; <a href="/menu">Menu</a> &rarr; {{ group }}</div>
   <div class="page-tag">Menu · Category</div>
   <h1>{{ group }}</h1>
-  <p class="page-sub">Everything in this category at Tulsi Foods — pure vegetarian, home-style North Indian food cooked to order in Mylapore, Chennai. Prices are today's prices; delivery is confirmed on WhatsApp.</p>
+  <p class="page-sub">{{ blurb or ("Everything in this category at Tulsi Foods — pure vegetarian, home-style North Indian food cooked to order in Mylapore, Chennai. Prices are today's prices; delivery is confirmed on WhatsApp.") }}</p>
   <div class="price-range">
     <span>{{ count }} item{{ '' if count == 1 else 's' }}</span>
     {% if price_low %}<span>from ₹{{ price_low }}</span>{% endif %}
     {% if price_high and price_high != price_low %}<span>up to ₹{{ price_high }}</span>{% endif %}
     <span>pure veg · no onion-garlic &amp; Jain on request</span>
   </div>
+
+  {% if bestsellers %}
+  <div class="bestsellers" id="bestsellers">
+    <div class="sib-links">
+      {% for b in bestsellers %}<a href="/menu/{{ b.id }}">★ {{ b.name }}</a>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   <div class="items" id="items">
     {% for item in items %}

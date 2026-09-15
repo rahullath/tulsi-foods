@@ -37,7 +37,7 @@
       "popular": true,
       "qty_2mo": 361.0,
       "revenue_2mo": 89569.73,
-      "description": "[4 Phulka + 1 Dal + 1 Sabji Gravy + 1 Sabji Dry + Rice + Curd + Pickel + Salad + Sweet + Papad]"
+      "description": "[4 Phulka + 1 Dal + 1 Sabji Gravy + 1 Sabji Dry + Rice + Curd + Pickle + Salad + Sweet + Papad]"
     },
     {
       "id": "mini-thali",
@@ -49,7 +49,7 @@
       "popular": true,
       "qty_2mo": 360.0,
       "revenue_2mo": 67629.29,
-      "description": "[2 Phulka + Dal + 1 Dry Sabji + Curd + Pickel + Salad + Rice}"
+      "description": "[2 Phulka + Dal + 1 Dry Sabji + Curd + Pickle + Salad + Rice}"
     },
     {
       "id": "phulka",

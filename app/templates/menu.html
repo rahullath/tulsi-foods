@@ -583,8 +583,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             currentSubtotal && currentSubtotal < eff.min_order
             ? ` <span style="color:#B3261E">Minimum order here is ₹${eff.min_order}.</span>` : ""}`;
         } else {
-          deliveryRow = `<div class="checkout-row"><span>Delivery (est.)</span><span>~₹45–₹100</span></div>`;
-          deliveryNote = "Live courier rate by Borzo — the kitchen confirms the exact fee on WhatsApp.";
+          deliveryRow = `<div class="checkout-row"><span>Delivery</span><span>Live rate</span></div>`;
+          deliveryNote = "Enter your delivery address for a live courier rate. Until then delivery is excluded from the total — the kitchen confirms the exact fee on WhatsApp.";
         }
       } else {
         deliveryNote = PICKUP_NOTE;

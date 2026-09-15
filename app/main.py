@@ -77,6 +77,20 @@ def all_categories() -> list[dict]:
     ]
 
 
+CATEGORY_BLURBS: dict[str, str] = {
+    "Thalis & Combos": "The whole meal on one plate — phulka, dal, sabzi, rice, curd, salad and a sweet, assembled fresh the moment you order. The North Indian Thali is the restaurant's signature; the Mini Thali is the same idea, half the size.",
+    "Parathas & Breads": "Hand-rolled parathas off the tawa, served with curd and pickle. Punjab-style, stuffed parathas, and plain variants that sit beside any sabzi.",
+    "Chaats & Snacks": "Made when you order so nothing goes soggy — papdi, dahi puri, vada pav, bhel, pav bhaji and the fried snacks that disappear first.",
+    "Sabzi": "Home-style vegetable gravies and dry preparations cooked the same day — dal makhani, paneer butter masala, chole, and seasonal sabzis. Most come in half portions too.",
+    "Starters": "Small plates for the table or a light meal — kebabs, tikkas and shallow-fried snacks served with the kitchen's chutneys.",
+    "Soups & Rice": "Soups, rice dishes and the lightest things on the menu. Dal-rice and coriander rice are the everyday workhorses.",
+    "Chai & Beverages": "Cutting chai, masala chai and thick shakes — the stuff people collect their orders for even when they stay for nothing else.",
+    "Desserts": "The sweet that closes every thali, plus the kitchen's desserts. Gajar halwa and kheer show up by season.",
+    "Italian": "Pure-veg Italian plates that fit the same kitchen — pastas and baked dishes without the 'fancy restaurant' markup.",
+    "Specialities": "The dishes the kitchen is known for beyond the everyday menu — things people cross the city for.",
+}
+
+
 # ---- pages ----
 
 # (item_id, tag, short description) — curated, shown on the home page "on the
@@ -413,31 +427,48 @@ def robots_txt():
 
 @app.get("/llms.txt", response_class=PlainTextResponse)
 def llms_txt():
+    menu_items = [m for m in menu.load_menu() if not m["id"].endswith(menu.HALF_SUFFIX)]
+    popular = [m for m in menu_items if m.get("popular")][:8]
     lines = [
         "# Tulsi Foods",
         "",
         "> Pure vegetarian, home-style North Indian restaurant in Mylapore, Chennai. "
         "Run by Kavita Lath since 2015. Thalis, parathas, sabzi, dal and chaat, cooked "
-        "to order and delivered direct — no aggregator, no platform fees.",
+        "to order and delivered direct — no aggregator, no platform fees. 11 years old "
+        "as of September 2026.",
         "",
         "- Cuisine: North Indian, pure vegetarian (Jain / no-onion-garlic on request)",
         "- Also known as: Tulasi Foods, Thulasi Restaurant (common misspellings/mishearings of the same restaurant)",
         "- Location: 34 Murrays Gate Road, Alwarpet, Chennai 600018, Tamil Nadu, India",
         "- Hours: Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM",
-        "- Delivery: Mylapore, Alwarpet, Teynampet and nearby areas within ~7 km",
-        "- Order: WhatsApp at +91 99400 62840, or the website menu below",
+        "- Delivery: Mylapore, Alwarpet, Teynampet and nearby areas within ~7 km, by Borzo courier at live rates",
+        "- Order: on this website, or WhatsApp at +91 99400 62840",
         "- Phone: +91 99406 21800",
+        "- Prices: ₹45–₹400 per dish; most mains available as half portions",
         "",
         "## Pages",
         "",
         f"- [Home]({SITE_URL}/): overview, story, how ordering works",
         f"- [Menu]({SITE_URL}/menu): today's dishes, prices and availability, order online",
         f"- Each dish has its own page, e.g. [Paneer Butter Masala]({SITE_URL}/menu/paneer-butter-masala) — any menu item id at {SITE_URL}/menu/&lt;id&gt;",
+        f"- [Track your order]({SITE_URL}/track): look up an order by tracking reference or phone",
         f"- [Delivery]({SITE_URL}/delivery): delivery areas, fees and timing",
         f"- [About]({SITE_URL}/about): the kitchen's story, reviews, and frequently asked questions",
         f"- [Privacy policy]({SITE_URL}/privacy-policy)",
         f"- [Refund &amp; cancellation policy]({SITE_URL}/refund-cancellation-policy)",
+        "",
+        "## Menu categories",
+        "",
     ]
+    for cat in all_categories():
+        lines.append(f"- {cat['name']} ({cat['count']} items): {SITE_URL}/category/{cat['slug']}")
+    lines += [
+        "",
+        "## Popular dishes",
+        "",
+    ]
+    for m in popular:
+        lines.append(f"- {m['name']} — ₹{m['price']}: {SITE_URL}/menu/{m['id']}")
     return PlainTextResponse("\n".join(lines))
 
 
@@ -826,6 +857,8 @@ def category_page(request: Request, slug: str):
         "category.html",
         {"group": group, "slug": slug, "items": items, "categories": all_categories(),
          "count": len(items), "price_low": low, "price_high": high,
+         "blurb": CATEGORY_BLURBS.get(group) or "",
+         "bestsellers": [m for m in items if m.get("popular")][:4],
          "category_url": category_url, "dish_photos": dish_photo_ids()},
     )
 

@@ -29,5 +29,61 @@
 </head>
 <body>
   {% block body %}{% endblock %}
+
+  {% block cartbar %}
+  <a class="cartbar" id="cartbar" href="/menu#checkout" hidden>
+    <span class="cartbar-count" id="cartbar-count">0</span>
+    <span class="cartbar-label">View cart</span>
+    <span class="cartbar-total" id="cartbar-total">₹0</span>
+  </a>
+  <style>
+  .cartbar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 80; display: flex; align-items: center; gap: 12px; background: var(--g, #0E7A45); color: #fff; border-radius: 999px; padding: 12px 8px 12px 16px; box-shadow: 0 8px 24px rgba(14, 122, 69, .35); text-decoration: none; font: 600 14px 'IBM Plex Sans', system-ui, sans-serif; }
+  .cartbar-count { background: rgba(255,255,255,.22); border-radius: 999px; min-width: 22px; height: 22px; line-height: 22px; text-align: center; padding: 0 6px; font-size: 12px; }
+  .cartbar-label { white-space: nowrap; }
+  .cartbar-total { font: 600 13px 'IBM Plex Mono', monospace; background: #fff; color: var(--g, #0E7A45); border-radius: 999px; padding: 8px 14px; }
+  @media (max-width: 768px) {
+    .cartbar { max-width: calc(100vw - 24px); gap: 8px; bottom: 12px; }
+  }
+  </style>
+  <script>
+  (function () {
+    var bar = document.getElementById('cartbar');
+    if (!bar) return;
+    if (location.pathname === '/menu') return;
+    var KEY = 'tulsi_menu_cart';
+    var PRICES = null;
+    var totalEl = document.getElementById('cartbar-total');
+    var countEl = document.getElementById('cartbar-count');
+    fetch('/api/menu').then(function (r) { return r.json(); }).then(function (data) {
+      PRICES = {};
+      (data.groups || []).forEach(function (g) {
+        (g.items || []).forEach(function (it) {
+          if (it.price != null) PRICES[String(it.id).split('__')[0]] = Number(it.price);
+        });
+      });
+      tick();
+    }).catch(function (_) { PRICES = {}; });
+    function tick() {
+      var cart = {};
+      try { cart = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (_) {}
+      var ids = Object.keys(cart).filter(function (k) { return cart[k] > 0; });
+      var count = 0, total = 0;
+      ids.forEach(function (k) {
+        count += cart[k];
+        total += cart[k] * (PRICES ? (PRICES[k] || 0) : 0);
+      });
+      if (count > 0) {
+        bar.hidden = false;
+        countEl.textContent = count;
+        totalEl.textContent = PRICES ? '₹' + total : '₹' + total;
+      } else {
+        bar.hidden = true;
+      }
+    }
+    tick();
+    setInterval(tick, 800);
+  })();
+  </script>
+  {% endblock %}
 </body>
 </html>
