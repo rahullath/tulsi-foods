@@ -81,9 +81,10 @@ def delivery_faqs(zones, free_above) -> list[dict]:
         {
             "q": "How can I pay at Tulsi Foods?",
             "a": (
-                "UPI when you order, or cash to the rider. The total at checkout "
-                "already includes the estimated delivery charge, so nothing is "
-                "added at the door."
+                "UPI when you order, or cash to the rider. Checkout lets you "
+                "include the estimated delivery charge in your total or pay the "
+                "rider directly — either way the kitchen confirms the exact fee "
+                "on WhatsApp."
             ),
         },
         {

@@ -46,6 +46,11 @@ Shipped this round (commit `ede04c1` + follow-ups):
   us; checkout shows "pay the rider directly", confirm line says so, kitchen.js
   card states "rider collects the ₹X delivery fee", tracking page flags it.
   Remaining: reconcile with Mom's actual rider practice + the test pass.
+- `[x]` **Orders only during open hours.** ASAP orders were possible 24/7; the
+  schedule gate now checks the full weekly-hours table (Mon opens 14:00, others
+  09:00, Sun 11:00; close 21:00) for both ASAP (now) and scheduled times, with
+  copy pointing to the next window when closed. Monday morning still refuses
+  the Lunch window specifically. (TZ math in the ISO parser fixed as part of it.)
 - `[ ]` **Test pass over the whole order path**: quote → order create → confirm
   msg → rider dispatch → track statuses → delivered. Fix edge cases found (e.g.
   quote cache key, pin-drag re-quote).

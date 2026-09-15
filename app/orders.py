@@ -12,6 +12,7 @@ from .config import (
     GST_ENABLED,
     GST_RATE,
     MONDAY_OPENS_AT,
+    OPENING_HOURS,
     PACKING_FEE,
     PACKING_FEE_LARGE_ORDER,
     PACKING_FEE_LARGE_ORDER_THRESHOLD,
@@ -39,7 +40,7 @@ def _parse_iso(scheduled_at: str) -> datetime:
     s = scheduled_at
     if s.endswith("Z"):
         s = s[:-1] + "+00:00"
-    return datetime.fromisoformat(s).replace(tzinfo=None)
+    return datetime.fromisoformat(s)
 
 
 def _validate_scheduled_at(scheduled_at: str | None) -> None:
@@ -47,7 +48,7 @@ def _validate_scheduled_at(scheduled_at: str | None) -> None:
     if not scheduled_at:
         return
     try:
-        when = _parse_iso(scheduled_at)
+        when = _parse_iso(scheduled_at).replace(tzinfo=None)  # naive UTC
     except ValueError:
         raise OrderError("Invalid scheduled time", 400)
     now = datetime.utcnow()
@@ -222,22 +223,42 @@ def check_address(address: str | None, pincode: str | None,
     return False, None
 
 
+def _hhmm12(hhmm: str) -> str:
+    h, m = hhmm.split(":")
+    h = int(h)
+    suffix = "AM" if h < 12 else "PM"
+    h12 = h % 12 or 12
+    return f"{h12}:{m} {suffix}".replace(":00 ", " ")
+
+
+def _open_close_for(weekday: int) -> tuple[str, str]:
+    if weekday == 0:  # Monday opens late
+        return MONDAY_OPENS_AT, OPENING_HOURS["mon_sat"][1]
+    if weekday == 6:
+        return OPENING_HOURS["sunday"]
+    return OPENING_HOURS["mon_sat"]
+
+
 def _schedule_closed_reason(scheduled_at: str | None = None,
                             scheduled_window: str | None = None) -> str | None:
-    """Fixed weekly hours not covered by the manual store_status toggle —
-    currently just Monday's half day. Checks against `scheduled_at` (a
-    pre-order's requested time) when given, otherwise the current time.
-    Returns a customer-facing reason, or None if within hours."""
-    if scheduled_at:
-        when = _parse_iso(scheduled_at).astimezone(IST)
-    else:
-        when = datetime.now(IST)
-    if when.weekday() == 0:  # Monday
-        opens_at = datetime.strptime(MONDAY_OPENS_AT, "%H:%M").time()
-        if when.time() < opens_at:
-            if scheduled_window == "lunch":
-                return f"We're closed Monday mornings — the Lunch window is unavailable, choose Dinner instead"
-            return f"We're closed Monday mornings — back online at {MONDAY_OPENS_AT}"
+    """Fixed weekly hours not covered by the manual store_status toggle.
+
+    Checks against `scheduled_at` (a pre-order's requested time) when given,
+    otherwise the current time — so an "as soon as possible" order can't slip
+    through outside opening hours. Returns a customer-facing reason, or None
+    if within hours."""
+    when = _parse_iso(scheduled_at).astimezone(IST) if scheduled_at else datetime.now(IST)
+    opens_at, closes_at = _open_close_for(when.weekday())
+    opens = datetime.strptime(opens_at, "%H:%M").time()
+    closes = datetime.strptime(closes_at, "%H:%M").time()
+    if when.time() < opens:
+        if when.weekday() == 0 and scheduled_window == "lunch":
+            return "We're closed Monday mornings — the Lunch window is unavailable, choose Dinner instead"
+        return f"We're closed right now — back online at {_hhmm12(opens_at)}"
+    if when.time() >= closes:
+        if scheduled_at:
+            return "That time is outside our closing hours — choose a Lunch or Dinner window instead."
+        return "We're closed right now — order ahead for the next Lunch or Dinner window."
     return None
 
 
