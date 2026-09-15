@@ -1,182 +1,1421 @@
-Tulsi Foods - WhatsApp catalog manual entry (form order: Name | Price | Sale price | Description | Link | Item code | Country=India)
-Sale price: leave blank. Hide item: keep OFF. (HALF) rows are half-portion SKUs.
-Images: 37 of 141 items have photos - pick from phone gallery for those; add images for the rest when ready.
+=== 1. Phulka — ₹41 [HAS-PHOTO] qty=1454   img: phulka.jpg ===
+Phulka
+41
+
+Soft, whole wheat Indian bread.
+https://tulsifoods.app/menu
+phulka
+India
+
+=== 2. Sabudana Vada (2pcs) — ₹142 [HAS-PHOTO] qty=392   img: sabudana-vada-2pcs.jpg ===
+Sabudana Vada (2pcs)
+142
+
+Deep-fried patties made from soaked tapioca pearls, mashed potatoes, and spices.
+https://tulsifoods.app/menu
+sabudana-vada-2pcs
+India
+
+=== 3. North Indian Thali — ₹248 [HAS-PHOTO] qty=361   img: north-indian-thali.jpg ===
+North Indian Thali
+248
+
+[4 Phulka + 1 Dal + 1 Sabji Gravy + 1 Sabji Dry + Rice + Curd + Pickel + Salad + Sweet + Papad]
+https://tulsifoods.app/menu
+north-indian-thali
+India
+
+=== 4. Mini Thali — ₹188 [HAS-PHOTO] qty=360   img: mini-thali.jpg ===
+Mini Thali
+188
+
+[2 Phulka + Dal + 1 Dry Sabji + Curd + Pickel + Salad + Rice}
+https://tulsifoods.app/menu
+mini-thali
+India
+
+=== 5. Mini Samosa — ₹20 [NO-PHOTO] qty=292 ===
+Mini Samosa
+20
+
+Crisp, golden samosas with a spiced veg filling, served hot with chutney.
+https://tulsifoods.app/menu
+mini-samosa
+India
+
+=== 6. Masala Chai — ₹51 [HAS-PHOTO] qty=281   img: masala-chai.jpg ===
+Masala Chai
+51
+
+Aromatic Indian spiced tea, brewed with a blend of rich black tea, spices, and milk.
+https://tulsifoods.app/menu
+masala-chai
+India
+
+=== 7. Aloo Paratha — ₹113 [HAS-PHOTO] qty=280   img: aloo-paratha.jpg ===
+Aloo Paratha
+113
+
+Whole wheat bread stuffed with a delicious mixture of spiced mashed potatoes.
+https://tulsifoods.app/menu
+aloo-paratha
+India
+
+=== 8. Samosa (2pcs) — ₹78 [HAS-PHOTO] qty=264   img: samosa-2pcs.jpg ===
+Samosa (2pcs)
+78
+
+Kolkata styled triangular puff filled with a spiced mixture of potatoes and peas
+https://tulsifoods.app/menu
+samosa-2pcs
+India
+
+=== 9. Dhokla — ₹111 [HAS-PHOTO] qty=250   img: dhokla.jpg ===
+Dhokla
+111
+
+Steamed and spongy fermented cake made from rice and flour.
+https://tulsifoods.app/menu
+dhokla
+India
+
+=== 10. Paneer Paratha — ₹123 [NO-PHOTO] qty=204 ===
+Paneer Paratha
+123
+
+Stuffed paratha with a savory filling of spiced paneer (Indian cottage cheese).
+https://tulsifoods.app/menu
+paneer-paratha
+India
+
+=== 11. Gobi Paratha — ₹123 [HAS-PHOTO] qty=143   img: gobi-paratha.jpg ===
+Gobi Paratha
+123
+
+Flaky paratha filled with spiced cauliflower, a popular North Indian dish.
+https://tulsifoods.app/menu
+gobi-paratha
+India
+
+=== 12. Gulab Jamun (2Pcs) — ₹100 [HAS-PHOTO] qty=140   img: gulab-jamun-2pcs.jpg ===
+Gulab Jamun (2Pcs)
+100
+
+Soft and spongy milk dumplings soaked in a sweet, fragrant sugar syrup.
+https://tulsifoods.app/menu
+gulab-jamun-2pcs
+India
+
+=== 13. Papdi Chat (6pcs) — ₹100 [HAS-PHOTO] qty=139   img: papdi-chat-6pcs.jpg ===
+Papdi Chat (6pcs)
+100
+
+A street food snack consisting of crispy dough wafers topped with potatoes, channas, and chutn
+https://tulsifoods.app/menu
+papdi-chat-6pcs
+India
+
+=== 14. Chola Bhatura — ₹253 [HAS-PHOTO] qty=114   img: chola-bhatura.jpg ===
+Chola Bhatura
+253
+
+Fluffy deep-fried bread served with spicy chickpeas, a North Indian favorite.
+https://tulsifoods.app/menu
+chola-bhatura
+India
+
+=== 15. Pav Bhaji — ₹152 [HAS-PHOTO] qty=106   img: pav-bhaji.jpg ===
+Pav Bhaji
+152
+
+A flavorful mixed vegetable curry served with soft buttered buns
+https://tulsifoods.app/menu
+pav-bhaji
+India
+
+=== 16. Cutlet (2pcs) — ₹100 [NO-PHOTO] qty=104 ===
+Cutlet (2pcs)
+100
+
+Pan-fried or deep-fried savory patties made with a mixture of mashed potatoes and vegetables
+https://tulsifoods.app/menu
+cutlet-2pcs
+India
+
+=== 17. Cheesy Disc (2pcs) — ₹132 [HAS-PHOTO] qty=102   img: cheesy-disc-2pcs.jpg ===
+Cheesy Disc (2pcs)
+132
+
+Melt-in-your-mouth cheesy discs, a delightful blend of cheese and veggies
+https://tulsifoods.app/menu
+cheesy-disc-2pcs
+India
+
+=== 18. Masala Papad — ₹60 [HAS-PHOTO] qty=93   img: masala-papad.jpg ===
+Masala Papad
+60
+
+Crispy papad topped with a flavorful mixture of spices, vegetables, and chutneys.
+https://tulsifoods.app/menu
+masala-papad
+India
+
+=== 19. Butter Naan — ₹87 [NO-PHOTO] qty=90 ===
+Butter Naan
+87
+
+Naan brushed with ghee or butter for an extra layer of richness.
+https://tulsifoods.app/menu
+butter-naan
+India
+
+=== 20. Paneer Tikka — ₹257 [HAS-PHOTO] qty=85   img: paneer-tikka.jpg ===
+Paneer Tikka
+257
+
+Sliced paneer marinated in flavorful spices and grilled to perfection.
+https://tulsifoods.app/menu
+paneer-tikka
+India
+
+=== 21. Plain Paratha — ₹50 [NO-PHOTO] qty=84 ===
+Plain Paratha
+50
+
+Buttery and flaky layered flatbread, a versatile accompaniment.
+https://tulsifoods.app/menu
+plain-paratha
+India
+
+=== 22. Buttermilk — ₹61 [NO-PHOTO] qty=82 ===
+Buttermilk
+61
+
+Refreshing spiced yogurt drink, perfect to cool your palate.
+https://tulsifoods.app/menu
+buttermilk
+India
+
+=== 23. Pani Puri — ₹81 [HAS-PHOTO] qty=81   img: pani-puri.jpg ===
+Pani Puri
+81
+
+Hollow puris filled with a spicy and tangy mixture of tamarind water, channas, and potatoes.
+https://tulsifoods.app/menu
+pani-puri
+India
+
+=== 24. Vegetable Pulao — ₹201 [NO-PHOTO] qty=80 ===
+Vegetable Pulao
+201
+
+Aromatic rice cooked with a mix of colorful vegetables and spices.
+https://tulsifoods.app/menu
+vegetable-pulao
+India
+
+=== 25. Paneer Butter Masala — ₹365 [HAS-PHOTO] qty=75   img: paneer-butter-masala.jpg ===
+Paneer Butter Masala
+365
+
+Rich and creamy tomato-based curry with succulent cubes of paneer.
+https://tulsifoods.app/menu
+paneer-butter-masala
+India
+
+   === Paneer Butter Masala (Half) — ₹220 [HAS-PHOTO]   img: paneer-butter-masala.jpg ===
+Paneer Butter Masala (Half)
+220
+
+Half portion. Rich and creamy tomato-based curry with succulent cubes of paneer.
+https://tulsifoods.app/menu
+paneer-butter-masala-half
+India
+
+=== 26. Masala Kulcha — ₹120 [NO-PHOTO] qty=73 ===
+Masala Kulcha
+120
+
+Kulcha stuffed with a spiced potato filling, adding an extra layer of flavor.
+https://tulsifoods.app/menu
+masala-kulcha
+India
+
+=== 27. Mosambi Juice — ₹121 [NO-PHOTO] qty=64 ===
+Mosambi Juice
+121
+
+Sweet and tangy juice extracted from fresh mosambi (sweet lime).
+https://tulsifoods.app/menu
+mosambi-juice
+India
+
+=== 28. Dal Tadka — ₹304 [NO-PHOTO] qty=64 ===
+Dal Tadka
+304
+
+Yellow lentils tempered with aromatic spices, a simple and comforting dish.
+https://tulsifoods.app/menu
+dal-tadka
+India
+
+   === Dal Tadka (Half) — ₹180 [NO-PHOTO] ===
+Dal Tadka (Half)
+180
+
+Half portion. Yellow lentils tempered with aromatic spices, a simple and comforting dish.
+https://tulsifoods.app/menu
+dal-tadka-half
+India
+
+=== 29. Kulfi — ₹120 [NO-PHOTO] qty=63 ===
+Kulfi
+120
+
+Traditional Indian ice cream with rich, condensed milk flavors and various aromatic infusions.
+https://tulsifoods.app/menu
+kulfi
+India
+
+=== 30. Corn Cheese Bun (2pcs) — ₹100 [HAS-PHOTO] qty=62   img: corn-cheese-bun-2pcs.jpg ===
+Corn Cheese Bun (2pcs)
+100
+
+Soft buns filled with a delightful combination of corn and gooey cheese
+https://tulsifoods.app/menu
+corn-cheese-bun-2pcs
+India
+
+=== 31. Aloo Tikki (2pcs) — ₹111 [HAS-PHOTO] qty=59   img: aloo-tikki-2pcs.jpg ===
+Aloo Tikki (2pcs)
+111
+
+Golden-fried potato patties served with mint chutney and tamarind sauce.
+https://tulsifoods.app/menu
+aloo-tikki-2pcs
+India
+
+=== 32. Tomato Soup — ₹201 [HAS-PHOTO] qty=59   img: tomato-soup.jpg ===
+Tomato Soup
+201
+
+A comforting and flavorful soup made with ripe tomatoes and aromatic herbs.
+https://tulsifoods.app/menu
+tomato-soup
+India
+
+=== 33. Water Bottle(300 Ml) — ₹10 [NO-PHOTO] qty=59 ===
+Water Bottle(300 Ml)
+10
+
+Sealed 300 ml water bottle.
+https://tulsifoods.app/menu
+water-bottle-300-ml
+India
+
+=== 34. Vegetable Kofta — ₹343 [NO-PHOTO] qty=58 ===
+Vegetable Kofta
+343
+
+Vegetable dumplings in a flavorful curry, a delightful and hearty dish.
+https://tulsifoods.app/menu
+vegetable-kofta
+India
+
+   === Vegetable Kofta (Half) — ₹210 [NO-PHOTO] ===
+Vegetable Kofta (Half)
+210
+
+Half portion. Vegetable dumplings in a flavorful curry, a delightful and hearty dish.
+https://tulsifoods.app/menu
+vegetable-kofta-half
+India
+
+=== 35. Cafe Latte — ₹60 [NO-PHOTO] qty=57 ===
+Cafe Latte
+60
+
+Smooth and velvety espresso-based coffee with steamed milk.
+https://tulsifoods.app/menu
+cafe-latte
+India
+
+=== 36. Lemonade — ₹80 [NO-PHOTO] qty=56 ===
+Lemonade
+80
+
+Classic and thirst-quenching lemonade, the perfect balance of sweet and tart.
+https://tulsifoods.app/menu
+lemonade
+India
+
+=== 37. Poha — ₹104 [NO-PHOTO] qty=56 ===
+Poha
+104
+
+Flattened rice cooked with spices, peas, and topped with fresh coriander.
+https://tulsifoods.app/menu
+poha
+India
+
+=== 38. Garlic Naan — ₹91 [NO-PHOTO] qty=54 ===
+Garlic Naan
+91
+
+Naan infused with garlic and herbs, a flavorful twist on the classic.
+https://tulsifoods.app/menu
+garlic-naan
+India
+
+=== 39. Executive Combo — ₹281 [NO-PHOTO] qty=53 ===
+Executive Combo
+281
+
+3 Phulkas with Paneer Butter Masala / Dal Makhani / Mixed Vegetable / Malai Kofta
+https://tulsifoods.app/menu
+executive-combo
+India
+
+=== 40. Chola Tikki (2pcs) — ₹168 [HAS-PHOTO] qty=52   img: chola-tikki-2pcs.jpg ===
+Chola Tikki (2pcs)
+168
+
+Spiced channas served over a crispy potato patty, garnished with various chutneys.
+https://tulsifoods.app/menu
+chola-tikki-2pcs
+India
+
+=== 41. Dal Makhani — ₹364 [HAS-PHOTO] qty=51   img: dal-makhani.jpg ===
+Dal Makhani
+364
+
+Slow-cooked black lentils and kidney beans in a creamy and aromatic tomato sauce.
+https://tulsifoods.app/menu
+dal-makhani
+India
+
+   === Dal Makhani (Half) — ₹220 [HAS-PHOTO]   img: dal-makhani.jpg ===
+Dal Makhani (Half)
+220
+
+Half portion. Slow-cooked black lentils and kidney beans in a creamy and aromatic tomato sauce.
+https://tulsifoods.app/menu
+dal-makhani-half
+India
+
+=== 42. Peas Paratha — ₹124 [NO-PHOTO] qty=49 ===
+Peas Paratha
+124
+
+Whole wheat paratha filled with a flavorful mixture of spiced peas.
+https://tulsifoods.app/menu
+peas-paratha
+India
+
+=== 43. Veg Briyani — ₹252 [NO-PHOTO] qty=48 ===
+Veg Briyani
+252
+
+A fragrant and flavorful rice dish cooked with mixed vegetables and biryani spices.
+https://tulsifoods.app/menu
+veg-briyani
+India
+
+=== 44. Bhel Puri — ₹112 [NO-PHOTO] qty=47 ===
+Bhel Puri
+112
+
+A delightful street food mix of puffed rice, vegetables, chutneys, and sev
+https://tulsifoods.app/menu
+bhel-puri
+India
+
+=== 45. Tea — ₹41 [HAS-PHOTO] qty=47   img: tea.jpg ===
+Tea
+41
+
+Hot and aromatic tea, served with or without milk, and customizable to taste.
+https://tulsifoods.app/menu
+tea
+India
+
+=== 46. Dahi Papdi Chat (6pcs) — ₹148 [NO-PHOTO] qty=45 ===
+Dahi Papdi Chat (6pcs)
+148
+
+Crispy papdis topped with dahi, potatoes, and a medley of chutneys.
+https://tulsifoods.app/menu
+dahi-papdi-chat-6pcs
+India
+
+=== 47. Mixed Vegetable — ₹369 [HAS-PHOTO] qty=44   img: mixed-vegetable.jpg ===
+Mixed Vegetable
+369
+
+Assorted vegetables cooked in a flavorful curry sauce.
+https://tulsifoods.app/menu
+mixed-vegetable
+India
+
+   === Mixed Vegetable (Half) — ₹220 [HAS-PHOTO]   img: mixed-vegetable.jpg ===
+Mixed Vegetable (Half)
+220
+
+Half portion. Assorted vegetables cooked in a flavorful curry sauce.
+https://tulsifoods.app/menu
+mixed-vegetable-half
+India
+
+=== 48. Channa Masala — ₹306 [HAS-PHOTO] qty=44   img: channa-masala.jpg ===
+Channa Masala
+306
+
+Spiced channas cooked in a tomato-based gravy, a popular vegetarian dish.
+https://tulsifoods.app/menu
+channa-masala
+India
+
+   === Channa Masala (Half) — ₹180 [HAS-PHOTO]   img: channa-masala.jpg ===
+Channa Masala (Half)
+180
+
+Half portion. Spiced channas cooked in a tomato-based gravy, a popular vegetarian dish.
+https://tulsifoods.app/menu
+channa-masala-half
+India
+
+=== 49. Add On Sabzi — ₹10 [NO-PHOTO] qty=41 ===
+Add On Sabzi
+10
 
 
-===== CHAATS & SNACKS =====
-Aloo Pakoda | price 104 | code aloo-pakoda | NO-PHOTO
-Aloo Sandwich | price 104 | code aloo-sandwich | NO-PHOTO
-Aloo Tikki (2pcs) | price 111 | code aloo-tikki-2pcs | HAS-PHOTO
-Bhel Puri | price 112 | code bhel-puri | NO-PHOTO
-Bread Chat | price 111 | code bread-chat | NO-PHOTO
-Chilli Cheeesetoast | price 112 | code chilli-cheeesetoast | NO-PHOTO
-Chola Tikki (2pcs) | price 168 | code chola-tikki-2pcs | HAS-PHOTO
-Churmur Chat | price 100 | code churmur-chat | NO-PHOTO
-Corn Aloo Tikki (2pcs) | price 139 | code corn-aloo-tikki-2pcs | NO-PHOTO
-Corn Cheese Sandwich | price 141 | code corn-cheese-sandwich | HAS-PHOTO
-Cutlet (2pcs) | price 100 | code cutlet-2pcs | NO-PHOTO
-Dahi Aloo Tikki (2pcs) | price 144 | code dahi-aloo-tikki-2pcs | NO-PHOTO
-Dahi Papdi Chat (6pcs) | price 148 | code dahi-papdi-chat-6pcs | NO-PHOTO
-Dahi Puri (6pcs) | price 146 | code dahi-puri-6pcs | NO-PHOTO
-Dhokla | price 111 | code dhokla | HAS-PHOTO
-Dhokla Chat | price 112 | code dhokla-chat | NO-PHOTO
-Extra Pav | price 20 | code extra-pav | NO-PHOTO
-Fruit Chaat | price 120 | code fruit-chaat | NO-PHOTO
-Garlic Bread (Cheese) | price 151 | code garlic-bread-cheese | HAS-PHOTO
-Grilled Sandwich | price 160 | code grilled-sandwich | HAS-PHOTO
-Jhal Puri | price 112 | code jhal-puri | HAS-PHOTO
-Masala Papad | price 60 | code masala-papad | HAS-PHOTO
-Mini Samosa | price 20 | code mini-samosa | NO-PHOTO
-Onion Pakoda | price 105 | code onion-pakoda | NO-PHOTO
-Paneer Sandwich | price 144 | code paneer-sandwich | NO-PHOTO
-Pani Puri | price 81 | code pani-puri | HAS-PHOTO
-Papdi Chat (6pcs) | price 100 | code papdi-chat-6pcs | HAS-PHOTO
-Pav Bhaji | price 152 | code pav-bhaji | HAS-PHOTO
-Poha | price 104 | code poha | NO-PHOTO
-Raita / Extra Curd | price 20 | code raita-extra-curd | NO-PHOTO
-Roasted Papad | price 40 | code roasted-papad | NO-PHOTO
-Sabudana Vada (2pcs) | price 142 | code sabudana-vada-2pcs | HAS-PHOTO
-Samosa (2pcs) | price 78 | code samosa-2pcs | HAS-PHOTO
-Samosa Chat | price 101 | code samosa-chat | NO-PHOTO
-Vada Pav | price 144 | code vada-pav | HAS-PHOTO
-Vegetable Sandwich | price 101 | code vegetable-sandwich | NO-PHOTO
+https://tulsifoods.app/menu
+add-on-sabzi
+India
 
-===== CHAI & BEVERAGES =====
-Badam Milkshake | price 121 | code badam-milkshake | NO-PHOTO
-Banana Milkshake | price 120 | code banana-milkshake | NO-PHOTO
-Blue Lagoon | price 100 | code blue-lagoon | NO-PHOTO
-Buttermilk | price 61 | code buttermilk | NO-PHOTO
-Cafe Latte | price 60 | code cafe-latte | NO-PHOTO
-Chocolate Milkshake | price 120 | code chocolate-milkshake | NO-PHOTO
-Cold Coffee | price 120 | code cold-coffee | NO-PHOTO
-Lassi | price 102 | code lassi | NO-PHOTO
-Lemon Tea | price 50 | code lemon-tea | NO-PHOTO
-Lemonade | price 80 | code lemonade | NO-PHOTO
-Mango Juice | price 120 | code mango-juice | NO-PHOTO
-Masala Chai | price 51 | code masala-chai | HAS-PHOTO
-Masala Thumsup | price 90 | code masala-thumsup | NO-PHOTO
-Mint Mojito | price 80 | code mint-mojito | HAS-PHOTO
-Mosambi Juice | price 121 | code mosambi-juice | NO-PHOTO
-Orange Juice | price 126 | code orange-juice | NO-PHOTO
-Oreo Milkshake | price 120 | code oreo-milkshake | NO-PHOTO
-Rose Milkshake | price 120 | code rose-milkshake | NO-PHOTO
-Tea | price 41 | code tea | HAS-PHOTO
-Vanilla Milkshake | price 120 | code vanilla-milkshake | NO-PHOTO
-Water Bottle(300 Ml) | price 10 | code water-bottle-300-ml | NO-PHOTO
-Watermelon Juice | price 101 | code watermelon-juice | NO-PHOTO
+=== 50. Vada Pav — ₹144 [HAS-PHOTO] qty=40   img: vada-pav.jpg ===
+Vada Pav
+144
 
-===== DESSERTS =====
-Chocolate Ice Cream | price 100 | code chocolate-ice-cream | NO-PHOTO
-Gulab Jamun (2Pcs) | price 100 | code gulab-jamun-2pcs | HAS-PHOTO
-Kulfi | price 120 | code kulfi | NO-PHOTO
-Mango Ice Cream | price 120 | code mango-ice-cream | NO-PHOTO
-Moong Dal Halwa | price 120 | code moong-dal-halwa | NO-PHOTO
-Rabdi | price 220 | code rabdi | NO-PHOTO
-Vanilla Ice Cream | price 120 | code vanilla-ice-cream | NO-PHOTO
+Spicy potato fritter sandwiched in a bun.
+https://tulsifoods.app/menu
+vada-pav
+India
 
-===== ITALIAN =====
-Cheese Pasta | price 251 | code cheese-pasta | NO-PHOTO
-Mini Pizza | price 60 | code mini-pizza | NO-PHOTO
-Mixed Sauce Pasta | price 244 | code mixed-sauce-pasta | NO-PHOTO
-Penne Arrabiata | price 205 | code penne-arrabiata | NO-PHOTO
-Regular Pizza | price 182 | code regular-pizza | HAS-PHOTO
-Vegetable Hakka Noodles | price 179 | code vegetable-hakka-noodles | NO-PHOTO
-White Sauce Pasta | price 203 | code white-sauce-pasta | NO-PHOTO
+=== 51. Mutter Paneer — ₹335 [NO-PHOTO] qty=40 ===
+Mutter Paneer
+335
 
-===== PARATHAS & BREADS =====
-Aloo Paratha | price 113 | code aloo-paratha | HAS-PHOTO
-Baby Cheese Naan (2pcs) | price 123 | code baby-cheese-naan-2pcs | NO-PHOTO
-Butter Naan | price 87 | code butter-naan | NO-PHOTO
-Chola Bhatura | price 253 | code chola-bhatura | HAS-PHOTO
-Extra Bhatura | price 52 | code extra-bhatura | NO-PHOTO
-Garlic Naan | price 91 | code garlic-naan | NO-PHOTO
-Gobi Paratha | price 123 | code gobi-paratha | HAS-PHOTO
-Kadai Ki Puri | price 21 | code kadai-ki-puri | NO-PHOTO
-Masala Kulcha | price 120 | code masala-kulcha | NO-PHOTO
-Mini Kulcha | price 35 | code mini-kulcha | NO-PHOTO
-Naan | price 72 | code naan | NO-PHOTO
-Paneer Paratha | price 123 | code paneer-paratha | NO-PHOTO
-Peas Paratha | price 124 | code peas-paratha | NO-PHOTO
-Phulka | price 41 | code phulka | HAS-PHOTO
-Plain Kulcha | price 80 | code plain-kulcha | NO-PHOTO
-Plain Paratha | price 50 | code plain-paratha | NO-PHOTO
-Plain Roti | price 52 | code plain-roti | NO-PHOTO
-Tandoori Roti | price 122 | code tandoori-roti | HAS-PHOTO
+Peas and paneer cubes in a rich and creamy tomato-based curry.
+https://tulsifoods.app/menu
+mutter-paneer
+India
 
-===== SABZI =====
-Aloo Dum | price 334 | code aloo-dum | NO-PHOTO
-   Aloo Dum (HALF) | price 200 | code aloo-dum-half
-Aloo Gobi | price 283 | code aloo-gobi | NO-PHOTO
-   Aloo Gobi (HALF) | price 170 | code aloo-gobi-half
-Aloo Sabzi | price 273 | code aloo-sabzi | NO-PHOTO
-   Aloo Sabzi (HALF) | price 160 | code aloo-sabzi-half
-Bhindi Ki Sabzi | price 205 | code bhindi-ki-sabzi | NO-PHOTO
-   Bhindi Ki Sabzi (HALF) | price 120 | code bhindi-ki-sabzi-half
-Channa Masala | price 306 | code channa-masala | HAS-PHOTO
-   Channa Masala (HALF) | price 180 | code channa-masala-half
-Dal Makhani | price 364 | code dal-makhani | HAS-PHOTO
-   Dal Makhani (HALF) | price 220 | code dal-makhani-half
-Dal Tadka | price 304 | code dal-tadka | NO-PHOTO
-   Dal Tadka (HALF) | price 180 | code dal-tadka-half
-Gobi Masala | price 214 | code gobi-masala | NO-PHOTO
-   Gobi Masala (HALF) | price 130 | code gobi-masala-half
-Kadi | price 210 | code kadi | NO-PHOTO
-   Kadi (HALF) | price 130 | code kadi-half
-Malai Kofta | price 354 | code malai-kofta | NO-PHOTO
-   Malai Kofta (HALF) | price 210 | code malai-kofta-half
-Mixed Vegetable | price 369 | code mixed-vegetable | HAS-PHOTO
-   Mixed Vegetable (HALF) | price 220 | code mixed-vegetable-half
-Mutter Paneer | price 335 | code mutter-paneer | NO-PHOTO
-   Mutter Paneer (HALF) | price 200 | code mutter-paneer-half
-Pakodi Ki Kadi | price 200 | code pakodi-ki-kadi | NO-PHOTO
-   Pakodi Ki Kadi (HALF) | price 120 | code pakodi-ki-kadi-half
-Palak Paneer | price 313 | code palak-paneer | NO-PHOTO
-   Palak Paneer (HALF) | price 190 | code palak-paneer-half
-Paneer Butter Masala | price 365 | code paneer-butter-masala | HAS-PHOTO
-   Paneer Butter Masala (HALF) | price 220 | code paneer-butter-masala-half
-Peas Masala | price 338 | code peas-masala | NO-PHOTO
-   Peas Masala (HALF) | price 200 | code peas-masala-half
-Vegetable Kofta | price 343 | code vegetable-kofta | NO-PHOTO
-   Vegetable Kofta (HALF) | price 210 | code vegetable-kofta-half
+   === Mutter Paneer (Half) — ₹200 [NO-PHOTO] ===
+Mutter Paneer (Half)
+200
 
-===== SOUPS & RICE =====
-Curd Rice | price 155 | code curd-rice | NO-PHOTO
-Jeera Rice | price 183 | code jeera-rice | NO-PHOTO
-Kaju Vegetable Pulao | price 350 | code kaju-vegetable-pulao | NO-PHOTO
-Peas Pulao | price 243 | code peas-pulao | HAS-PHOTO
-Plain Rice | price 131 | code plain-rice | NO-PHOTO
-Sweet Corn Soup | price 222 | code sweet-corn-soup | NO-PHOTO
-Tomato Soup | price 201 | code tomato-soup | HAS-PHOTO
-Veg Briyani | price 252 | code veg-briyani | NO-PHOTO
-Veg Fried Rice | price 215 | code veg-fried-rice | NO-PHOTO
-Vegetable Pulao | price 201 | code vegetable-pulao | NO-PHOTO
-Vegetable Soup | price 201 | code vegetable-soup | NO-PHOTO
+Half portion. Peas and paneer cubes in a rich and creamy tomato-based curry.
+https://tulsifoods.app/menu
+mutter-paneer-half
+India
 
-===== SPECIALITIES =====
-Club Kachori (6pcs) | price 196 | code club-kachori-6pcs | NO-PHOTO
-Raita (250ml) | price 100 | code raita-250ml | NO-PHOTO
+=== 52. Regular Pizza — ₹182 [HAS-PHOTO] qty=38   img: regular-pizza.jpg ===
+Regular Pizza
+182
 
-===== STARTERS =====
-Cheese Balls | price 221 | code cheese-balls | NO-PHOTO
-Cheesy Disc (2pcs) | price 132 | code cheesy-disc-2pcs | HAS-PHOTO
-Corn Cheese Bun (2pcs) | price 100 | code corn-cheese-bun-2pcs | HAS-PHOTO
-Crispy Chilly Corn | price 252 | code crispy-chilly-corn | HAS-PHOTO
-Crispy Chilly Paneer | price 300 | code crispy-chilly-paneer | NO-PHOTO
-Crispy Chilly Potato | price 227 | code crispy-chilly-potato | NO-PHOTO
-French Fries | price 181 | code french-fries | NO-PHOTO
-Garlic Bread | price 83 | code garlic-bread | NO-PHOTO
-Gobi Manchurian | price 284 | code gobi-manchurian | NO-PHOTO
-Kathi Roll | price 138 | code kathi-roll | HAS-PHOTO
-Nachos | price 225 | code nachos | NO-PHOTO
-Paneer Tikka | price 257 | code paneer-tikka | HAS-PHOTO
-Veg Burger | price 94 | code veg-burger | NO-PHOTO
+Classic pizza with a tomato sauce base, cheese, and assorted toppings.
+https://tulsifoods.app/menu
+regular-pizza
+India
 
-===== THALIS & COMBOS =====
-Add On Sabzi | price 10 | code add-on-sabzi | NO-PHOTO
-Classic Dal Rice | price 232 | code classic-dal-rice | NO-PHOTO
-Dal Makhani Rice Bowl | price 268 | code dal-makhani-rice-bowl | NO-PHOTO
-Executive Combo | price 281 | code executive-combo | NO-PHOTO
-Mini Thali | price 188 | code mini-thali | HAS-PHOTO
-North Indian Thali | price 248 | code north-indian-thali | HAS-PHOTO
-Paneer Butter Masala Rice Bowl | price 268 | code paneer-butter-masala-rice-bowl | NO-PHOTO
-Rajasthani Thali | price 599 | code rajasthani-thali | NO-PHOTO
+=== 53. Crispy Chilly Corn — ₹252 [HAS-PHOTO] qty=37   img: crispy-chilly-corn.jpg ===
+Crispy Chilly Corn
+252
+
+Golden-fried corn kernels tossed in a spicy and tangy chili seasoning
+https://tulsifoods.app/menu
+crispy-chilly-corn
+India
+
+=== 54. Vegetable Soup — ₹201 [NO-PHOTO] qty=36 ===
+Vegetable Soup
+201
+
+A hearty soup loaded with a variety of fresh vegetables, simmered to perfection.
+https://tulsifoods.app/menu
+vegetable-soup
+India
+
+=== 55. Mint Mojito — ₹80 [HAS-PHOTO] qty=35   img: mint-mojito.jpg ===
+Mint Mojito
+80
+
+A refreshing and zesty mocktail with mint, lime, and soda.
+https://tulsifoods.app/menu
+mint-mojito
+India
+
+=== 56. Moong Dal Halwa — ₹120 [NO-PHOTO] qty=34 ===
+Moong Dal Halwa
+120
+
+
+https://tulsifoods.app/menu
+moong-dal-halwa
+India
+
+=== 57. Gobi Manchurian — ₹284 [NO-PHOTO] qty=33 ===
+Gobi Manchurian
+284
+
+Crispy cauliflower florets coated in a savory, tangy Manchurian sauce.
+https://tulsifoods.app/menu
+gobi-manchurian
+India
+
+=== 58. Aloo Gobi — ₹283 [NO-PHOTO] qty=32 ===
+Aloo Gobi
+283
+
+A classic North Indian dish featuring spiced potatoes and cauliflower.
+https://tulsifoods.app/menu
+aloo-gobi
+India
+
+   === Aloo Gobi (Half) — ₹170 [NO-PHOTO] ===
+Aloo Gobi (Half)
+170
+
+Half portion. A classic North Indian dish featuring spiced potatoes and cauliflower.
+https://tulsifoods.app/menu
+aloo-gobi-half
+India
+
+=== 59. Chilli Cheeesetoast — ₹112 [NO-PHOTO] qty=32 ===
+Chilli Cheeesetoast
+112
+
+Spicy and cheesy toast sandwich with a kick of chili.
+https://tulsifoods.app/menu
+chilli-cheeesetoast
+India
+
+=== 60. Lassi — ₹102 [NO-PHOTO] qty=32 ===
+Lassi
+102
+
+Yogurt-based drink, available in sweet or savory variations.
+https://tulsifoods.app/menu
+lassi
+India
+
+=== 61. Vegetable Sandwich — ₹101 [NO-PHOTO] qty=32 ===
+Vegetable Sandwich
+101
+
+A delicious sandwich with a medley of fresh vegetables and spreads.
+https://tulsifoods.app/menu
+vegetable-sandwich
+India
+
+=== 62. Watermelon Juice — ₹101 [NO-PHOTO] qty=32 ===
+Watermelon Juice
+101
+
+Refreshing and hydrating juice made from juicy watermelon.
+https://tulsifoods.app/menu
+watermelon-juice
+India
+
+=== 63. Bhindi Ki Sabzi — ₹205 [NO-PHOTO] qty=30 ===
+Bhindi Ki Sabzi
+205
+
+Okra cooked with spices, a delicious and crunchy vegetable dish.
+https://tulsifoods.app/menu
+bhindi-ki-sabzi
+India
+
+   === Bhindi Ki Sabzi (Half) — ₹120 [NO-PHOTO] ===
+Bhindi Ki Sabzi (Half)
+120
+
+Half portion. Okra cooked with spices, a delicious and crunchy vegetable dish.
+https://tulsifoods.app/menu
+bhindi-ki-sabzi-half
+India
+
+=== 64. Club Kachori (6pcs) — ₹196 [NO-PHOTO] qty=30 ===
+Club Kachori (6pcs)
+196
+
+Small, crispy lentil-filled kachoris served with a side of Aloo sabzi
+https://tulsifoods.app/menu
+club-kachori-6pcs
+India
+
+=== 65. Aloo Sabzi — ₹273 [NO-PHOTO] qty=29 ===
+Aloo Sabzi
+273
+
+Spiced potato curry, a comforting and versatile side dish.
+https://tulsifoods.app/menu
+aloo-sabzi
+India
+
+   === Aloo Sabzi (Half) — ₹160 [NO-PHOTO] ===
+Aloo Sabzi (Half)
+160
+
+Half portion. Spiced potato curry, a comforting and versatile side dish.
+https://tulsifoods.app/menu
+aloo-sabzi-half
+India
+
+=== 66. Garlic Bread (Cheese) — ₹151 [HAS-PHOTO] qty=29   img: garlic-bread-cheese.jpg ===
+Garlic Bread (Cheese)
+151
+
+Crunchy garlic bread topped with melted cheese for the perfect savory indulgence.
+https://tulsifoods.app/menu
+garlic-bread-cheese
+India
+
+=== 67. Extra Pav — ₹20 [NO-PHOTO] qty=28 ===
+Extra Pav
+20
+
+An extra soft pav bun to go with your bhaji.
+https://tulsifoods.app/menu
+extra-pav
+India
+
+=== 68. Cheese Balls — ₹221 [NO-PHOTO] qty=27 ===
+Cheese Balls
+221
+
+Golden-fried cheese balls with a crispy outer layer and a gooey, melted cheese center
+https://tulsifoods.app/menu
+cheese-balls
+India
+
+=== 69. Classic Dal Rice — ₹232 [NO-PHOTO] qty=27 ===
+Classic Dal Rice
+232
+
+Slow-cooked yellow dal tempered with mustard seeds, ghee, and fresh coriander — served with steamed basmati rice, a fresh cucumber-tomato salad, and a pickle on the side. Light, nourishing, and full of warmth. (Serves 1)
+https://tulsifoods.app/menu
+classic-dal-rice
+India
+
+=== 70. Dahi Puri (6pcs) — ₹146 [NO-PHOTO] qty=27 ===
+Dahi Puri (6pcs)
+146
+
+Hollow puris filled with a mixture of dahi, potatoes, and tamarind chutney
+https://tulsifoods.app/menu
+dahi-puri-6pcs
+India
+
+=== 71. Malai Kofta — ₹354 [NO-PHOTO] qty=27 ===
+Malai Kofta
+354
+
+Soft and creamy paneer dumplings in a rich and aromatic tomato-based curry.
+https://tulsifoods.app/menu
+malai-kofta
+India
+
+   === Malai Kofta (Half) — ₹210 [NO-PHOTO] ===
+Malai Kofta (Half)
+210
+
+Half portion. Soft and creamy paneer dumplings in a rich and aromatic tomato-based curry.
+https://tulsifoods.app/menu
+malai-kofta-half
+India
+
+=== 72. Vegetable Hakka Noodles — ₹179 [NO-PHOTO] qty=27 ===
+Vegetable Hakka Noodles
+179
+
+Stir-fried noodles with an assortment of vegetables, flavored with Hakka spices.
+https://tulsifoods.app/menu
+vegetable-hakka-noodles
+India
+
+=== 73. Kathi Roll — ₹138 [HAS-PHOTO] qty=26   img: kathi-roll.jpg ===
+Kathi Roll
+138
+
+A rolled wrap filled with a tasty mixture of vegetables or paneer.
+https://tulsifoods.app/menu
+kathi-roll
+India
+
+=== 74. French Fries — ₹181 [NO-PHOTO] qty=25 ===
+French Fries
+181
+
+Classic golden fries, perfectly crispy on the outside and fluffy on the inside
+https://tulsifoods.app/menu
+french-fries
+India
+
+=== 75. Jeera Rice — ₹183 [NO-PHOTO] qty=23 ===
+Jeera Rice
+183
+
+Basmati rice flavored with cumin seeds, a simple and aromatic side dish.
+https://tulsifoods.app/menu
+jeera-rice
+India
+
+=== 76. Pakodi Ki Kadi — ₹200 [NO-PHOTO] qty=23 ===
+Pakodi Ki Kadi
+200
+
+
+https://tulsifoods.app/menu
+pakodi-ki-kadi
+India
+
+   === Pakodi Ki Kadi (Half) — ₹120 [NO-PHOTO] ===
+Pakodi Ki Kadi (Half)
+120
+
+Half portion. 
+https://tulsifoods.app/menu
+pakodi-ki-kadi-half
+India
+
+=== 77. Dal Makhani Rice Bowl — ₹268 [NO-PHOTO] qty=22 ===
+Dal Makhani Rice Bowl
+268
+
+Our signature dal makhani — whole black lentils and kidney beans slow-cooked overnight in a buttery tomato gravy, finished with a swirl of cream and a sprig of coriander. Served with steamed basmati rice, fresh salad, and pickle. (Serves 1)
+https://tulsifoods.app/menu
+dal-makhani-rice-bowl
+India
+
+=== 78. Roasted Papad — ₹40 [NO-PHOTO] qty=22 ===
+Roasted Papad
+40
+
+Plain papad roasted to perfection, a crispy and light appetizer.
+https://tulsifoods.app/menu
+roasted-papad
+India
+
+=== 79. Sweet Corn Soup — ₹222 [NO-PHOTO] qty=22 ===
+Sweet Corn Soup
+222
+
+A creamy and comforting soup featuring sweet corn kernels and vegetables.
+https://tulsifoods.app/menu
+sweet-corn-soup
+India
+
+=== 80. Paneer Butter Masala Rice Bowl — ₹268 [NO-PHOTO] qty=21 ===
+Paneer Butter Masala Rice Bowl
+268
+
+Tender cottage cheese cubes dunked in a rich, mildly spiced tomato-butter-cashew gravy, topped with fresh cream and coriander. Served with steamed basmati rice, cucumber-tomato salad, and tangy pickle. (Serves 1)
+https://tulsifoods.app/menu
+paneer-butter-masala-rice-bowl
+India
+
+=== 81. Paneer Sandwich — ₹144 [NO-PHOTO] qty=21 ===
+Paneer Sandwich
+144
+
+A satisfying sandwich with a filling of marinated and grilled paneer.
+https://tulsifoods.app/menu
+paneer-sandwich
+India
+
+=== 82. Corn Cheese Sandwich — ₹141 [HAS-PHOTO] qty=20   img: corn-cheese-sandwich.jpg ===
+Corn Cheese Sandwich
+141
+
+Delicious corn and cheese filling between slices of bread, grilled to perfection.
+https://tulsifoods.app/menu
+corn-cheese-sandwich
+India
+
+=== 83. Grilled Sandwich — ₹160 [HAS-PHOTO] qty=20   img: grilled-sandwich.jpg ===
+Grilled Sandwich
+160
+
+A wholesome sandwich with a variety of fillings, grilled to perfection.
+https://tulsifoods.app/menu
+grilled-sandwich
+India
+
+=== 84. Aloo Pakoda — ₹104 [NO-PHOTO] qty=19 ===
+Aloo Pakoda
+104
+
+Crispy and spiced deep-fried potato fritters.
+https://tulsifoods.app/menu
+aloo-pakoda
+India
+
+=== 85. Aloo Sandwich — ₹104 [NO-PHOTO] qty=19 ===
+Aloo Sandwich
+104
+
+Simple yet flavorful sandwich with a filling of spiced mashed potatoes.
+https://tulsifoods.app/menu
+aloo-sandwich
+India
+
+=== 86. Extra Bhatura — ₹52 [NO-PHOTO] qty=19 ===
+Extra Bhatura
+52
+
+An extra fluffy bhatura to go with your chole.
+https://tulsifoods.app/menu
+extra-bhatura
+India
+
+=== 87. White Sauce Pasta — ₹203 [NO-PHOTO] qty=19 ===
+White Sauce Pasta
+203
+
+Pasta coated in a luscious white sauce, rich with cream and cheese.
+https://tulsifoods.app/menu
+white-sauce-pasta
+India
+
+=== 88. Cheese Pasta — ₹251 [NO-PHOTO] qty=18 ===
+Cheese Pasta
+251
+
+Creamy pasta with a rich cheese sauce, a comforting and indulgent choice.
+https://tulsifoods.app/menu
+cheese-pasta
+India
+
+=== 89. Tandoori Roti — ₹122 [HAS-PHOTO] qty=18   img: tandoori-roti.jpg ===
+Tandoori Roti
+122
+
+Round flatbread cooked in a tandoor, lending it a smoky flavor.
+https://tulsifoods.app/menu
+tandoori-roti
+India
+
+=== 90. Masala Thumsup — ₹90 [NO-PHOTO] qty=17 ===
+Masala Thumsup
+90
+
+Spiced and flavored version of the popular cola, Thums Up.
+https://tulsifoods.app/menu
+masala-thumsup
+India
+
+=== 91. Samosa Chat — ₹101 [NO-PHOTO] qty=17 ===
+Samosa Chat
+101
+
+Samosa broken into pieces and topped with chutneys and spices.
+https://tulsifoods.app/menu
+samosa-chat
+India
+
+=== 92. Chocolate Ice Cream — ₹100 [NO-PHOTO] qty=16 ===
+Chocolate Ice Cream
+100
+
+Decadent chocolate-infused frozen goodness, a heavenly delight for chocolate enthusiasts.
+https://tulsifoods.app/menu
+chocolate-ice-cream
+India
+
+=== 93. Jhal Puri — ₹112 [HAS-PHOTO] qty=16   img: jhal-puri.jpg ===
+Jhal Puri
+112
+
+Crispy, hollow puris filled with spicy tamarind water, potatoes, and channas
+https://tulsifoods.app/menu
+jhal-puri
+India
+
+=== 94. Penne Arrabiata — ₹205 [NO-PHOTO] qty=16 ===
+Penne Arrabiata
+205
+
+Penne pasta in a spicy and tangy tomato-based arrabiata sauce.
+https://tulsifoods.app/menu
+penne-arrabiata
+India
+
+=== 95. Veg Fried Rice — ₹215 [NO-PHOTO] qty=16 ===
+Veg Fried Rice
+215
+
+Fragrant and flavorful fried rice loaded with mixed vegetables.
+https://tulsifoods.app/menu
+veg-fried-rice
+India
+
+=== 96. Mixed Sauce Pasta — ₹244 [NO-PHOTO] qty=15 ===
+Mixed Sauce Pasta
+244
+
+Pasta with a medley of white and red sauces, creating a creamy and flavorful dish.
+https://tulsifoods.app/menu
+mixed-sauce-pasta
+India
+
+=== 97. Naan — ₹72 [NO-PHOTO] qty=15 ===
+Naan
+72
+
+Soft and fluffy leavened bread, ideal for sopping up rich gravies
+https://tulsifoods.app/menu
+naan
+India
+
+=== 98. Plain Kulcha — ₹80 [NO-PHOTO] qty=15 ===
+Plain Kulcha
+80
+
+Soft and mildly leavened Indian bread, perfect for scooping up curries.
+https://tulsifoods.app/menu
+plain-kulcha
+India
+
+=== 99. Peas Pulao — ₹243 [HAS-PHOTO] qty=14   img: peas-pulao.jpg ===
+Peas Pulao
+243
+
+Basmati rice cooked with green peas and aromatic spices.
+https://tulsifoods.app/menu
+peas-pulao
+India
+
+=== 100. Vanilla Ice Cream — ₹120 [NO-PHOTO] qty=14 ===
+Vanilla Ice Cream
+120
+
+Classic vanilla-flavored frozen delight, a timeless treat for any dessert lover.
+https://tulsifoods.app/menu
+vanilla-ice-cream
+India
+
+=== 101. Onion Pakoda — ₹105 [NO-PHOTO] qty=14 ===
+Onion Pakoda
+105
+
+
+https://tulsifoods.app/menu
+onion-pakoda
+India
+
+=== 102. Plain Rice — ₹131 [NO-PHOTO] qty=14 ===
+Plain Rice
+131
+
+Steamed white rice
+https://tulsifoods.app/menu
+plain-rice
+India
+
+=== 103. Rabdi — ₹220 [NO-PHOTO] qty=14 ===
+Rabdi
+220
+
+Indulgent and creamy dessert made by reducing sweetened milk to a thick, luscious consistency
+https://tulsifoods.app/menu
+rabdi
+India
+
+=== 104. Corn Aloo Tikki (2pcs) — ₹139 [NO-PHOTO] qty=13 ===
+Corn Aloo Tikki (2pcs)
+139
+
+A flavorful combination of corn and potato formed into delicious tikkis.
+https://tulsifoods.app/menu
+corn-aloo-tikki-2pcs
+India
+
+=== 105. Garlic Bread — ₹83 [NO-PHOTO] qty=13 ===
+Garlic Bread
+83
+
+Crunchy garlic bread topped with melted cheese for the perfect savory indulgence.
+https://tulsifoods.app/menu
+garlic-bread
+India
+
+=== 106. Raita (250ml) — ₹100 [NO-PHOTO] qty=13 ===
+Raita (250ml)
+100
+
+
+https://tulsifoods.app/menu
+raita-250ml
+India
+
+=== 107. Baby Cheese Naan (2pcs) — ₹123 [NO-PHOTO] qty=12 ===
+Baby Cheese Naan (2pcs)
+123
+
+Baby Naan filled with cheese and brushed with butter for an extra layer of richness.
+https://tulsifoods.app/menu
+baby-cheese-naan-2pcs
+India
+
+=== 108. Chocolate Milkshake — ₹120 [NO-PHOTO] qty=12 ===
+Chocolate Milkshake
+120
+
+Rich and chocolaty milkshake, a delightful treat for chocolate lovers.
+https://tulsifoods.app/menu
+chocolate-milkshake
+India
+
+=== 109. Gobi Masala — ₹214 [NO-PHOTO] qty=12 ===
+Gobi Masala
+214
+
+Cauliflower florets cooked in a flavorful and spiced tomato-based sauce.
+https://tulsifoods.app/menu
+gobi-masala
+India
+
+   === Gobi Masala (Half) — ₹130 [NO-PHOTO] ===
+Gobi Masala (Half)
+130
+
+Half portion. Cauliflower florets cooked in a flavorful and spiced tomato-based sauce.
+https://tulsifoods.app/menu
+gobi-masala-half
+India
+
+=== 110. Crispy Chilly Paneer — ₹300 [NO-PHOTO] qty=10 ===
+Crispy Chilly Paneer
+300
+
+Pan-fried paneer cubes coated in a spicy and flavorful chili glaze
+https://tulsifoods.app/menu
+crispy-chilly-paneer
+India
+
+=== 111. Dhokla Chat — ₹112 [NO-PHOTO] qty=10 ===
+Dhokla Chat
+112
+
+A chat variation featuring bite-sized dhokla pieces topped with chutneys and spices.
+https://tulsifoods.app/menu
+dhokla-chat
+India
+
+=== 112. Kadai Ki Puri — ₹21 [NO-PHOTO] qty=10 ===
+Kadai Ki Puri
+21
+
+Soft-round fried wheat based traditional puris
+https://tulsifoods.app/menu
+kadai-ki-puri
+India
+
+=== 113. Oreo Milkshake — ₹120 [NO-PHOTO] qty=9 ===
+Oreo Milkshake
+120
+
+Creamy and indulgent milkshake made with Oreo cookies.
+https://tulsifoods.app/menu
+oreo-milkshake
+India
+
+=== 114. Crispy Chilly Potato — ₹227 [NO-PHOTO] qty=8 ===
+Crispy Chilly Potato
+227
+
+Crispy fried potato slices tossed in a spicy and tangy chili sauce.
+https://tulsifoods.app/menu
+crispy-chilly-potato
+India
+
+=== 115. Dahi Aloo Tikki (2pcs) — ₹144 [NO-PHOTO] qty=8 ===
+Dahi Aloo Tikki (2pcs)
+144
+
+Crispy potato patties topped with dahi, chutneys, and spices.
+https://tulsifoods.app/menu
+dahi-aloo-tikki-2pcs
+India
+
+=== 116. Palak Paneer — ₹313 [NO-PHOTO] qty=8 ===
+Palak Paneer
+313
+
+Cubes of paneer in a creamy spinach gravy, a nutritious and delicious dish.
+https://tulsifoods.app/menu
+palak-paneer
+India
+
+   === Palak Paneer (Half) — ₹190 [NO-PHOTO] ===
+Palak Paneer (Half)
+190
+
+Half portion. Cubes of paneer in a creamy spinach gravy, a nutritious and delicious dish.
+https://tulsifoods.app/menu
+palak-paneer-half
+India
+
+=== 117. Aloo Dum — ₹334 [NO-PHOTO] qty=7 ===
+Aloo Dum
+334
+
+Potatoes cooked in a rich and flavorful gravy, a perfect accompaniment.
+https://tulsifoods.app/menu
+aloo-dum
+India
+
+   === Aloo Dum (Half) — ₹200 [NO-PHOTO] ===
+Aloo Dum (Half)
+200
+
+Half portion. Potatoes cooked in a rich and flavorful gravy, a perfect accompaniment.
+https://tulsifoods.app/menu
+aloo-dum-half
+India
+
+=== 118. Badam Milkshake — ₹121 [NO-PHOTO] qty=7 ===
+Badam Milkshake
+121
+
+A nourishing milkshake made with almond paste.
+https://tulsifoods.app/menu
+badam-milkshake
+India
+
+=== 119. Curd Rice — ₹155 [NO-PHOTO] qty=7 ===
+Curd Rice
+155
+
+A South Indian dish featuring rice mixed with dahi and seasoned with spices.
+https://tulsifoods.app/menu
+curd-rice
+India
+
+=== 120. Kadi — ₹210 [NO-PHOTO] qty=7 ===
+Kadi
+210
+
+Dahi-based curry with besan dumplings, tempered with spices.
+https://tulsifoods.app/menu
+kadi
+India
+
+   === Kadi (Half) — ₹130 [NO-PHOTO] ===
+Kadi (Half)
+130
+
+Half portion. Dahi-based curry with besan dumplings, tempered with spices.
+https://tulsifoods.app/menu
+kadi-half
+India
+
+=== 121. Mango Ice Cream — ₹120 [NO-PHOTO] qty=7 ===
+Mango Ice Cream
+120
+
+
+https://tulsifoods.app/menu
+mango-ice-cream
+India
+
+=== 122. Plain Roti — ₹52 [NO-PHOTO] qty=7 ===
+Plain Roti
+52
+
+Traditional unleavened flatbread, perfect for pairing with a variety of dishes.
+https://tulsifoods.app/menu
+plain-roti
+India
+
+=== 123. Rose Milkshake — ₹120 [NO-PHOTO] qty=6 ===
+Rose Milkshake
+120
+
+Refreshing milkshake flavored with the essence of rose petals.
+https://tulsifoods.app/menu
+rose-milkshake
+India
+
+=== 124. Veg Burger — ₹94 [NO-PHOTO] qty=6 ===
+Veg Burger
+94
+
+A hearty vegetarian burger with a flavorful patty, fresh veggies, and a zesty dressing.
+https://tulsifoods.app/menu
+veg-burger
+India
+
+=== 125. Bread Chat — ₹111 [NO-PHOTO] qty=5 ===
+Bread Chat
+111
+
+A unique and delicious chat preparation with bite-sized bread pieces and flavorful toppings.
+https://tulsifoods.app/menu
+bread-chat
+India
+
+=== 126. Kaju Vegetable Pulao — ₹350 [NO-PHOTO] qty=5 ===
+Kaju Vegetable Pulao
+350
+
+
+https://tulsifoods.app/menu
+kaju-vegetable-pulao
+India
+
+=== 127. Mango Juice — ₹120 [NO-PHOTO] qty=5 ===
+Mango Juice
+120
+
+
+https://tulsifoods.app/menu
+mango-juice
+India
+
+=== 128. Peas Masala — ₹338 [NO-PHOTO] qty=4 ===
+Peas Masala
+338
+
+A flavorful curry made with green peas in a spiced tomato-based sauce.
+https://tulsifoods.app/menu
+peas-masala
+India
+
+   === Peas Masala (Half) — ₹200 [NO-PHOTO] ===
+Peas Masala (Half)
+200
+
+Half portion. A flavorful curry made with green peas in a spiced tomato-based sauce.
+https://tulsifoods.app/menu
+peas-masala-half
+India
+
+=== 129. Rajasthani Thali — ₹599 [NO-PHOTO] qty=4 ===
+Rajasthani Thali
+599
+
+A combo a rajsthani flavours (sweet, dal baati, kadi pulao, missi roti, gatte ki sabzi)
+https://tulsifoods.app/menu
+rajasthani-thali
+India
+
+=== 130. Churmur Chat — ₹100 [NO-PHOTO] qty=3 ===
+Churmur Chat
+100
+
+Puffed rice mixed with spiced peas, onion, chutney and sev.
+https://tulsifoods.app/menu
+churmur-chat
+India
+
+=== 131. Cold Coffee — ₹120 [NO-PHOTO] qty=3 ===
+Cold Coffee
+120
+
+Chilled and creamy coffee beverage
+https://tulsifoods.app/menu
+cold-coffee
+India
+
+=== 132. Lemon Tea — ₹50 [NO-PHOTO] qty=3 ===
+Lemon Tea
+50
+
+
+https://tulsifoods.app/menu
+lemon-tea
+India
+
+=== 133. Blue Lagoon — ₹100 [NO-PHOTO] qty=2 ===
+Blue Lagoon
+100
+
+A vibrant and colorful mocktail featuring blue cura?ao and citrus flavors.
+https://tulsifoods.app/menu
+blue-lagoon
+India
+
+=== 134. Mini Pizza — ₹60 [NO-PHOTO] qty=2 ===
+Mini Pizza
+60
+
+
+https://tulsifoods.app/menu
+mini-pizza
+India
+
+=== 135. Nachos — ₹225 [NO-PHOTO] qty=2 ===
+Nachos
+225
+
+Crispy tortilla chips generously topped with melted cheese and salsa.
+https://tulsifoods.app/menu
+nachos
+India
+
+=== 136. Orange Juice — ₹126 [NO-PHOTO] qty=2 ===
+Orange Juice
+126
+
+Freshly squeezed orange juice, a burst of citrusy goodness.
+https://tulsifoods.app/menu
+orange-juice
+India
+
+=== 137. Vanilla Milkshake — ₹120 [NO-PHOTO] qty=2 ===
+Vanilla Milkshake
+120
+
+Classic and timeless milkshake with the pure and sweet flavor of vanilla.
+https://tulsifoods.app/menu
+vanilla-milkshake
+India
+
+=== 138. Banana Milkshake — ₹120 [NO-PHOTO] qty=1 ===
+Banana Milkshake
+120
+
+A smooth and creamy milkshake featuring the natural sweetness of bananas.
+https://tulsifoods.app/menu
+banana-milkshake
+India
+
+=== 139. Mini Kulcha — ₹35 [NO-PHOTO] qty=1 ===
+Mini Kulcha
+35
+
+
+https://tulsifoods.app/menu
+mini-kulcha
+India
+
+=== 140. Raita / Extra Curd — ₹20 [NO-PHOTO] qty=1 ===
+Raita / Extra Curd
+20
+
+Extra fresh curd to cool things down.
+https://tulsifoods.app/menu
+raita-extra-curd
+India
+
+=== 141. Fruit Chaat — ₹120 [NO-PHOTO] qty=0 ===
+Fruit Chaat
+120
+
+Fresh seasonal fruits like papaya, bananas, and pomegranates chopped and tossed with lemon juice, black salt, roasted cumin powder, and chaat masala.
+https://tulsifoods.app/menu
+fruit-chaat
+India

@@ -76,10 +76,33 @@ def _row(item: dict, photos: set[str]) -> list[str]:
     ]
 
 
-def catalog_rows() -> list[list[str]]:
+def _menu_in_priority_order() -> list[dict]:
+    items = menu.load_menu()
+    parents = sorted(
+        (m for m in items if not m["id"].endswith(HALF_SUFFIX)),
+        key=lambda m: (-(m.get("qty_2mo") or 0), (m.get("name") or "").lower()),
+    )
+    ordered: list[dict] = []
+    for parent in parents:
+        ordered.append(parent)
+        if parent.get("half_price"):
+            half = dict(parent)
+            half["id"] = parent["id"] + HALF_SUFFIX
+            half["name"] = f"{parent['name']} (Half)"
+            half["price"] = parent["half_price"]
+            half["popular"] = False
+            half["photo_id"] = parent["id"]
+            ordered.append(half)
+    return ordered
+
+
+def catalog_rows_prioritized() -> list[list[str]]:
     photos = dish_photo_ids()
-    items = sorted(menu.menu_for(), key=lambda i: (i["group"], i["name"].lower()))
-    return [_row(item, photos) for item in items]
+    return [_row(item, photos) for item in _menu_in_priority_order()]
+
+
+def catalog_rows() -> list[list[str]]:
+    return catalog_rows_prioritized()
 
 
 def catalog_csv() -> str:
