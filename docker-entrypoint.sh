@@ -10,9 +10,10 @@ fi
 
 mkdir -p /app/data
 
-# Seed menu from bundled file on first boot (works on both Fly and Railway).
-if [ ! -f /app/data/menu.json ]; then
-    cp /app/menu.json.bundled /app/data/menu.json
-fi
+# menu.json is repo-managed — scripts/build_menu.py and scripts/merge_petpooja.py
+# are the only writers, nothing touches it at runtime. So always sync the bundled
+# copy over the volume's, or the first boot's copy never updates (new items and
+# half_price fields silently go stale on every future release).
+cp /app/menu.json.bundled /app/data/menu.json
 
 exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}"
