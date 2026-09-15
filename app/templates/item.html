@@ -105,16 +105,18 @@
     <h2>More {{ item.group|lower }} from the menu</h2>
     <p class="related-note">These go well or cook the same way — order a couple together.</p>
     {% for r in related %}
-    <a class="rel-card" href="/menu/{{ r.id.split('__')[0] }}">
-      {% if r.photo_id in dish_photos %}
-      <div class="rel-photo"><img src="/static/img/dishes/{{ r.photo_id }}.jpg" alt="{{ r.name }}" loading="lazy" width="48" height="48"></div>
-      {% endif %}
-      <div class="rel-body">
-        <div class="rel-name"><span class="veg-mark" aria-hidden="true"></span>{{ r.name }}</div>
-        <div class="rel-sub">₹{{ r.price }}{% if r.popular %} · popular{% endif %}</div>
-      </div>
-      <span class="rel-arrow">→</span>
-    </a>
+    <div class="rel-card">
+      <a class="rel-main" href="/menu/{{ r.id.split('__')[0] }}">
+        {% if r.photo_id in dish_photos %}
+        <div class="rel-photo"><img src="/static/img/dishes/{{ r.photo_id }}.jpg" alt="{{ r.name }}" loading="lazy" width="48" height="48"></div>
+        {% endif %}
+        <div class="rel-body">
+          <div class="rel-name"><span class="veg-mark" aria-hidden="true"></span>{{ r.name }}</div>
+          <div class="rel-sub">₹{{ r.price }}{% if r.popular %} · popular{% endif %}</div>
+        </div>
+      </a>
+      <div class="rel-stepper" data-id="{{ r.id.split('__')[0] }}" data-price="{{ r.price }}" data-name="{{ r.name }}"></div>
+    </div>
     {% endfor %}
     <a class="rel-all" href="/menu">View the full Tulsi Foods menu →</a>
   </section>
@@ -204,7 +206,8 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
 
 .related { padding-bottom: 8px; }
 .related-note { font-size: 13px; color: var(--sub); margin-bottom: 12px; }
-.rel-card { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; text-decoration: none; color: var(--ink); margin-bottom: 10px; }
+.rel-card { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; margin-bottom: 10px; }
+.rel-main { display: flex; align-items: center; gap: 12px; flex: 1; text-decoration: none; color: var(--ink); min-width: 0; }
 .rel-photo { width: 48px; height: 48px; flex: 0 0 auto; border-radius: 10px; overflow: hidden; }
 .rel-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rel-body { flex: 1; }
@@ -212,7 +215,12 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
 .rel-name .veg-mark { width: 10px; height: 10px; }
 .rel-name .veg-mark::after { width: 5px; height: 5px; }
 .rel-sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
-.rel-arrow { color: var(--g); font-size: 16px; }
+.rel-stepper { flex: none; display: flex; align-items: center; gap: 6px; }
+.rs-btn { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--g); background: #fff; color: var(--g); font-size: 17px; font-weight: 700; line-height: 1; cursor: pointer; }
+.rs-btn:hover { background: #EDF6E2; }
+.rs-btn.minus { color: #B3261E; border-color: #E2CCC0; }
+.rs-btn.minus:hover { background: #FBEAE5; }
+.rs-qty { font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; font-weight: 700; min-width: 20px; text-align: center; }
 .rel-all { display: inline-block; font: 600 13px 'IBM Plex Mono', monospace; color: var(--g); text-decoration: none; margin-top: 4px; }
 .rel-all:hover { text-decoration: underline; }
 
@@ -259,6 +267,35 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
   }
 
   const save = () => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (_) {} };
+
+  const steppers = Array.from(document.querySelectorAll(".rel-stepper"));
+  const renderSteppers = () => {
+    steppers.forEach((el) => {
+      const id = el.dataset.id;
+      const qty = cart[id] || 0;
+      el.innerHTML = qty > 0
+        ? `<button type="button" class="rs-btn minus" aria-label="Decrease quantity">−</button>
+           <span class="rs-qty">${qty}</span>
+           <button type="button" class="rs-btn" aria-label="Increase quantity">+</button>`
+        : `<button type="button" class="rs-btn" aria-label="Add ${el.dataset.name} to cart">+</button>`;
+    });
+  };
+  steppers.forEach((el) => {
+    const id = el.dataset.id;
+    el.addEventListener("click", (e) => {
+      const t = e.target;
+      if (!t.classList.contains("rs-btn")) return;
+      const cur = cart[id] || 0;
+      if (t.classList.contains("minus")) {
+        if (cur <= 1) delete cart[id]; else cart[id] = cur - 1;
+      } else {
+        cart[id] = Math.min((cur || 0) + 1, 20);
+      }
+      save();
+      renderSteppers();
+    });
+  });
+  renderSteppers();
 
   minus.addEventListener("click", () => { if (qty > 1) { qty--; qtyEl.textContent = qty; } });
   plus.addEventListener("click", () => { if (qty < 20) { qty++; qtyEl.textContent = qty; } });
