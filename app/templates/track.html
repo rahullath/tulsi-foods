@@ -73,6 +73,7 @@
   ];
   const CANCELED = "cancelled";
   const ORDER_ID = {{ order_id }};
+  const TRACKING_TOKEN = {{ tracking_token | tojson }};
 
   function toDate(s) {
     if (!s) return null;
@@ -105,7 +106,7 @@
   async function refresh() {
     let o;
     try {
-      const r = await fetch(`/api/orders/${ORDER_ID}`);
+      const r = await fetch(`/api/orders/${TRACKING_TOKEN}`);
       if (!r.ok) { document.getElementById('card').innerHTML = '<div class="err">Order not found.</div>'; return; }
       o = await r.json();
     } catch (e) { return; }

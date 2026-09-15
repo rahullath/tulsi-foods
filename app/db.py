@@ -161,6 +161,20 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE orders ADD COLUMN petpooja_order_id TEXT")
     if not _has_col("orders", "petpooja_synced_at"):
         conn.execute("ALTER TABLE orders ADD COLUMN petpooja_synced_at TEXT")
+    if not _has_col("orders", "tracking_token"):
+        conn.execute("ALTER TABLE orders ADD COLUMN tracking_token TEXT")
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_tracking_token ON orders(tracking_token)")
+    # Backfill a token for any older orders that predate this column, so every
+    # order — new and old — gets a guess-proof tracking reference.
+    missing = conn.execute(
+        "SELECT id FROM orders WHERE tracking_token IS NULL OR tracking_token = ''"
+    ).fetchall()
+    if missing:
+        import secrets as _secrets
+        _alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        for row in missing:
+            token = "".join(_secrets.choice(_alphabet) for _ in range(8))
+            conn.execute("UPDATE orders SET tracking_token=? WHERE id=?", (token, row["id"]))
     # store_status table (may not exist in older databases)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS store_status ("
@@ -309,18 +323,19 @@ def create_order(customer_id: int, order_type: str, subtotal: float,
                  address_flagged: bool = False,
                  address_flag_reason: str | None = None,
                  packing_fee: float = 0.0,
-                 gst_amount: float = 0.0) -> int:
+                 gst_amount: float = 0.0,
+                 tracking_token: str | None = None) -> int:
     conn = get_conn()
     cur = conn.execute(
         "INSERT INTO orders(customer_id, status, order_type, subtotal, delivery_fee, "
         "packing_fee, gst_amount, total, payment_method, instructions, delivery_address, "
         "delivery_pincode, delivery_lat, delivery_lng, scheduled_at, address_flagged, "
-        "address_flag_reason) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "address_flag_reason, tracking_token) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (customer_id, "new", order_type, subtotal, delivery_fee, packing_fee, gst_amount,
          total, payment_method, instructions, delivery_address, delivery_pincode,
          delivery_lat, delivery_lng, scheduled_at,
-         1 if address_flagged else 0, address_flag_reason),
+         1 if address_flagged else 0, address_flag_reason, tracking_token),
     )
     oid = cur.lastrowid
     conn.executemany(
@@ -378,6 +393,44 @@ def get_order(order_id: int) -> dict | None:
     d = dict(o)
     d["items"] = [dict(i) for i in items]
     return d
+
+
+def get_order_by_token(tracking_token: str) -> dict | None:
+    """Look up an order by its unguessable tracking token (public tracking)."""
+    conn = get_conn()
+    o = conn.execute(
+        "SELECT o.*, c.name AS customer_name, c.phone AS customer_phone, "
+        "       c.address AS customer_address "
+        "FROM orders o LEFT JOIN customers c ON c.id=o.customer_id "
+        "WHERE o.tracking_token=?", (tracking_token,),
+    ).fetchone()
+    if not o:
+        conn.close()
+        return None
+    items = conn.execute(
+        "SELECT item_id, name, price, qty FROM order_items WHERE order_id=?",
+        (o["id"],),
+    ).fetchall()
+    conn.close()
+    d = dict(o)
+    d["items"] = [dict(i) for i in items]
+    return d
+
+
+def get_orders_by_phone(phone: str, limit: int = 5) -> list[dict]:
+    """Recent orders for a phone number (for the /track lookup). Cancelled
+    orders excluded so customers only see live ones."""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT o.id, o.tracking_token, o.status, o.total, o.created_at, "
+        "       o.scheduled_at, o.order_type "
+        "FROM orders o JOIN customers c ON c.id=o.customer_id "
+        "WHERE c.phone=? AND o.status != 'cancelled' "
+        "ORDER BY o.id DESC LIMIT ?",
+        (phone, limit),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def update_order_status(order_id: int, status: str) -> None:

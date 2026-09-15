@@ -37,7 +37,7 @@
   <main id="menu-main">
     {% for g in groups %}
     <section class="group" id="g-{{ loop.index }}">
-      <h2>{{ g["group"] }}</h2>
+      <h2>{{ g["group"] }} <a class="cat-link" href="/category/{{ g.get('slug', '') }}">view full category &rarr;</a></h2>
       {% for it in g["items"] %}
       <div class="menu-card{% if not it.available %} off{% endif %}" data-id="{{ it.id }}" data-name="{{ it.name|lower }}" data-popular="{{ 'true' if it.popular else 'false' }}">
         {% if it.photo_id in dish_photos %}
@@ -135,7 +135,9 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 /* Menu main */
 main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .group { scroll-margin-top: 64px; }
-.group h2 { font-size: 16px; margin: 20px 0 10px; color: var(--ink); font-weight: 600; }
+.group h2 { font-size: 16px; margin: 20px 0 10px; color: var(--ink); font-weight: 600; display: flex; gap: 10px; }
+.cat-link { font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--g); text-decoration: none; align-self: baseline; letter-spacing: .03em; }
+.cat-link:hover { text-decoration: underline; }
 .group:first-child h2 { margin-top: 0; }
 
 /* Item card */
@@ -241,6 +243,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   const PICKUP_LNG = {{ pickup_lng }};
   const ZONES = {{ zones | tojson }};
   const FREE_DELIVERY_ABOVE = {{ free_delivery_above }};
+  const FREE_DELIVERY_ENABLED = {{ 'true' if delivery_free_enabled else 'false' }};
   const PICKUP_NOTE = "Pickup at 34 Murrays Gate Road, Alwarpet — ready in about 20\u201325 min.";
   const GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
   const PACKING_FEE = {{ packing_fee }};
@@ -517,12 +520,46 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         if (km <= z.max_km) {
           return {
             zone: z.name, km,
-            fee: subtotal >= FREE_DELIVERY_ABOVE ? 0 : z.fee,
+            fee: FREE_DELIVERY_ENABLED && subtotal >= FREE_DELIVERY_ABOVE ? 0 : z.fee,
             min_order: z.min_order, outside: false,
           };
         }
       }
       return { zone: null, km, fee: null, min_order: null, outside: true };
+    }
+
+    // Live courier quote (Borzo) — served from /api/delivery/quote, cached
+    // server-side. The zone table (`q`) shows instantly as a placeholder;
+    // the server quote replaces it when it lands, so the number the customer
+    // sees is the real courier rate, not our distance table.
+    let liveQuote = null;       // {fee, serviceable, min_order, provider, ...}
+    let liveQuoteKey = null;    // pin+subtotal key the cached quote covers
+    let quoteTimer = null, quoteSeq = 0;
+
+    function liveQuoteContext() {
+      const lat = parseFloat(overlay.querySelector("#input-lat")?.value);
+      const lng = parseFloat(overlay.querySelector("#input-lng")?.value);
+      const subtotal = Object.keys(cart).reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
+      if (!isFinite(lat) || !isFinite(lng)) return null;
+      return { key: `${lat.toFixed(4)},${lng.toFixed(4)},${subtotal}`, lat, lng, subtotal };
+    }
+
+    function scheduleLiveQuote() {
+      const ctx = liveQuoteContext();
+      if (!ctx) { liveQuote = null; liveQuoteKey = null; return; }
+      if (ctx.key === liveQuoteKey) return; // already quoted for this pin+amount
+      clearTimeout(quoteTimer);
+      const seq = ++quoteSeq;
+      quoteTimer = setTimeout(async () => {
+        try {
+          const r = await fetch(`/api/delivery/quote?lat=${ctx.lat}&lng=${ctx.lng}&subtotal=${Math.round(ctx.subtotal)}`);
+          const d = await r.json();
+          if (seq !== quoteSeq || !d || d.serviceable === false) { liveQuote = null; return; }
+          liveQuote = d;
+          liveQuoteKey = ctx.key;
+          refreshCheckoutSummary();
+        } catch (_) { liveQuote = null; }
+      }, 300);
     }
 
     function refreshCheckoutSummary() {
@@ -535,23 +572,26 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 
       let deliveryRow, deliveryNote;
       if (isDelivery) {
-        if (q && q.outside) {
+        const eff = (liveQuote && liveQuote.serviceable) ? liveQuote : q;
+        if (eff && eff.outside) {
           deliveryRow = `<div class="checkout-row" style="color:#B3261E"><span>Delivery</span><span>Outside our area — pickup instead</span></div>`;
-          deliveryNote = `<span style="color:#B3261E">We don't deliver ${q.km ? Math.round(q.km) + " km away" : "that far"}. Pickup is in Alwarpet.</span>`;
-        } else if (q) {
-          deliveryRow = `<div class="checkout-row"><span>Delivery (est.)</span><span>${q.fee ? "~₹" + q.fee : "FREE (est.)"}</span></div>`;
-          deliveryNote = `Estimated from your area. ${FREE_DELIVERY_ABOVE > 0 && q.fee ? `Free over ₹${FREE_DELIVERY_ABOVE}. ` : ""}Kitchen confirms the exact fee.${
-            currentSubtotal && currentSubtotal < q.min_order
-            ? ` <span style="color:#B3261E">Minimum order here is ₹${q.min_order}.</span>` : ""}`;
+          deliveryNote = `<span style="color:#B3261E">We don't deliver ${eff.km ? Math.round(eff.km) + " km away" : "that far"}. Pickup is in Alwarpet.</span>`;
+        } else if (eff) {
+          const liveFee = Number(eff.fee) || 0;
+          deliveryRow = `<div class="checkout-row"><span>Delivery (est.)</span><span>${liveFee ? "~₹" + Math.round(liveFee) : "FREE (est.)"}</span></div>`;
+          deliveryNote = `${liveQuote ? "Live courier rate. " : "Estimated from your area. "}Kitchen confirms the exact fee on WhatsApp.${
+            currentSubtotal && currentSubtotal < eff.min_order
+            ? ` <span style="color:#B3261E">Minimum order here is ₹${eff.min_order}.</span>` : ""}`;
         } else {
-          deliveryRow = `<div class="checkout-row"><span>Delivery (est.)</span><span>~₹30–₹70</span></div>`;
-          deliveryNote = "Estimated from your area — the kitchen confirms the exact fee on WhatsApp.";
+          deliveryRow = `<div class="checkout-row"><span>Delivery (est.)</span><span>~₹45–₹100</span></div>`;
+          deliveryNote = "Live courier rate by Borzo — the kitchen confirms the exact fee on WhatsApp.";
         }
       } else {
         deliveryNote = PICKUP_NOTE;
       }
 
-      const deliveryFee = q && !q.outside ? q.fee : 0;
+      const effQuote = (liveQuote && liveQuote.serviceable) ? liveQuote : q;
+      const deliveryFee = effQuote && !effQuote.outside ? (Number(effQuote.fee) || 0) : 0;
       overlay.querySelector(".checkout-summary").innerHTML =
         currentIds.map(id => `<div class="checkout-row"><span>${NAMES[id]} × ${cart[id]}</span><span>₹${(PRICES[id] || 0) * cart[id]}</span></div>`).join("")
         + (currentSubtotal > 0 ? `
@@ -583,6 +623,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       } else {
         nudge.hidden = true;
       }
+      scheduleLiveQuote();
     }
     refreshCheckoutSummary();
 
@@ -872,6 +913,9 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           `Payment: ${payload.payment_method === "upi" ? "UPI" : "Cash on delivery"}`,
           ...(payload.instructions ? [`Note: ${payload.instructions}`] : []),
           "",
+          `Your tracking reference: ${data.tracking_token}`,
+          `Track it: https://tulsifoods.app/track/${data.tracking_token}`,
+          "",
           "Please confirm my delivery time and share your payment QR.",
         ];
         const confirmHref = "https://wa.me/919940062840?text=" + encodeURIComponent(confirmLines.join("\n"));
@@ -898,7 +942,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
                 Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Your UPI app will open pre-filled.
                 We confirm the payment, then start your order.</p>
             ` : ""}
-            <a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px" href="/track/${data.order_id}">Track my order ↳</a>
+            <a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px" href="/track/${data.tracking_token}">Track my order ↳</a>
             <button class="checkout-place" id="checkout-continue">Continue browsing</button>
             ${isDelivery ? `<div class="edit-window" id="edit-window">
               <div class="edit-window-text">Wrong address? You have <span id="edit-countdown">3:00</span> to fix it.</div>

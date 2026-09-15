@@ -133,6 +133,15 @@ section[id] { scroll-margin-top: 76px; }
 .faq-item[open] summary::after { content: '–'; }
 .faq-item p { padding: 0 18px 16px; margin: 0; font-size: 14.5px; line-height: 1.7; color: #4A4F45; }
 
+/* Categories dropdown (desktop nav) */
+.nav-drop { position: relative; }
+.nav-drop-menu { position: absolute; top: calc(100% + 12px); left: 50%; transform: translateX(-50%); background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 12px 30px rgba(20, 30, 15, .12); padding: 8px; min-width: 220px; display: none; z-index: 50; }
+.nav-drop-menu::before { content: ''; position: absolute; top: -7px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 12px; height: 12px; background: #fff; border-left: 1px solid var(--border); border-top: 1px solid var(--border); }
+.nav-drop-menu a { display: block; padding: 9px 12px; font-size: 14px; color: var(--g); text-decoration: none; border-radius: 8px; white-space: nowrap; }
+.nav-drop-menu a:hover { background: var(--card); }
+.nav-drop-menu .nav-drop-all { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 10px; font-weight: 600; }
+.nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu { display: block; }
+
 /* Footer */
 .footer { padding: 26px 40px 34px; max-width: 1200px; margin: 0 auto; font-size: 13px; color: var(--sub); }
 .footer a { color: var(--g); text-decoration: none; }
@@ -168,8 +177,16 @@ section[id] { scroll-margin-top: 76px; }
     <span>Tulsi Foods</span>
   </a>
   <div class="nav-links">
+    <span class="nav-drop">
+      <a href="/menu" aria-haspopup="true">Categories <small style="opacity:.6">▾</small></a>
+      <div class="nav-drop-menu" role="menu">
+        {% for c in categories %}<a href="/category/{{ c.slug }}" role="menuitem">{{ c.name }}</a>{% endfor %}
+        <a href="/menu" class="nav-drop-all">View full menu &rarr;</a>
+      </div>
+    </span>
     <a href="/menu">Menu</a>
-    <a href="/delivery">Delivery</a>
+    <a href="/delivery">Delivery order</a>
+    <a href="/track">Track your order</a>
     <a href="/about">Our story</a>
     <a href="/about#contact">Contact</a>
     <a href="/menu" class="nav-cta">Order online</a>
@@ -232,6 +249,22 @@ section[id] { scroll-margin-top: 76px; }
         <div class="stove-name">{{ d.name }}</div>
         {% if d.desc %}<div class="stove-desc">{{ d.desc }}</div>{% endif %}
         <div class="stove-price">₹{{ d.price }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="what" id="categories" style="padding-bottom: 8px;">
+  <div class="section-tag">Browse</div>
+  <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(24px,3vw,32px);margin-top:8px;margin-bottom:6px;">What are you craving?</h2>
+  <p class="what-answer" style="margin-top:4px;">Each category is a full page, so you can see everything we make in it — thalis, parathas, chaat, sabzi, desserts and more — with today's prices.</p>
+  <div class="stove-grid" style="margin-top:22px;">
+    {% for c in categories %}
+    <a class="stove-card reveal" href="/category/{{ c.slug }}">
+      <div class="stove-body">
+        <div class="stove-name">{{ c.name }}</div>
+        <div class="stove-desc">{{ c.count }} item{{ '' if c.count == 1 else 's' }} · see all &rarr;</div>
       </div>
     </a>
     {% endfor %}
@@ -346,7 +379,8 @@ section[id] { scroll-margin-top: 76px; }
 <div class="footer">
   <div class="footer-main">
     <span>Tulsi Foods · 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
-    <span><a href="/menu">Menu</a> · <a href="/delivery">Delivery areas</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/privacy-policy">Privacy</a> · <a href="/refund-cancellation-policy">Refund policy</a></span>
+    <span>{% for c in categories %}<a href="/category/{{ c.slug }}">{{ c.name }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</span>
+    <span><a href="/menu">Menu</a> · <a href="/delivery">Delivery areas</a> · <a href="/track">Track your order</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/privacy-policy">Privacy</a> · <a href="/refund-cancellation-policy">Refund policy</a></span>
   </div>
   <div class="footer-aka">
     Also known as Tulasi Foods, Thulasi Restaurant · Also on

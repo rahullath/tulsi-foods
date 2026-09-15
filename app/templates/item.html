@@ -38,7 +38,7 @@
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="/">Home</a> <span class="bc-sep">›</span>
     <a href="/menu">Menu</a> <span class="bc-sep">›</span>
-    <span class="bc-cur">{{ item.group }}</span> <span class="bc-sep">›</span>
+    <a href="/category/{{ category_slug }}">{{ item.group }}</a> <span class="bc-sep">›</span>
     <span class="bc-cur">{{ item.name }}</span>
   </nav>
 
@@ -86,6 +86,12 @@
     <h2>About {{ item.name }}</h2>
     <p>{{ item_description }}</p>
     <p class="facts">Made fresh to order at Tulsi Foods, a home-style pure vegetarian kitchen in Mylapore, Chennai — no aggregator, no platform fees.</p>
+  </section>
+
+  <section class="thali" id="thali" hidden>
+    <h2>What's in this {{ 'thali' if 'thali' in (item.group | lower) else 'dish' }}?</h2>
+    <ul class="thali-pills" id="thali-pills" aria-label="Everything included"></ul>
+    <p class="facts">Every plate is assembled fresh when you order. Swaps and extras are easy — add a note during checkout, and we'll confirm on WhatsApp before cooking.</p>
   </section>
 
   <section class="ordering">
@@ -198,6 +204,10 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
 .about p { font-size: 14px; line-height: 1.65; color: #3C4137; }
 .about .facts { font-size: 13px; color: var(--sub); margin-top: 8px; }
 
+.thali-pills { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding: 0; }
+.thali-pills li { font: 500 13px/1.2 'IBM Plex Mono', monospace; color: #2C5A1E; background: #EDF6E2; border: 1px solid #DDE4CC; border-radius: 999px; padding: 8px 13px; }
+.thali .facts { font-size: 13px; color: var(--sub); margin-top: 12px; }
+
 .ordering ul { list-style: none; padding: 0; }
 .ordering li { font-size: 14px; line-height: 1.55; color: #3C4137; padding: 6px 0 6px 18px; position: relative; border-bottom: 1px dashed var(--line2); }
 .ordering li::before { content: ''; position: absolute; left: 0; top: 12px; width: 7px; height: 7px; border-radius: 50%; background: var(--g2); }
@@ -309,6 +319,22 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
     stateEl.innerHTML = 'Added — <a href="/menu#checkout">checkout &amp; pay →</a>';
     setTimeout(() => { addBtn.classList.remove("done"); addBtn.textContent = "Add more"; }, 1800);
   });
+})();
+
+(function () {
+  var desc = {{ item_description | tojson }};
+  var m = String(desc || '').match(/[\[{]([^\]}]+)[\]}]/);
+  if (!m) return;
+  var parts = m[1].split('+').map(function (s) { return s.trim(); }).map(function (s) { return s.replace(/^(\d+)\s*/, '$1x '); }).filter(Boolean);
+  if (!parts.length) return;
+  var sec = document.getElementById('thali');
+  var ul = document.getElementById('thali-pills');
+  parts.forEach(function (p) {
+    var li = document.createElement('li');
+    li.textContent = p;
+    ul.appendChild(li);
+  });
+  sec.hidden = false;
 })();
 </script>
 {% endblock %}

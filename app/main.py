@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import date
 from pathlib import Path
 from urllib.parse import quote
@@ -15,6 +16,7 @@ from .config import (
     ADMIN_TOKEN,
     DELIVERY_ZONES,
     FREE_DELIVERY_ABOVE,
+    FREE_DELIVERY_ENABLED,
     GOOGLE_MAPS_JS_API_KEY,
     GOOGLE_REVIEW_LINK,
     GST_ENABLED,
@@ -48,6 +50,33 @@ def dish_photo_ids() -> set[str]:
     return {p.stem for p in DISH_PHOTO_DIR.glob("*.jpg")}
 
 
+def _group_slug(group: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", group.lower()).strip("-")
+    return slug or "uncategorised"
+
+
+def group_slugs() -> dict[str, str]:
+    """Stable group name -> URL slug map, sourced from the menu itself so the
+    category pages, nav links and sitemap can never drift apart."""
+    return {g: _group_slug(g) for g in dict.fromkeys(m["group"] for m in menu.load_menu())}
+
+
+def all_categories() -> list[dict]:
+    """Category descriptor list (name, slug, item count) for nav/sitemap."""
+    groups: dict[str, list] = {}
+    order: list[str] = []
+    for m in menu.load_menu():
+        g = m["group"]
+        if g not in groups:
+            groups[g] = []
+            order.append(g)
+        groups[g].append(m)
+    return [
+        {"name": g, "slug": _group_slug(g), "count": len(groups[g])}
+        for g in order
+    ]
+
+
 # ---- pages ----
 
 # (item_id, tag, short description) — curated, shown on the home page "on the
@@ -78,7 +107,8 @@ def landing_page(request: Request):
     return templates.TemplateResponse(
         request, "landing.html",
         {"picks": picks, "google_stats": google_stats, "google_review_link": GOOGLE_REVIEW_LINK,
-         "faqs": faqs.landing_faqs(DELIVERY_ZONES, FREE_DELIVERY_ABOVE, price_range, bool(UPI_VPA))},
+         "faqs": faqs.landing_faqs(DELIVERY_ZONES, FREE_DELIVERY_ABOVE, price_range, bool(UPI_VPA)),
+         "categories": all_categories()},
     )
 
 
@@ -126,6 +156,8 @@ def facebook_domain_verification():
 @app.get("/menu", response_class=HTMLResponse)
 def menu_page(request: Request):
     groups = menu.grouped()
+    for g in groups:
+        g["slug"] = _group_slug(g["group"])
     return templates.TemplateResponse(
         request,
         "menu.html",
@@ -137,7 +169,9 @@ def menu_page(request: Request):
          "packing_fee_threshold": PACKING_FEE_LARGE_ORDER_THRESHOLD,
          "gst_rate": GST_RATE, "gst_enabled": GST_ENABLED,
          "upi_vpa": UPI_VPA, "upi_payee_name": UPI_PAYEE_NAME,
-         "free_delivery_above": FREE_DELIVERY_ABOVE},
+         "free_delivery_above": FREE_DELIVERY_ABOVE,
+         "delivery_free_enabled": FREE_DELIVERY_ENABLED,
+         "categories": all_categories()},
     )
 
 @app.get("/delivery", response_class=HTMLResponse)
@@ -213,7 +247,8 @@ def menu_item_page(request: Request, item_id: str):
         "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "Home", "item": f"{SITE_URL}/"},
             {"@type": "ListItem", "position": 2, "name": "Menu", "item": f"{SITE_URL}/menu"},
-            {"@type": "ListItem", "position": 3, "name": item["group"]},
+            {"@type": "ListItem", "position": 3, "name": item["group"],
+             "item": f"{SITE_URL}/category/{_group_slug(item['group'])}"},
             {"@type": "ListItem", "position": 4, "name": item["name"], "item": item_url},
         ],
     }
@@ -226,6 +261,8 @@ def menu_item_page(request: Request, item_id: str):
          "status_text": status_text, "half": item.get("half_price"),
          "related": related, "dish_photos": photos, "wa_link": wa_link,
          "item_url": item_url, "item_description": desc, "ordering": ordering,
+         "category_slug": _group_slug(item["group"]),
+         "categories": all_categories(),
          "item_schema": _item_product_schema(item, item_url, photo_url, desc, available),
          "breadcrumb_schema": breadcrumb},
     )
@@ -259,12 +296,27 @@ def _item_product_schema(item: dict, item_url: str, photo_url: str,
     return schema
 
 
-@app.get("/track/{order_id}", response_class=HTMLResponse)
-def track_page(request: Request, order_id: int):
-    o = db.get_order(order_id)
+@app.get("/track", response_class=HTMLResponse)
+def track_landing_page(request: Request):
+    """SEO entry point for order tracking. From here a customer finds their
+    order by tracking reference or phone and lands on /track/{ref}."""
+    return templates.TemplateResponse(request, "track-landing.html", {})
+
+
+@app.get("/track/{ref}", response_class=HTMLResponse)
+def track_page(request: Request, ref: str):
+    """Customer tracking page. `ref` is the unguessable tracking token sent in
+    the order confirmation; legacy numeric order ids still work (redirected to
+    the canonical token URL) so old WhatsApp/SMS links keep resolving."""
+    o = db.get_order_by_token(ref) if not ref.isdigit() else db.get_order(int(ref))
     if not o:
         raise HTTPException(404, "Order not found")
-    return templates.TemplateResponse(request, "track.html", {"order_id": order_id})
+    token = o.get("tracking_token") or ref
+    if not ref.isdigit():
+        return templates.TemplateResponse(
+            request, "track.html", {"order_id": o["id"], "tracking_token": token}
+        )
+    return RedirectResponse(f"/track/{token}", status_code=301)
 
 
 @app.get("/about", response_class=HTMLResponse)
@@ -404,6 +456,8 @@ SITEMAP_TEMPLATES = {
     "/bio": "bio.html",
     "/privacy-policy": "privacy.html",
     "/refund-cancellation-policy": "refund-cancellation-policy.html",
+    "/track": "track-landing.html",
+    "/404": "404.html",
 }
 
 
@@ -431,11 +485,16 @@ def sitemap_xml():
             lastmod_tag = f"\n    <lastmod>{date.fromtimestamp(mtime).isoformat()}</lastmod>"
         entries.append(f"  <url>\n    <loc>{SITE_URL}{path}</loc>{lastmod_tag}\n  </url>")
     menu_mtime = (Path("data/menu.json")).stat().st_mtime
-    for m in menu.load_menu():
-        if m["id"].endswith(menu.HALF_SUFFIX):
-            continue
+    menu_items = [m for m in menu.load_menu() if not m["id"].endswith(menu.HALF_SUFFIX)]
+    for m in menu_items:
         lastmod_tag = f"\n    <lastmod>{date.fromtimestamp(menu_mtime).isoformat()}</lastmod>"
         entries.append(f"  <url>\n    <loc>{SITE_URL}/menu/{m['id']}</loc>{lastmod_tag}\n  </url>")
+    # Category archive pages carry the same freshness as the menu they list.
+    for cat in all_categories():
+        lastmod_tag = f"\n    <lastmod>{date.fromtimestamp(menu_mtime).isoformat()}</lastmod>"
+        entries.append(
+            f"  <url>\n    <loc>{SITE_URL}/category/{cat['slug']}</loc>{lastmod_tag}\n  </url>"
+        )
     body = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -743,6 +802,50 @@ def admin_conversation_human(wa_id: str, body: HumanIn,
     return {"wa_id": wa_id, "human": body.human, "ok": True}
 
 
+@app.get("/category/{slug}", response_class=HTMLResponse)
+def category_page(request: Request, slug: str):
+    """One SEO page per food category, listing every item in it, all linked
+    to their individual dish pages and back to /menu."""
+    slugs = group_slugs()
+    group = next((g for g, s in slugs.items() if s == slug), None)
+    if not group:
+        raise HTTPException(404, "Category not found")
+    items = [m for m in menu.load_menu() if m["group"] == group and not m["id"].endswith(menu.HALF_SUFFIX)]
+    items.sort(key=lambda m: (not m.get("popular"), m["name"]))
+    items = [dict(m) for m in items]
+    day = menu.today()
+    for m in items:
+        m["available"] = menu.is_available(m["id"], day)
+        m["price"] = float(m["price"])
+        m["half"] = m.get("half_price")
+    prices = [m["price"] for m in items]
+    low, high = (min(prices), max(prices)) if prices else (None, None)
+    category_url = f"{SITE_URL}/category/{slug}"
+    return templates.TemplateResponse(
+        request,
+        "category.html",
+        {"group": group, "slug": slug, "items": items, "categories": all_categories(),
+         "count": len(items), "price_low": low, "price_high": high,
+         "category_url": category_url, "dish_photos": dish_photo_ids()},
+    )
+
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    """Branded 404 so a mistyped slug lands on a page with working links out,
+    not a bare not-found line. API callers (/api/...) still get clean JSON."""
+    if request.url.path.startswith("/api/"):
+        raise exc
+    return templates.TemplateResponse(request, "404.html", {"categories": all_categories()}, status_code=404)
+
+
+@app.get("/404", response_class=HTMLResponse)
+def not_found_page(request: Request):
+    """The 404 page also lives at a real URL (and in the sitemap) so search
+    engines can crawl it and customers can return from a bad slug to the site."""
+    return templates.TemplateResponse(request, "404.html", {"categories": all_categories()}, status_code=200)
+
+
 # ---- orders ----
 
 class OrderItemIn(BaseModel):
@@ -782,12 +885,39 @@ def create_order(order: OrderIn):
         raise HTTPException(e.status, e.message)
 
 
-@app.get("/api/orders/{order_id}")
-def get_order(order_id: int):
-    o = db.get_order(order_id)
+@app.get("/api/delivery/quote")
+def delivery_quote_api(lat: float, lng: float, subtotal: float = 0.0,
+                       address: str | None = None):
+    """Live courier quote for a dropped pin (Borzo first, zone fallback)."""
+    from .delivery.estimate import estimate
+    q = estimate(lat, lng, subtotal, address)
+    q["free_enabled"] = FREE_DELIVERY_ENABLED
+    return q
+
+
+@app.get("/api/orders/{ref}")
+def get_order(ref: str):
+    """Public order lookup — token-first for tracking links; numeric order
+    ids accepted for internal/bot callers."""
+    o = db.get_order_by_token(ref) if not ref.isdigit() else db.get_order(int(ref))
     if not o:
         raise HTTPException(404, "Order not found")
     return o
+
+
+class PhoneLookupIn(BaseModel):
+    phone: str
+
+
+@app.post("/api/orders/lookup")
+def lookup_orders_by_phone(body: PhoneLookupIn):
+    """For the /track landing page: which orders belong to this phone number?
+    Only returns id, tracking token and a couple of safe fields — the full
+    order stays behind the token URL."""
+    phone = "".join(ch for ch in body.phone if ch.isdigit())[-10:]
+    if len(phone) < 10:
+        raise HTTPException(422, "Enter a valid 10-digit phone number")
+    return {"orders": db.get_orders_by_phone(f"+91{phone}")}
 
 
 class OrderAddressIn(BaseModel):

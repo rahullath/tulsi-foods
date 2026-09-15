@@ -23,6 +23,9 @@ DELIVERY_ZONES = [
 ]
 
 FREE_DELIVERY_ABOVE = 700  # optional: free delivery over this amount
+# Free-delivery promo is PAUSED for now (per owner). When re-enabled, zone
+# fees over FREE_DELIVERY_ABOVE get waived again ("free over ₹700").
+FREE_DELIVERY_ENABLED = False
 
 # GST for direct (non-aggregator) orders. Swiggy data shows a consistent 5%
 # charged on every order (the standard non-ITC restaurant rate) — aggregators

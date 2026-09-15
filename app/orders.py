@@ -8,6 +8,7 @@ from . import db, menu
 from .config import (
     DELIVERY_ZONES,
     FREE_DELIVERY_ABOVE,
+    FREE_DELIVERY_ENABLED,
     GST_ENABLED,
     GST_RATE,
     MONDAY_OPENS_AT,
@@ -20,6 +21,16 @@ IST = ZoneInfo("Asia/Kolkata")
 
 ADDRESS_EDIT_WINDOW = timedelta(minutes=3)
 MAX_SCHEDULE_AHEAD = timedelta(days=14)
+
+_TRACK_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+
+def _new_tracking_token() -> str:
+    """Short, human-readable token customers reference on WhatsApp/phone.
+    No ambiguous chars (I/L/O/0/1). Kept independent of the sequential order
+    id so tracking URLs can't be guessed by incrementing a number."""
+    import secrets
+    return "".join(secrets.choice(_TRACK_ALPHABET) for _ in range(8))
 
 _LANDMARK_RE = re.compile(r"\s*\(Landmark:\s*(.*?)\)\s*$", re.IGNORECASE)
 
@@ -57,11 +68,12 @@ class OrderError(Exception):
 
 def delivery_fee(km: float, subtotal: float = 0.0) -> dict | None:
     """Quote only — no min-order enforcement (for the web UI to display live).
-    Kept as fallback estimate when Shiprocket is unavailable."""
+    Kept as fallback estimate when the courier API is unavailable."""
     zone = next((z for z in DELIVERY_ZONES if km <= z["max_km"]), None)
     if not zone:
         return None
-    fee = 0.0 if subtotal >= FREE_DELIVERY_ABOVE else zone["fee"]
+    free_waives = FREE_DELIVERY_ENABLED and subtotal >= FREE_DELIVERY_ABOVE
+    fee = 0.0 if free_waives else zone["fee"]
     return {"zone": zone["name"], "fee": fee, "min_order": zone["min_order"]}
 
 
@@ -214,15 +226,27 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
     lines, subtotal = build_lines(items)
 
     delivery_fee = 0.0
+    tracking_token = _new_tracking_token()
     if order_type == "delivery":
         if km is not None:
             # Legacy km-based flow (WhatsApp bot fallback)
             quote = delivery_quote(km, subtotal)
             delivery_fee = quote["fee"]
+        elif lat and lng:
+            # Web checkout: live courier quote for the dropped pin.
+            # Falls back to the zone estimate if the courier API is down —
+            # never blocks the order for a pricing hiccup.
+            try:
+                from .delivery.estimate import estimate
+                q = estimate(float(lat), float(lng), subtotal, address)
+                delivery_fee = q["fee"] if q.get("serviceable") and q.get("fee") is not None else None
+            except Exception:
+                delivery_fee = None
+            if delivery_fee is None:
+                delivery_fee = delivery_fee_from_pincode(pincode or "600018", subtotal)
         elif pincode:
-            # Pincode-based flow: use zone estimate, actual fee set at dispatch
-            zone_fee = delivery_fee_from_pincode(pincode, subtotal)
-            delivery_fee = zone_fee
+            # Pincode-based fallback: zone estimate, actual fee set at dispatch
+            delivery_fee = delivery_fee_from_pincode(pincode, subtotal)
         else:
             raise OrderError("Delivery distance or pincode is required", 400)
 
@@ -237,7 +261,8 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                           delivery_lat=lat, delivery_lng=lng,
                           scheduled_at=scheduled_at,
                           address_flagged=flagged, address_flag_reason=flag_reason,
-                          packing_fee=packing_fee, gst_amount=gst_amount)
+                          packing_fee=packing_fee, gst_amount=gst_amount,
+                          tracking_token=tracking_token)
     if order_type == "delivery" and address:
         base_address, landmark = _split_landmark(address)
         try:
@@ -271,7 +296,8 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
 
     return {"order_id": oid, "status": "new", "subtotal": round(subtotal, 2),
             "packing_fee": packing_fee, "gst_amount": gst_amount,
-            "delivery_fee": delivery_fee, "total": round(total, 2)}
+            "delivery_fee": delivery_fee, "total": round(total, 2),
+            "tracking_token": tracking_token}
 
 
 def edit_address(order_id: int, address: str, pincode: str | None = None,
@@ -299,11 +325,9 @@ def delivery_fee_from_pincode(pincode: str, subtotal: float) -> float:
     """Estimate delivery fee from pincode using zone logic.
 
     Since Indian pincodes cover broad areas, we use our zone estimates.
-    The actual fee is calculated by Shiprocket at dispatch time.
+    The actual fee is calculated by the courier at dispatch time.
     """
-    # Map pincode prefix to approximate zones (Chennai-specific heuristic)
-    # This is a rough estimate — real calculation happens at dispatch
-    if subtotal >= FREE_DELIVERY_ABOVE:
+    if FREE_DELIVERY_ENABLED and subtotal >= FREE_DELIVERY_ABOVE:
         return 0.0
     # Default to Zone A fee as estimate; dispatch corrects if needed
     return DELIVERY_ZONES[0]["fee"]

@@ -7,6 +7,14 @@ FAQPage JSON-LD can never drift from what the site actually does.
 from .config import MONDAY_OPENS_AT, OPENING_HOURS, STORE_WHATSAPP
 
 
+def _free_clause(free_above) -> str:
+    """Free-delivery promo is currently paused; only mention it when live."""
+    from .config import FREE_DELIVERY_ENABLED
+    if not FREE_DELIVERY_ENABLED:
+        return ""
+    return f" Delivery is free on orders over ₹{free_above}."
+
+
 def _hhmm_to_12h(hhmm: str) -> str:
     h, m = hhmm.split(":")
     h = int(h)
@@ -24,11 +32,6 @@ def _open_text() -> str:
     )
 
 
-def _fee_text(zones) -> str:
-    parts = [f"₹{z['fee']} up to {z['max_km']:.0f} km" for z in zones]
-    return ", ".join(parts)
-
-
 def _min_order_text(zones) -> str:
     return ", ".join(
         f"₹{z['min_order']} within {z['max_km']:.0f} km" for z in zones
@@ -42,9 +45,11 @@ def delivery_faqs(zones, free_above) -> list[dict]:
         {
             "q": "How much does Tulsi Foods delivery cost?",
             "a": (
-                f"Tulsi Foods estimates delivery at {_fee_text(zones)} from the "
-                f"kitchen in Alwarpet, Chennai. Delivery is free on orders over "
-                f"₹{free_above}, and the kitchen confirms the exact fee before you pay."
+                f"Tulsi Foods delivers by Borzo courier at live rates — typically "
+                f"about ₹45 to ₹100 within {zones[-1]['max_km']:.0f} km of the "
+                "Alwarpet kitchen. The checkout shows your exact estimated rate "
+                "for your address, and the kitchen confirms it on WhatsApp "
+                f"before you pay.{_free_clause(free_above)}"
             ),
         },
         {
@@ -116,8 +121,9 @@ def landing_faqs(zones, free_above, price_range, has_upi) -> list[dict]:
             "a": (
                 "Yes — anywhere within 7 km of the kitchen in Alwarpet: Mylapore, "
                 "Alwarpet, Royapettah, Teynampet, R.A. Puram, Adyar, T. Nagar and "
-                f"Egmore. Estimated delivery is {_fee_text(zones)} "
-                f"(free over ₹{free_above}); the kitchen confirms the exact fee."
+                "Egmore. Delivery is by Borzo courier at live rates — typically "
+                "about ₹45 to ₹100 — and the checkout shows your exact estimated "
+                f"rate before you order.{_free_clause(free_above)}"
             ),
         },
         {

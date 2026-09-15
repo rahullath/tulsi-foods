@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block meta %}
+<meta name="description" content="Track your Tulsi Foods order — use the tracking reference from your WhatsApp confirmation, or look up by phone number to see your recent orders and their live status.">
+<title>Track Your Order | Tulsi Foods, Mylapore Chennai</title>
+{% endblock %}
+{% block canonical %}<link rel="canonical" href="https://tulsifoods.app/track">{% endblock %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+{% endblock %}
+{% block styles %}{% endblock %}
+{% block body %}
+<style>
+:root { --g: #0E7A45; --sf: #E08A1E; --bg: #FBF8F2; --card: #fff; --border: #E7E1D6; --ink: #171A14; --sub: #6F7468; --line2: #EFEBE3; }
+* { box-sizing: border-box; margin: 0; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--line2); position: sticky; top: 0; z-index: 30; background: var(--bg); }
+.nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.nav-brand img { width: 40px; height: 40px; object-fit: contain; }
+.nav-brand span { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; color: var(--ink); }
+.nav-links { display: flex; align-items: center; gap: 28px; font-size: 14px; }
+.nav-links a { color: #4A4F45; text-decoration: none; }
+.nav-links a:hover { color: var(--ink); }
+.nav-cta { background: var(--g); color: #fff; border-radius: 999px; padding: 11px 20px; font-weight: 600; text-decoration: none; }
+
+.page { max-width: 760px; margin: 0 auto; padding: 48px 40px 64px; }
+.page-tag { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--g); letter-spacing: .05em; text-transform: uppercase; }
+.page h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(30px, 4vw, 42px); margin: 12px 0 0; line-height: 1.08; }
+.page-sub { margin: 16px 0 0; font-size: 16px; line-height: 1.65; color: #43483F; max-width: 620px; }
+
+.lookup { margin-top: 30px; display: flex; flex-direction: column; gap: 18px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px 24px; }
+.card h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px; }
+.card p { font-size: 14px; color: #43483F; margin: 6px 0 14px; line-height: 1.6; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+input[type=text] { flex: 1; min-width: 200px; border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; font: 600 15px 'IBM Plex Mono', monospace; color: var(--ink); background: #fff; letter-spacing: .06em; text-transform: uppercase; }
+input[type=text]::placeholder { color: #B9BDB2; text-transform: none; }
+input[type=tel] { flex: 1; min-width: 200px; border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; font: 400 16px 'IBM Plex Sans', sans-serif; color: var(--ink); background: #fff; }
+button { background: var(--g); color: #fff; border: 0; border-radius: 10px; padding: 13px 22px; font: 600 15px 'IBM Plex Sans', sans-serif; cursor: pointer; }
+button[disabled] { opacity: .5; cursor: default; }
+.msg { margin-top: 12px; font-size: 14px; }
+.msg.err { color: #B44D2E; }
+.card ul { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.card li a { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #F5F1E8; border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; text-decoration: none; color: var(--ink); font-size: 14.5px; }
+.card li a:hover { border-color: var(--g); }
+.card li .ref { font: 500 13px 'IBM Plex Mono', monospace; color: var(--g); }
+.card li .meta { color: var(--sub); font-size: 12.5px; text-align: right; }
+
+.snippet { margin-top: 44px; }
+.snippet h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; margin-bottom: 10px; }
+.snippet p { font-size: 15px; line-height: 1.7; color: #43483F; }
+.snippet ul { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.snippet ul li { display: flex; gap: 12px; align-items: flex-start; }
+.snippet ul li::before { content: '✓'; color: var(--g); font-weight: 700; }
+
+.notice { margin-top: 32px; background: #EDF6E2; border: 1px solid #DDE4CC; color: #2C5A1E; border-radius: 14px; padding: 18px 20px; font-size: 14px; line-height: 1.65; }
+.notice a { color: var(--g); font-weight: 600; text-decoration: none; }
+
+.page-cta { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; }
+.page-cta a { background: var(--card); color: var(--g); border: 1px solid var(--border); border-radius: 12px; padding: 14px 24px; font-size: 15px; font-weight: 600; text-decoration: none; }
+
+.footer { padding: 26px 40px 34px; font-size: 13px; color: var(--sub); max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+.footer a { color: var(--g); text-decoration: none; }
+
+@media (max-width: 768px) {
+  .nav { padding: 16px 18px; }
+  .nav-links { display: none; }
+  .page { padding: 32px 18px 48px; }
+  .card { padding: 18px; }
+  .card li a { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .card li .meta { text-align: left; }
+  .footer { padding: 20px 18px 30px; }
+}
+</style>
+
+<nav class="nav">
+  <a class="nav-brand" href="/">
+    <img src="/static/logo.png" alt="Tulsi Foods">
+    <span>Tulsi Foods</span>
+  </a>
+  <div class="nav-links">
+    <a href="/menu">Menu</a>
+    <a href="/delivery">Delivery</a>
+    <a href="/track" style="color: var(--ink); font-weight: 600;">Track your order</a>
+    <a href="/about">Our story</a>
+    <a href="/menu" class="nav-cta">Order online</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-tag">Order tracking</div>
+  <h1>Where's my order?</h1>
+  <p class="page-sub">Every order confirmation on WhatsApp includes a tracking reference like this: <strong style="font-family:'IBM Plex Mono',monospace;color:var(--g);">TFS-4QZ9XC2M</strong>. Enter it here — or use your phone number to see your recent orders.</p>
+
+  <div class="lookup">
+    <div class="card">
+      <h2>Track by reference</h2>
+      <p>Paste or type your tracking reference, then open the order page.</p>
+      <div class="row">
+        <input type="text" id="ref" placeholder="e.g. TFS-4QZ9XC2M" autocomplete="off" aria-label="Tracking reference">
+        <button id="ref-btn" type="button">Track</button>
+      </div>
+      <div class="msg" id="ref-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Find my orders by phone</h2>
+      <p>Enter the mobile number you ordered with, and we'll list your recent orders.</p>
+      <div class="row">
+        <input type="tel" id="phone" placeholder="+91 98XXX XXXXX" autocomplete="tel" aria-label="Phone number">
+        <button id="phone-btn" type="button">Look up</button>
+      </div>
+      <div class="msg" id="phone-msg"></div>
+      <ul id="orders" hidden></ul>
+    </div>
+  </div>
+
+  <div class="notice">Just placed your order? You'll get the tracking reference in the WhatsApp confirmation from <strong>+91 99400 62840</strong> within a couple of minutes. If it hasn't arrived, message us — we'll send it again.</div>
+
+  <div class="snippet">
+    <h2>How it works</h2>
+    <ul>
+      <li><span>Your order is confirmed on WhatsApp, with the tracking reference included.</span></li>
+      <li><span>The status updates as we cook — queued, cooking, out for delivery, delivered.</span></li>
+      <li><span>Courier orders show an estimated delivery window, refreshed as the rider gets closer.</span></li>
+    </ul>
+  </div>
+
+  <div class="page-cta">
+    <a href="/menu">Order something &rarr;</a>
+    <a href="/delivery">Delivery areas</a>
+    <a href="/about#contact">Talk to the kitchen</a>
+  </div>
+</div>
+
+<div class="footer">
+  <span>Tulsi Foods · 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
+  <span><a href="/menu">Menu</a> · <a href="/delivery">Delivery areas</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/privacy-policy">Privacy</a> · <a href="/refund-cancellation-policy">Refund policy</a></span>
+</div>
+
+<script>
+(function () {
+  var refInput = document.getElementById('ref');
+  var refBtn = document.getElementById('ref-btn');
+  var refMsg = document.getElementById('ref-msg');
+  var phoneInput = document.getElementById('phone');
+  var phoneBtn = document.getElementById('phone-btn');
+  var phoneMsg = document.getElementById('phone-msg');
+  var orders = document.getElementById('orders');
+
+  function setMsg(el, text, isErr) {
+    el.textContent = text;
+    el.className = 'msg' + (isErr ? ' err' : '');
+    if (text) el.style.display = '';
+    else el.style.display = 'none';
+  }
+
+  function cleanRef(v) {
+    v = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return v.replace(/^TFS/, '');
+  }
+
+  refBtn.addEventListener('click', function () {
+    var r = cleanRef(refInput.value);
+    if (!r) { setMsg(refMsg, 'Enter your tracking reference, e.g. TFS-4QZ9XC2M.', true); return; }
+    window.location.href = '/track/' + r;
+  });
+  refInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') refBtn.click(); });
+
+  function statusText(s, o) {
+    var map = { 'confirmed': 'Confirmed', 'processing': 'Cooking', 'out_for_delivery': 'Out for delivery', 'delivered': 'Delivered', 'cancelled': 'Cancelled' };
+    var label = map[s] || s || 'Confirmed';
+    var when = (o.scheduled_at || o.created_at || '').replace('T', ' ').slice(0, 16);
+    return label + (when ? ' · ' + when : '');
+  }
+
+  phoneBtn.addEventListener('click', function () {
+    var p = String(phoneInput.value || '').replace(/[^\d]/g, '').slice(-10);
+    if (p.length !== 10) { setMsg(phoneMsg, 'Enter a valid 10-digit mobile number.', true); return; }
+    phoneBtn.disabled = true;
+    setMsg(phoneMsg, '');
+    fetch('/api/orders/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: '+91' + p })
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      phoneBtn.disabled = false;
+      if (data.error) { setMsg(phoneMsg, 'We could not find that number. Check it and try again.', true); return; }
+      var list = data.orders || [];
+      if (!list.length) { setMsg(phoneMsg, 'No orders found for this number on Tulsi Foods yet.'); return; }
+      orders.hidden = false;
+      orders.innerHTML = '';
+      list.forEach(function (o) {
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.href = '/track/' + o.tracking_token;
+        var left = document.createElement('div');
+        left.innerHTML = '#TFS-' + o.tracking_token + '<br><span class="meta">' + statusText(o.status, o) + '</span>';
+        var right = document.createElement('div');
+        right.className = 'meta';
+        right.textContent = '₹' + o.total + (o.order_type === 'pickup' ? ' · pickup' : '');
+        left.classList.add('ref');
+        a.appendChild(left);
+        a.appendChild(right);
+        li.appendChild(a);
+        orders.appendChild(li);
+      });
+    }).catch(function () {
+      phoneBtn.disabled = false;
+      setMsg(phoneMsg, 'Something went wrong. Try again in a moment.', true);
+    });
+  });
+  phoneInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') phoneBtn.click(); });
+})();
+</script>
+{% endblock %}
