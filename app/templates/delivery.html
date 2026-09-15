@@ -47,9 +47,6 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .page-cta-text { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; }
 .page-cta a { background: #fff; color: var(--g); border-radius: 12px; padding: 14px 24px; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap; }
 
-.footer { padding: 26px 40px 34px; display: flex; justify-content: space-between; font-size: 13px; color: var(--sub); max-width: 1200px; margin: 0 auto; }
-.footer a { color: var(--g); text-decoration: none; }
-
 @media (max-width: 768px) {
   .page { padding: 32px 18px 48px; }
   .zone-table th:first-child, .zone-table td:first-child { border-top-left-radius: 10px; }
@@ -58,7 +55,6 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
   .zone-table tbody tr { display: block; padding: 0; }
   .zone-table td::before { content: attr(data-label); display: block; font: 500 10px/1 'IBM Plex Mono', monospace; color: var(--sub); letter-spacing: .04em; margin-bottom: 5px; }
   .page-cta { flex-direction: column; text-align: center; }
-  .footer { flex-direction: column; gap: 8px; padding: 20px 18px 30px; }
 }
 </style>
 
@@ -119,11 +115,6 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
     <div class="page-cta-text">Check what's cooking today</div>
     <a href="/menu">See today's menu &rarr;</a>
   </div>
-</div>
-
-<div class="footer">
-  <span>Tulsi Foods · 34 Murrays Gate Road, Alwarpet, Chennai 600018 · Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM</span>
-  <span><a href="/menu">Menu</a> · <a href="/track">Track your order</a> · <a href="/about">Our story</a> · <a href="/about#contact">Contact</a> · <a href="/updates">Kitchen updates</a> · <a href="/privacy-policy">Privacy</a> · <a href="/refund-cancellation-policy">Refund policy</a></span>
 </div>
 
 <script type="application/ld+json">

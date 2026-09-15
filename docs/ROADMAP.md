@@ -67,11 +67,17 @@ and item pages. Kitchen/admin pass `hide_nav`. Drive-bys: category pages link
 Verified: 23 pages render, burger present everywhere public and absent on
 tools, inline JS clean, link-graph shows every page reaches the core links.
 
-### R2-3. Footer reformat — `[ ]`
-Footers are per-template and slightly different. Unify: one `_footer.html`
-include with ordered link groups (Order: Menu/Categories; Help: Track, Delivery,
-FAQs; Company: Our story, Contact, Privacy, Refund; Legal) + address/hours.
-Build on the base.html include approach from R2-2.
+### R2-3. Footer reformat — `[x]`
+One shared `_footer.html` partial rendered from `base.html` (same self-contained
+pattern as the nav — most pages skip `style.css`). Content is the union of what
+the 10 per-template footers carried: address/hours, category links, the full
+link set, and the also-known-as / also-on entity line — so track, privacy,
+refund and item/menu pages gain category + entity links they never had.
+Kitchen/admin hide it via the existing `hide_nav` flag. Deleted all per-template
+footer markup + CSS (`.footer`, `.mf`, `.bio-footer`). Verified: 24 pages render,
+exactly one footer everywhere public, none on tools, inline JS clean. (Note:
+`index.html` still has its own footer block but is unrouted — dead template,
+cleanup candidate for R2-12.)
 
 ### R2-4. "Fresh from the Kitchen" compilation page (`/updates`) — `[x]`
 Not a diary (nobody will update it daily) — a compilation of Instagram posts,
