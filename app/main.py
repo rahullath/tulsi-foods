@@ -156,25 +156,79 @@ def menu_item_page(request: Request, item_id: str):
     available = menu.is_available(base_id, day)
     reason = menu._specialities_reason(item, day)
 
+    # Same-group dishes first (strongest topical link), then pad with popular
+    # items from elsewhere so every dish page has real internal links out.
     related = []
     for g in menu.grouped(day):
         if g["group"] == item["group"]:
             related = [it for it in g["items"]
                        if it["id"] != base_id and not it["id"].endswith(menu.HALF_SUFFIX)]
-            related = related[:6]
             break
+    if len(related) < 4:
+        seen = {base_id} | {r["id"] for r in related}
+        for g in menu.grouped(day):
+            for it in g["items"]:
+                if len(related) >= 4:
+                    break
+                if it["id"] in seen or it["id"].endswith(menu.HALF_SUFFIX):
+                    continue
+                if it.get("popular"):
+                    related.append(it)
+                    seen.add(it["id"])
+            if len(related) >= 4:
+                break
 
     item_url = f"{SITE_URL}/menu/{base_id}"
     photo_url = f"{SITE_URL}/static/img/dishes/{item['photo_id']}.jpg" if has_photo else ""
-    desc = item.get("description") or f"{item['name']}, a {item['group'].lower()} from Tulsi Foods."
+    desc = (item.get("description")
+            or catalog.FILL_DESCRIPTIONS.get(base_id)
+            or f"{item['name']}, a {item['group'].lower()} from Tulsi Foods.")
     wa_link = "https://wa.me/919940062840?text=" + quote(
         f"Hi Tulsi Foods, I'd like to order {item['name']} (₹{item['price']})."
     )
-    item_schema = {
+
+    status_text = "Available now" if available else (reason or "Finished for today")
+    ordering = {
+        "zones": ", ".join(
+            f"{z['name']} up to {z['max_km']:.0f} km — ₹{z['fee']} delivery"
+            for z in DELIVERY_ZONES
+        ),
+        "hours": "Mon–Sat 9 AM – 9 PM, Sun 11 AM – 9 PM",
+        "address": "34 Murrays Gate Road, Alwarpet, Chennai 600018",
+        "whatsapp": "+91 99400 62840",
+        "phone": "+91 99406 21800",
+    }
+    breadcrumb = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Home", "item": f"{SITE_URL}/"},
+            {"@type": "ListItem", "position": 2, "name": "Menu", "item": f"{SITE_URL}/menu"},
+            {"@type": "ListItem", "position": 3, "name": item["group"]},
+            {"@type": "ListItem", "position": 4, "name": item["name"], "item": item_url},
+        ],
+    }
+
+    return templates.TemplateResponse(
+        request,
+        "item.html",
+        {"item": item, "has_photo": has_photo, "photo_url": photo_url,
+         "available": available, "unavailable_reason": reason,
+         "status_text": status_text, "half": item.get("half_price"),
+         "related": related, "dish_photos": photos, "wa_link": wa_link,
+         "item_url": item_url, "item_description": desc, "ordering": ordering,
+         "item_schema": _item_product_schema(item, item_url, photo_url, desc, available),
+         "breadcrumb_schema": breadcrumb},
+    )
+
+
+def _item_product_schema(item: dict, item_url: str, photo_url: str,
+                         desc: str, available: bool) -> dict:
+    schema = {
         "@context": "https://schema.org",
         "@type": "Product",
         "name": item["name"],
-        "description": desc + " Pure vegetarian, home-style, Mylapore Chennai.",
+        "description": desc,
         "url": item_url,
         "category": item["group"],
         "brand": {"@type": "Brand", "name": "Tulsi Foods"},
@@ -190,17 +244,10 @@ def menu_item_page(request: Request, item_id: str):
         },
     }
     if photo_url:
-        item_schema["image"] = photo_url
-
-    return templates.TemplateResponse(
-        request,
-        "item.html",
-        {"item": item, "has_photo": has_photo, "photo_url": photo_url,
-         "available": available, "unavailable_reason": reason,
-         "half": item.get("half_price"), "related": related,
-         "dish_photos": photos, "wa_link": wa_link, "item_url": item_url,
-         "item_description": desc, "item_schema": item_schema},
-    )
+        schema["image"] = photo_url
+    else:
+        schema["image"] = f"{SITE_URL}/static/logo.png"
+    return schema
 
 
 @app.get("/track/{order_id}", response_class=HTMLResponse)

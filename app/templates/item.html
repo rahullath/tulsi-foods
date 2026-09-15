@@ -1,7 +1,20 @@
 {% extends "base.html" %}
 {% block meta %}
-<meta name="description" content="{{ item_description }}">
-<title>{{ item.name }} | Tulsi Foods, Mylapore</title>
+<meta name="description" content="{{ item_description }} — {{ item.price }} INR, pure vegetarian, home-style, Mylapore Chennai. Order direct on WhatsApp, no platform fees.">
+<title>{{ item.name }} @ ₹{{ item.price }} | Tulsi Foods, Mylapore</title>
+<meta property="og:type" content="product">
+<meta property="og:title" content="{{ item.name }} | Tulsi Foods, Mylapore">
+<meta property="og:description" content="{{ item_description }}">
+<meta property="og:url" content="{{ item_url }}">
+<meta property="og:image" content="{{ photo_url or 'https://tulsifoods.app/static/logo.png' }}">
+<meta property="og:locale" content="en_IN">
+<meta property="og:site_name" content="Tulsi Foods">
+<meta property="product:price:amount" content="{{ item.price }}">
+<meta property="product:price:currency" content="INR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ item.name }} | Tulsi Foods, Mylapore">
+<meta name="twitter:description" content="{{ item_description }}">
+<meta name="twitter:image" content="{{ photo_url or 'https://tulsifoods.app/static/logo.png' }}">
 {% endblock %}
 {% block canonical %}<link rel="canonical" href="{{ item_url }}">{% endblock %}
 {% block fonts %}
@@ -14,7 +27,7 @@
 <div id="item-app">
   <header class="mh">
     <a class="mh-brand" href="/">
-      <img src="/static/logo.png" alt="" class="mh-logo">
+      <img src="/static/logo.png" alt="Tulsi Foods" class="mh-logo">
       <div>
         <div class="mh-name">Tulsi Foods</div>
         <div class="mh-sub"><span class="veg-mark" aria-hidden="true"></span>Mylapore · 100% pure veg</div>
@@ -22,12 +35,17 @@
     </a>
   </header>
 
-  <main>
-    <a class="back" href="/menu">← full menu</a>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/">Home</a> <span class="bc-sep">›</span>
+    <a href="/menu">Menu</a> <span class="bc-sep">›</span>
+    <span class="bc-cur">{{ item.group }}</span> <span class="bc-sep">›</span>
+    <span class="bc-cur">{{ item.name }}</span>
+  </nav>
 
+  <main>
     {% if has_photo %}
     <div class="photo">
-      <img src="{{ photo_url }}" alt="{{ item.name }}">
+      <img src="{{ photo_url }}" alt="{{ item.name }}, pure vegetarian, Tulsi Foods Mylapore" width="400" height="300">
     </div>
     {% endif %}
 
@@ -35,41 +53,60 @@
       <h1>{{ item.name }}</h1>
       {% if item.popular %}<span class="pop">popular</span>{% endif %}
     </div>
-    <div class="cat"><span class="veg-mark" aria-hidden="true"></span>{{ item.group }} · pure veg</div>
-    {% if item.description %}<p class="desc">{{ item.description }}</p>{% endif %}
+    <div class="cat"><span class="veg-mark" aria-hidden="true"></span>{{ item.group }} · {{ "Half portion available" if half else "Full portion" }} · pure veg</div>
 
     <div class="status">
       {% if available %}
-      <span class="av">Available now</span>
+      <span class="av">● Available now</span>
       {% else %}
-      <span class="sold">{{ unavailable_reason or "Finished for today" }}</span>
+      <span class="sold">○ {{ status_text }}</span>
       {% endif %}
     </div>
 
-    <div class="price">₹{{ item.price }}</div>
-    {% if half %}
-    <div class="half">Half portion also available — <b>₹{{ half }}</b></div>
-    {% endif %}
+    <div class="price">
+      ₹{{ item.price }}
+      {% if half %}<span class="half-inline">· ₹{{ half }} (half)</span>{% endif %}
+    </div>
 
     <a class="cta wa" href="{{ wa_link }}" target="_blank" rel="noopener">Order on WhatsApp →</a>
-    <a class="cta menu" href="/menu">Browse the full menu</a>
+    <a class="cta menu" href="/menu">Order online — see full menu</a>
   </main>
+
+  <section class="about">
+    <h2>About {{ item.name }}</h2>
+    <p>{{ item_description }}</p>
+    <p class="facts">Made fresh to order at Tulsi Foods, a home-style pure vegetarian kitchen in Mylapore, Chennai — no aggregator, no platform fees.</p>
+  </section>
+
+  <section class="ordering">
+    <h2>Order {{ item.name }} today</h2>
+    <ul>
+      <li><b>Order on WhatsApp</b> — {{ ordering.whatsapp }}. Fastest, and we usually deliver in about 40 minutes within Mylapore.</li>
+      <li><b>By phone</b> — {{ ordering.phone }}.</li>
+      <li><b>Online</b> — use the menu, add to cart and check out on this site.</li>
+      <li><b>Pickup</b> — {{ ordering.address }}.</li>
+      <li><b>Delivery</b> — {{ ordering.zones }}.</li>
+      <li><b>Hours</b> — {{ ordering.hours }}.</li>
+    </ul>
+  </section>
 
   {% if related %}
   <section class="related">
-    <h2>From the {{ item.group|lower }} menu</h2>
+    <h2>More {{ item.group|lower }} from the menu</h2>
+    <p class="related-note">These go well or cook the same way — order a couple together.</p>
     {% for r in related %}
     <a class="rel-card" href="/menu/{{ r.id.split('__')[0] }}">
       {% if r.photo_id in dish_photos %}
-      <div class="rel-photo"><img src="/static/img/dishes/{{ r.photo_id }}.jpg" alt="{{ r.name }}" loading="lazy"></div>
+      <div class="rel-photo"><img src="/static/img/dishes/{{ r.photo_id }}.jpg" alt="{{ r.name }}" loading="lazy" width="48" height="48"></div>
       {% endif %}
       <div class="rel-body">
         <div class="rel-name"><span class="veg-mark" aria-hidden="true"></span>{{ r.name }}</div>
-        <div class="rel-sub">₹{{ r.price }}</div>
+        <div class="rel-sub">₹{{ r.price }}{% if r.popular %} · popular{% endif %}</div>
       </div>
       <span class="rel-arrow">→</span>
     </a>
     {% endfor %}
+    <a class="rel-all" href="/menu">View the full Tulsi Foods menu →</a>
   </section>
   {% endif %}
 
@@ -101,10 +138,13 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .mh-name { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; line-height: 1.1; }
 .mh-sub { font-size: 11px; opacity: .85; margin-top: 2px; }
 
-main { flex: 1; padding: 16px 18px; }
+.breadcrumb { font: 500 12px 'IBM Plex Mono', monospace; color: var(--sub); padding: 12px 18px 0; }
+.breadcrumb a { color: var(--g); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.bc-sep { margin: 0 5px; color: #B9B2A2; }
+.bc-cur { color: var(--sub); }
 
-.back { display: inline-block; font: 500 13px 'IBM Plex Mono', monospace; color: var(--g); text-decoration: none; margin-bottom: 12px; }
-.back:hover { text-decoration: underline; }
+main { flex: 1; padding: 14px 18px 4px; }
 
 .photo { width: 100%; aspect-ratio: 4/3; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: #fff; margin-bottom: 16px; }
 .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -118,23 +158,32 @@ h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; line-heigh
 .veg-mark { flex: none; display: inline-block; width: 12px; height: 12px; border: 1.5px solid var(--g); border-radius: 2px; position: relative; }
 .veg-mark::after { content: ''; position: absolute; width: 6px; height: 6px; background: var(--g); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 
-.desc { font-size: 14px; line-height: 1.6; color: #3C4137; margin-top: 12px; }
-
 .status { margin-top: 14px; }
 .av { font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--g); }
 .sold { font: 600 12px/1 'IBM Plex Mono', monospace; color: #B3261E; }
 
 .price { font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px; font-weight: 700; margin-top: 14px; }
-.half { font-size: 13px; color: var(--sub); margin-top: 6px; }
-.half b { color: var(--ink); }
+.half-inline { font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--sub); }
 
 .cta { display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 12px; padding: 14px; margin-top: 14px; }
 .cta.wa { background: var(--g); color: #fff; }
 .cta.menu { background: #fff; color: var(--g); border: 1px solid var(--border); }
 .cta.menu:hover { border-color: var(--g); }
 
-.related { padding: 6px 18px 24px; }
-.related h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; margin-bottom: 12px; }
+section { padding: 22px 18px 0; }
+section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; margin-bottom: 8px; line-height: 1.2; }
+
+.about p { font-size: 14px; line-height: 1.65; color: #3C4137; }
+.about .facts { font-size: 13px; color: var(--sub); margin-top: 8px; }
+
+.ordering ul { list-style: none; padding: 0; }
+.ordering li { font-size: 14px; line-height: 1.55; color: #3C4137; padding: 6px 0 6px 18px; position: relative; border-bottom: 1px dashed var(--line2); }
+.ordering li::before { content: ''; position: absolute; left: 0; top: 12px; width: 7px; height: 7px; border-radius: 50%; background: var(--g2); }
+.ordering li:last-child { border-bottom: none; }
+.ordering li b { color: var(--ink); }
+
+.related { padding-bottom: 8px; }
+.related-note { font-size: 13px; color: var(--sub); margin-bottom: 12px; }
 .rel-card { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; text-decoration: none; color: var(--ink); margin-bottom: 10px; }
 .rel-photo { width: 48px; height: 48px; flex: 0 0 auto; border-radius: 10px; overflow: hidden; }
 .rel-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -144,8 +193,10 @@ h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; line-heigh
 .rel-name .veg-mark::after { width: 5px; height: 5px; }
 .rel-sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
 .rel-arrow { color: var(--g); font-size: 16px; }
+.rel-all { display: inline-block; font: 600 13px 'IBM Plex Mono', monospace; color: var(--g); text-decoration: none; margin-top: 4px; }
+.rel-all:hover { text-decoration: underline; }
 
-.mf { padding: 18px 14px 32px; text-align: center; font-size: 12px; color: var(--sub); border-top: 1px solid var(--line2); }
+.mf { padding: 18px 14px 32px; text-align: center; font-size: 12px; color: var(--sub); border-top: 1px solid var(--line2); margin-top: 24px; }
 .mf a { color: var(--g); text-decoration: none; }
 .mf a:hover { text-decoration: underline; }
 .mf-sep { margin: 0 6px; }
@@ -153,8 +204,10 @@ h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; line-heigh
 @media (min-width: 600px) {
   #item-app { max-width: 720px; }
   main { max-width: 640px; margin: 0 auto; }
+  section { max-width: 640px; margin: 0 auto; }
 }
 </style>
 
 <script type="application/ld+json">{{ item_schema | tojson }}</script>
+<script type="application/ld+json">{{ breadcrumb_schema | tojson }}</script>
 {% endblock %}
