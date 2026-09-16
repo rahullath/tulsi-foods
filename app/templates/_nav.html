@@ -12,7 +12,7 @@
   <div class="nav-links">
     {% if categories %}
     <span class="nav-drop">
-      <a href="/menu" aria-haspopup="true">Categories <small style="opacity:.6">▾</small></a>
+      <a href="/category" aria-haspopup="true">Categories <small style="opacity:.6">▾</small></a>
       <div class="nav-drop-menu" role="menu">
         {% for c in categories %}<a href="/category/{{ c.slug }}" role="menuitem">{{ c.name }}</a>{% endfor %}
         <a href="/menu" class="nav-drop-all">View full menu &rarr;</a>
@@ -34,7 +34,7 @@
     <a href="/about">Our story</a>
     <a href="/about#contact">Contact</a>
     {% if categories %}
-    <div class="nav-panel-cats-label">Categories</div>
+    <div class="nav-panel-cats-label"><a href="/category" style="color:inherit;text-decoration:none;">Categories — browse all &rarr;</a></div>
     {% for c in categories %}<a href="/category/{{ c.slug }}" class="nav-panel-cat">{{ c.name }}</a>{% endfor %}
     {% endif %}
     <a href="/menu" class="nav-cta nav-panel-cta">Order online</a>

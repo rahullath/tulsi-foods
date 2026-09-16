@@ -67,6 +67,7 @@ Entity anchors repeated verbatim everywhere (footer aka-line + llms.txt):
 | `/` | ✓ | "North Indian food, cooked the way it is at home." | Restaurant, FAQPage | ✓ |
 | `/menu` | ✓ | "Today's menu" | Menu | ✓ |
 | `/menu/{id}` (×150) | ✓ unique | dish name | Product, BreadcrumbList | ✓ |
+| `/category` | ✓ | "Browse the menu by category" (+10 h2s) | ItemList, BreadcrumbList | ✓ |
 | `/category/{slug}` (×10) | ✓ unique | group name | ItemList, BreadcrumbList | ✓ |
 | `/track`, `/track/{ref}` | ✓ | "Where's my order?" / status-driven | — (app surface) | ✓ (`/track`) |
 | `/delivery` | ✓ | "Where we deliver, and what it costs" | FAQPage | ✓ |
@@ -87,7 +88,7 @@ c = TestClient(app)
 with c:  # context manager triggers db.init_db() startup
     cats = [x["slug"] for x in all_categories()]
     pages = ["/", "/menu", "/track", "/delivery", "/about", "/bio",
-             "/404", "/updates", "/privacy-policy", "/refund-cancellation-policy"] \
+             "/404", "/updates", "/category", "/privacy-policy", "/refund-cancellation-policy"] \
         + [f"/category/{s}" for s in cats] + ["/menu/north-indian-thali"]
     sm = c.get("/sitemap.xml").text
     titles, h1s, bad_ld = [], [], []

@@ -565,6 +565,7 @@ def llms_txt():
     ]
     for cat in all_categories():
         lines.append(f"- {cat['name']} ({cat['count']} items): {SITE_URL}/category/{cat['slug']}")
+    lines.append(f"- [All categories]({SITE_URL}/category): the full category index in one page")
     lines += [
         "",
         "## Popular dishes",
@@ -593,6 +594,7 @@ SITEMAP_TEMPLATES = {
     "/track": "track-landing.html",
     "/404": "404.html",
     "/updates": "updates.html",
+    "/category": "categories.html",
 }
 
 
@@ -600,6 +602,7 @@ SITEMAP_TEMPLATES = {
 # template and its data file, so new entries bump the date without a deploy.
 SITEMAP_DATA_FILES = {
     "/updates": UPDATES_FILE,
+    "/category": Path("data/menu.json"),
 }
 
 
@@ -947,6 +950,45 @@ def admin_conversation_human(wa_id: str, body: HumanIn,
     from .whatsapp import sessions as wa_sessions
     wa_sessions.set_human(wa_id, body.human)
     return {"wa_id": wa_id, "human": body.human, "ok": True}
+
+
+@app.get("/category", response_class=HTMLResponse)
+def category_index(request: Request):
+    """Index of all food categories — the parent page the 10 category pages
+    hang off, with a card (photo, blurb, count, price range) per category."""
+    photos = dish_photo_ids()
+    groups = []
+    for cat in all_categories():
+        items = [m for m in menu.load_menu()
+                 if m["group"] == cat["name"] and not m["id"].endswith(menu.HALF_SUFFIX)]
+        items.sort(key=lambda m: (not m.get("popular"), m["name"]))
+        prices = [float(m["price"]) for m in items if isinstance(m.get("price"), (int, float))]
+        photo = next((m["id"] for m in items if m["id"] in photos), None)
+        groups.append({"name": cat["name"], "slug": cat["slug"], "count": len(items),
+                       "blurb": CATEGORY_BLURBS.get(cat["name"]) or "",
+                       "photo": photo,
+                       "low": min(prices) if prices else None,
+                       "high": max(prices) if prices else None})
+    index_url = f"{SITE_URL}/category"
+    return templates.TemplateResponse(
+        request,
+        "categories.html",
+        {"groups": groups, "categories": all_categories(),
+         "total_items": sum(g["count"] for g in groups), "index_url": index_url,
+         "index_json_ld": [
+             {"@context": "https://schema.org", "@type": "ItemList",
+              "name": "Tulsi Foods menu categories", "url": index_url,
+              "numberOfItems": len(groups),
+              "itemListElement": [
+                  {"@type": "ListItem", "position": i + 1,
+                   "name": g["name"], "url": f"{SITE_URL}/category/{g['slug']}"}
+                  for i, g in enumerate(groups)]},
+             {"@context": "https://schema.org", "@type": "BreadcrumbList",
+              "itemListElement": [
+                  {"@type": "ListItem", "position": 1, "name": "Home", "item": SITE_URL},
+                  {"@type": "ListItem", "position": 2, "name": "Categories", "item": index_url}]},
+         ]},
+    )
 
 
 @app.get("/category/{slug}", response_class=HTMLResponse)

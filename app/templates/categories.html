@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block meta %}
+<meta name="description" content="Browse every Tulsi Foods category — thalis, parathas, chaat, sabzi, desserts and more, with today's Mylapore prices. Pure veg, cooked to order.">
+<title>Menu Categories | Tulsi Foods, Mylapore</title>
+{% for schema in index_json_ld %}
+<script type="application/ld+json">{{ schema | tojson }}</script>
+{% endfor %}
+{% endblock %}
+{% block canonical %}<link rel="canonical" href="https://tulsifoods.app/category">{% endblock %}
+{% block styles %}{% endblock %}
+{% block body %}
+<style>
+:root { --g: #0E7A45; --sf: #E08A1E; --bg: #FBF8F2; --card: #fff; --border: #E7E1D6; --ink: #171A14; --sub: #6F7468; --line2: #EFEBE3; }
+* { box-sizing: border-box; margin: 0; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+
+.page { max-width: 1120px; margin: 0 auto; padding: 48px 40px 64px; }
+.crumb { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--sub); }
+.crumb a { color: var(--g); text-decoration: none; }
+.crumb a:hover { text-decoration: underline; }
+
+.hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center; margin-top: 26px; }
+.page-tag { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--g); letter-spacing: .05em; text-transform: uppercase; }
+.page h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(32px, 4vw, 44px); margin: 12px 0 0; line-height: 1.05; }
+.page-sub { margin: 16px 0 0; font-size: 16px; line-height: 1.65; color: #43483F; max-width: 560px; }
+.page-sub a { color: var(--g); font-weight: 600; text-decoration: none; }
+.hero-photo { border-radius: 16px; overflow: hidden; aspect-ratio: 4 / 3; background: #F0F3E8; }
+.hero-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero-cta { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; }
+.hero-cta a { border-radius: 12px; padding: 14px 24px; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.hero-cta .primary { background: var(--g); color: #fff; }
+.hero-cta .ghost { background: var(--card); color: var(--g); border: 1px solid var(--border); }
+
+.groups { margin-top: 44px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.g-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit; display: flex; gap: 0; transition: transform .15s ease, box-shadow .15s ease; }
+.g-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(20, 30, 15, .08); }
+.g-photo { width: 168px; flex: 0 0 auto; background: #F0F3E8; min-height: 132px; }
+.g-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.g-body { padding: 18px 20px; }
+.g-body h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; margin: 0; line-height: 1.2; }
+.g-meta { margin-top: 8px; font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--sub); }
+.g-blurb { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #43483F; }
+.g-link { display: inline-block; margin-top: 12px; font-size: 14px; font-weight: 600; color: var(--g); }
+
+.page-cta { margin-top: 48px; background: var(--g); color: #fff; border-radius: 16px; padding: 32px 34px; display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+.page-cta-text { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; }
+.page-cta a { background: #fff; color: var(--g); border-radius: 12px; padding: 14px 24px; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+
+@media (max-width: 768px) {
+  .page { padding: 32px 18px 48px; }
+  .hero { grid-template-columns: 1fr; gap: 24px; }
+  .groups { grid-template-columns: 1fr; gap: 12px; }
+  .g-photo { width: 120px; min-height: 110px; }
+  .page-cta { flex-direction: column; text-align: center; }
+}
+</style>
+
+<div class="page">
+  <div class="crumb"><a href="/">Home</a> &rarr; Categories</div>
+
+  <div class="hero">
+    <div>
+      <div class="page-tag">All categories · {{ total_items }} dishes</div>
+      <h1>Browse the menu by category</h1>
+      <p class="page-sub">Every Tulsi Foods category on one page — thalis, parathas, chaat, sabzi, desserts and more, with today's prices. Everything is pure veg and cooked after you order; most mains come in <a href="/menu">half portions</a> too.</p>
+      <div class="hero-cta">
+        <a class="primary" href="/menu">Order from today's menu</a>
+        <a class="ghost" href="https://wa.me/919940062840?text=Hi%2C%20I%20want%20to%20place%20an%20order." target="_blank" rel="noopener">Order on WhatsApp</a>
+      </div>
+    </div>
+    <div class="hero-photo"><img src="/static/img/dishes/mini-thali.jpg" alt="Tulsi Foods mini thali — dal, sabzi, phulka, rice and curd" loading="eager" fetchpriority="high"></div>
+  </div>
+
+  <div class="groups">
+    {% for g in groups %}
+    <a class="g-card" href="/category/{{ g.slug }}">
+      {% if g.photo %}<div class="g-photo"><img src="/static/img/dishes/{{ g.photo }}.jpg" alt="{{ g.name }} at Tulsi Foods, Mylapore" loading="lazy"></div>{% endif %}
+      <div class="g-body">
+        <h2>{{ g.name }}</h2>
+        <div class="g-meta">{{ g.count }} item{{ '' if g.count == 1 else 's' }}{% if g.low %} · ₹{{ g.low|int }}{% if g.high and g.high != g.low %}–₹{{ g.high|int }}{% endif %}{% endif %}</div>
+        {% if g.blurb %}<p class="g-blurb">{{ g.blurb }}</p>{% endif %}
+        <span class="g-link">See all {{ g.count }} &rarr;</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <div class="page-cta">
+    <div class="page-cta-text">Hungry already? The kitchen is on till 9 PM.</div>
+    <a href="/menu">See today's full menu</a>
+  </div>
+</div>
+{% endblock %}
