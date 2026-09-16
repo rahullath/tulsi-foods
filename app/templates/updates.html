@@ -26,6 +26,8 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
 .card-photo { aspect-ratio: 16 / 9; background: #F0F3E8; }
 .card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-photo.portrait { aspect-ratio: auto; background: #5F7E4D; }
+.card-photo.portrait img { height: auto; max-height: 440px; object-fit: contain; }
 .card-body { padding: 20px 22px 22px; }
 .card-meta { display: flex; align-items: center; gap: 10px; font: 500 11px/1 'IBM Plex Mono', monospace; }
 .card-kind { color: #fff; background: var(--g); border-radius: 999px; padding: 5px 11px; letter-spacing: .05em; text-transform: uppercase; }
@@ -60,7 +62,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
     {% for u in updates %}
     <article class="card">
       {% if u.image %}
-      <div class="card-photo"><img src="{{ u.image }}" alt="{{ u.image_alt }}" loading="lazy"></div>
+      <div class="card-photo{% if u.orientation == 'portrait' %} portrait{% endif %}"><img src="{{ u.image }}" alt="{{ u.image_alt }}" loading="lazy"></div>
       {% elif u.photo %}
       <div class="card-photo"><img src="/static/img/dishes/{{ u.photo }}.jpg" alt="{{ u.title }}, Tulsi Foods Mylapore" loading="lazy"></div>
       {% endif %}

@@ -108,6 +108,20 @@ UPDATE_KIND_LABELS = {
 }
 
 
+def _image_orientation(src: str | None) -> str | None:
+    """portrait/landscape for a /static/ image path, so templates can fit
+    tall posters with contain instead of cropping them. None when unknown."""
+    if not src or not src.startswith("/static/"):
+        return None
+    try:
+        from PIL import Image
+        with Image.open(Path("app") / src[len("/static/"):]) as im:
+            w, h = im.size
+        return "portrait" if h > w * 1.1 else "landscape"
+    except Exception:
+        return None
+
+
 def _display_date(iso: str) -> str:
     try:
         return datetime.strptime(iso, "%Y-%m-%d").strftime("%d %b %Y").lstrip("0")
@@ -139,6 +153,7 @@ def load_updates() -> list[dict]:
             "photo": e["photo"] if e.get("photo") in photos else None,
             "image": e.get("image") or None,
             "image_alt": e.get("image_alt") or e["title"],
+            "orientation": _image_orientation(e.get("image")),
             "dishes": [{"id": d, "name": menu.get_item(d)["name"]} for d in dishes],
             "source": e.get("source") or None,
             "source_label": e.get("source_label") or "See the original",
