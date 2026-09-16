@@ -52,6 +52,25 @@ def dish_photo_ids() -> set[str]:
     return {p.stem for p in DISH_PHOTO_DIR.glob("*.jpg")}
 
 
+CATEGORY_HERO_DIR = Path("app/static/img/categories")
+
+# Per-category hero alt text when the image needs describing (e.g. a poster
+# with baked-in labels). Falls back to "<Group> at Tulsi Foods, Mylapore".
+CATEGORY_HERO_ALT = {
+    "thalis-combos": "North Indian Thali box labelled compartment-wise: curd, jeera rice, gulab jamun, veg kofta, dal tadka, phulkas, salad and mix veg — Tulsi Foods, Mylapore",
+}
+
+
+def category_hero(slug: str) -> dict | None:
+    """Hero image for a category page, if present. Drop
+    app/static/img/categories/<slug>.jpg to feature a category — no code change."""
+    if (CATEGORY_HERO_DIR / f"{slug}.jpg").is_file():
+        group = next((g for g, s in group_slugs().items() if s == slug), slug)
+        return {"src": f"/static/img/categories/{slug}.jpg",
+                "alt": CATEGORY_HERO_ALT.get(slug, f"{group} at Tulsi Foods, Mylapore")}
+    return None
+
+
 def _group_slug(group: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", group.lower()).strip("-")
     return slug or "uncategorised"
@@ -1000,7 +1019,10 @@ def category_page(request: Request, slug: str):
     if not group:
         raise HTTPException(404, "Category not found")
     items = [m for m in menu.load_menu() if m["group"] == group and not m["id"].endswith(menu.HALF_SUFFIX)]
-    items.sort(key=lambda m: (not m.get("popular"), m["name"]))
+    photos = dish_photo_ids()
+    # Photo items first (no more walls of empty boxes), then popular, then A–Z.
+    items.sort(key=lambda m: ((m.get("photo_id") or m["id"]) not in photos,
+                              not m.get("popular"), m["name"]))
     items = [dict(m) for m in items]
     day = menu.today()
     for m in items:
@@ -1016,8 +1038,9 @@ def category_page(request: Request, slug: str):
         {"group": group, "slug": slug, "items": items, "categories": all_categories(),
          "count": len(items), "price_low": low, "price_high": high,
          "blurb": CATEGORY_BLURBS.get(group) or "",
-         "bestsellers": [m for m in items if m.get("popular")][:4],
-         "category_url": category_url, "dish_photos": dish_photo_ids()},
+"bestsellers": [m for m in items if m.get("popular")][:4],
+          "category_url": category_url, "dish_photos": photos,
+          "hero": category_hero(slug)},
     )
 
 

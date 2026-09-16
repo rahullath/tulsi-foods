@@ -147,6 +147,23 @@ Done so far: junk removal + `docs/` home for agent/misc notes. Deeper rebuild
 (defer; low ROI now): consolidate `app/` subpackages (`delivery/`, `whatsapp/`,
 `sms/`, `petpooja/`) docs → `docs/`, split `main.py` (>1k lines) into routers.
 
+### R2-13. Branded dish-photo placeholders — `[ ]`
+Dishes without photos show an empty green box (category pages now sort
+photo-items first, which hides the problem but doesn't solve it). Plan:
+- **Design (one sample, Mom approves):** 1080×1080, cream background `#FBF8F2`,
+  Tulsi leaf logo top, dish name in Bricolage Grotesque, "100% pure veg ·
+  Tulsi Foods, Mylapore" footer line, thin green `#0E7A45` border — same visual
+  language as the North Indian Thali poster (green + cream + labelled).
+- **Generate, don't photoshoot:** `scripts/make_placeholder.py` (PIL, fonts
+  already in repo via Google Fonts links — vendor the .ttf locally) renders one
+  `.jpg` per imageless item id into `app/static/img/dishes/`; real photos always
+  win (loader prefers existing files, never overwrites).
+- **Rollout:** run once for all photo-less ids, commit the files; templates need
+  zero changes (they already check `pid in dish_photos`). Alt text stays the
+  same shape as real photos.
+- **Keep honest:** placeholder is a branded card, never a fake food photo —
+  no stock imagery pretending to be the dish.
+
 ---
 
 ## 1. Telegram mini-app (Kitchen Console) — long-term

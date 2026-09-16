@@ -25,6 +25,8 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .page-sub { margin: 16px 0 0; font-size: 16px; line-height: 1.65; color: #43483F; max-width: 640px; }
 .price-range { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
 .price-range span { font: 500 12px/1 'IBM Plex Mono', monospace; color: #5B6B45; background: #F0F3E8; border: 1px solid #DDE4CC; border-radius: 999px; padding: 8px 13px; }
+.cat-hero { margin-top: 26px; border-radius: 16px; overflow: hidden; aspect-ratio: 16 / 7; background: #F0F3E8; }
+.cat-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .items { margin-top: 34px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
 .bestsellers { margin-top: 26px; }
@@ -76,6 +78,9 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
     {% if price_high and price_high != price_low %}<span>up to ₹{{ price_high }}</span>{% endif %}
     <span>pure veg · no onion-garlic &amp; Jain on request</span>
   </div>
+  {% if hero %}
+  <div class="cat-hero"><img src="{{ hero.src }}" alt="{{ hero.alt }}" loading="eager" fetchpriority="high"></div>
+  {% endif %}
 
   {% if bestsellers %}
   <div class="bestsellers" id="bestsellers">
