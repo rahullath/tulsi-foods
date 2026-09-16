@@ -63,11 +63,13 @@ CATEGORY_HERO_ALT = {
 
 def category_hero(slug: str) -> dict | None:
     """Hero image for a category page, if present. Drop
-    app/static/img/categories/<slug>.jpg to feature a category — no code change."""
-    if (CATEGORY_HERO_DIR / f"{slug}.jpg").is_file():
-        group = next((g for g, s in group_slugs().items() if s == slug), slug)
-        return {"src": f"/static/img/categories/{slug}.jpg",
-                "alt": CATEGORY_HERO_ALT.get(slug, f"{group} at Tulsi Foods, Mylapore")}
+    app/static/img/categories/<slug>.jpg (.png/.webp also work) to feature a
+    category — no code change."""
+    for ext in ("jpg", "jpeg", "png", "webp"):
+        if (CATEGORY_HERO_DIR / f"{slug}.{ext}").is_file():
+            group = next((g for g, s in group_slugs().items() if s == slug), slug)
+            return {"src": f"/static/img/categories/{slug}.{ext}",
+                    "alt": CATEGORY_HERO_ALT.get(slug, f"{group} at Tulsi Foods, Mylapore")}
     return None
 
 
@@ -135,6 +137,8 @@ def load_updates() -> list[dict]:
             "title": e["title"],
             "text": e["text"],
             "photo": e["photo"] if e.get("photo") in photos else None,
+            "image": e.get("image") or None,
+            "image_alt": e.get("image_alt") or e["title"],
             "dishes": [{"id": d, "name": menu.get_item(d)["name"]} for d in dishes],
             "source": e.get("source") or None,
             "source_label": e.get("source_label") or "See the original",

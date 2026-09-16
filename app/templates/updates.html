@@ -31,6 +31,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .card-kind { color: #fff; background: var(--g); border-radius: 999px; padding: 5px 11px; letter-spacing: .05em; text-transform: uppercase; }
 .card-kind.kind-offer { background: var(--sf); }
 .card-kind.kind-milestone { background: #5B6B45; }
+.card-kind.kind-instagram { background: #7A3FAA; }
 .card-date { color: var(--sub); }
 .card h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 21px; margin: 12px 0 0; line-height: 1.25; }
 .card p { margin: 10px 0 0; font-size: 15px; line-height: 1.7; color: #43483F; }
@@ -58,7 +59,9 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
   <div class="feed">
     {% for u in updates %}
     <article class="card">
-      {% if u.photo %}
+      {% if u.image %}
+      <div class="card-photo"><img src="{{ u.image }}" alt="{{ u.image_alt }}" loading="lazy"></div>
+      {% elif u.photo %}
       <div class="card-photo"><img src="/static/img/dishes/{{ u.photo }}.jpg" alt="{{ u.title }}, Tulsi Foods Mylapore" loading="lazy"></div>
       {% endif %}
       <div class="card-body">
