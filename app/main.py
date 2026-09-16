@@ -115,7 +115,7 @@ def _image_orientation(src: str | None) -> str | None:
         return None
     try:
         from PIL import Image
-        with Image.open(Path("app") / src[len("/static/"):]) as im:
+        with Image.open(Path("app/static") / src[len("/static/"):]) as im:
             w, h = im.size
         return "portrait" if h > w * 1.1 else "landscape"
     except Exception:
