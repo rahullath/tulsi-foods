@@ -14,6 +14,7 @@ from .config import (
     PETPOOJA_APP_KEY,
     PETPOOJA_APP_SECRET,
     PETPOOJA_FETCH_MENU_URL,
+    PETPOOJA_PROXY_URL,
     PETPOOJA_REST_ID,
     PETPOOJA_RIDER_STATUS_URL,
     PETPOOJA_SAVE_ORDER_URL,
@@ -22,6 +23,16 @@ from .config import (
 from .mapping import order_to_save_order_payload
 
 log = logging.getLogger("petpooja")
+
+
+def _client(timeout: float) -> httpx.Client:
+    """httpx client for Petpooja calls.
+
+    Routes everything through PETPOOJA_PROXY_URL when set so order-placement
+    requests egress from one static IP (Petpooja's live-integration
+    requirement, §3.7) and talks directly when it's blank (sandbox).
+    """
+    return httpx.Client(proxy=PETPOOJA_PROXY_URL or None, timeout=timeout)
 
 
 class PetpoojaError(Exception):
@@ -62,7 +73,7 @@ def save_order(order: dict, callback_url: str, gst_rate: float) -> dict:
         "udid": "",
         "device_type": "Web",
     }
-    with httpx.Client(timeout=20) as c:
+    with _client(20) as c:
         r = c.post(PETPOOJA_SAVE_ORDER_URL, json=payload)
         try:
             data = r.json()
@@ -89,7 +100,7 @@ def cancel_order(client_order_id: int, reason: str) -> dict:
         "cancelReason": reason,
         "status": "-1",
     }
-    with httpx.Client(timeout=20) as c:
+    with _client(20) as c:
         r = c.post(PETPOOJA_UPDATE_ORDER_STATUS_URL, json=payload)
         try:
             data = r.json()
@@ -102,7 +113,7 @@ def fetch_menu() -> dict:
     """Pull the current menu from Petpooja POS. Not yet wired into app/menu.py
     (data/menu.json is still the live catalog source) — see docs/HANDOFF.md
     for the reconciliation this needs before it can replace it."""
-    with httpx.Client(timeout=30) as c:
+    with _client(30) as c:
         r = c.post(PETPOOJA_FETCH_MENU_URL, json={"restID": PETPOOJA_REST_ID})
         try:
             data = r.json()
@@ -123,7 +134,7 @@ def push_rider_status(client_order_id: int, status: str, rider_name: str | None 
         "external_order_id": "",
         "rider_data": {"rider_name": rider_name or "", "rider_phone": rider_phone or ""},
     }
-    with httpx.Client(timeout=20) as c:
+    with _client(20) as c:
         r = c.post(PETPOOJA_RIDER_STATUS_URL, json=payload)
         try:
             data = r.json()

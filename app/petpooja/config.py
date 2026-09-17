@@ -46,6 +46,18 @@ PETPOOJA_RIDER_STATUS_URL = os.environ.get(
 # being set up — see docs/HANDOFF.md.
 PETPOOJA_WEBHOOK_TOKEN = os.environ.get("PETPOOJA_WEBHOOK_TOKEN", "")
 
+# Optional HTTP(S) proxy for ALL outbound Petpooja calls (Save Order,
+# menu fetch, status updates, rider status). Used so every order-placement
+# request egresses from one static IP ("PETPOOJA_PROXY_URL" e.g.
+# http://user:pass@proxy.example.com:3128) — Petpooja requires a static
+# source IP for the live integration (see docs/PETPOOJA_INTEGRATION.md §3.7).
+# Empty = direct connection (fine for the sandbox).
+#
+# NOTE: if the proxy password itself contains a "@", leave it UNencoded
+# here — httpx splits userinfo on the last "@" and handles it correctly,
+# and the stored env value (not curl) is what matters. (curl needs "%40".)
+PETPOOJA_PROXY_URL = os.environ.get("PETPOOJA_PROXY_URL", "")
+
 # Static restaurant info Save Order wants in the top-level request (not the
 # OrderInfo/Restaurant object) — reuse what Borzo already has on file.
 from ..delivery.config import PICKUP_ADDRESS, PICKUP_PHONE  # noqa: E402
