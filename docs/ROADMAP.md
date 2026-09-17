@@ -118,12 +118,14 @@ but extend to a story strip ("Why we started this instead of Swiggy/Zomato" →
 commissions), a `/story` or on-landing section, footer line, and pinned journal
 entry. Positioning: the anti-commission, self-sustaining small-business model.
 
-### R2-9. Dine-in QR ordering (table number → Petpooja, not WhatsApp) — `[ ]`
-Table-place QR → lightweight menu/order submission bound to a table number →
-goes into Petpooja POS directly (unlike web/WhatsApp orders). Do NOT build
-until: (a) Petpooja prod creds are issued, (b) we observe how Mom's current
-dine-in order-taking actually works (see R2-10) — the flow may be better served
-by paper + a quick tablet entry than a customer-facing QR.
+### R2-9. Dine-in QR ordering (table number → Petpooja, not WhatsApp) — `[x]`
+Sandbox integration done + verified end-to-end on the live server (order 15:
+Save Order → accept → callback flips `new → preparing → ready`). Full status
+in `docs/PETPOOJA_INTEGRATION.md`. **Remaining before go-live (all external):**
+(a) Railway Pro static egress IPs enabled + all IPs whitelisted with Petpooja
+(**required** — Shivam Sep 16, §3.7), (b) menu ID reconciliation vs their real catalog (§3.2),
+(c) wire admin cancel → `cancel_order()` (§3.1), (d) prod creds + re-run test
+scenarios. Dine-in QR flow itself still pending (see R2-10).
 
 ### R2-10. Local customer-flow research — `[ ]`
 People behave weirder than data predicts. Before R2-1/R2-9, spend time in the

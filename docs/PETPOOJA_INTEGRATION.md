@@ -210,15 +210,47 @@ update all `PETPOOJA_*` env vars (local + Railway) and re-verify the
 staging URLs in `config.py`'s defaults still apply, or override via env if
 not.
 
-### 3.7 IP whitelisting scope, worth double-checking
-The sandbox guide says the dashboard is IP-restricted, and Shivam's email
-asked for a public IP to whitelist it. In practice, the actual Save Order
-API calls succeeded both from a local machine and from Railway's servers
-(different IPs, neither of which is the `188.29.111.40` originally shared)
-— suggesting the IP restriction applies only to *dashboard login*, not the
-API endpoints themselves. Worth confirming explicitly with Petpooja before
-assuming production API calls from Railway will just work without any
-additional whitelisting step.
+### 3.7 Static egress IP REQUIRED for production (Shivam, Sep 16 — confirmed)
+The sandbox guide said the dashboard is IP-restricted, and Save Order API calls
+succeeded from a local machine and from Railway's servers (different IPs,
+neither of which is the `188.29.111.40` originally shared), so we suspected the
+restriction applied only to *dashboard login*. **Shivam Tiwari's Sep 16 email
+removes that doubt**: a static IP is required for the *live* integration so
+Petpooja can verify every order-placement request originates from one. Treat
+production Save Order as IP-whitelisted; don't plan around it "just working".
+
+**Our infra (confirmed 2026-09-17):** the live site runs on **Railway** —
+`tulsifoods.app` CNAMEs to `u0tbzotf.up.railway.app`; edge headers
+`server: railway-hikari`, `x-railway-edge: lhr1`. The Fly.io app
+(`tulsi-foods`) found on the dev machine is a **stale, suspended leftover**
+(trial ended Aug 2026) — do not touch it; ignore the old `_fly-ownership` DNS
+record and the `66.241.125.250` A record in `tulsifoods.app_dns_records.csv`
+(they belong to the old Fly deployment). Railway deploy is Dockerfile-based,
+EXPOSE 8000, via `git push`-triggered rebuild.
+
+**Plan (go-live blocker):**
+1. **Railway Pro plan required** for static outbound IPs ($20/mo, covers the
+   first $20 of usage). Confirm the account already pays for Pro — if not,
+   upgrade first.
+2. In the Railway dashboard: Project → tulsifoods service → **Settings →
+   Networking → Enable Static IPs** (Pro). No CLI needed (not installed on the
+   dev machine). Traffic is load-balanced over the assigned IPv4s (3 by
+   default since the July 2026 HA migration), so **Petpooja must whitelist ALL
+   of them**, not one.
+3. **Redeploy the service** after enabling — IPs only take effect after that.
+4. Verify the machine really egresses from those IPs: Railway web-shell
+   (dashboard → service → … → Shell) → `curl https://api.ipify.org`. Repeat a
+   couple of times to confirm all 3 show up.
+5. Email Shivam the full list of IPv4s for whitelisting (all of them, with the
+   "3 addresses, load-balanced" note).
+6. **Caveat — may be SHARED, not dedicated:** Railway's static outbound IPs
+   are not guaranteed dedicated per-customer (they may be shared with other
+   Railway Pro customers' egress). For Petpooja's stated need — *verify all
+   order placement requests originate from a static IP* — a stable/static
+   address is what matters and these qualify. If Shivam turns out to need a
+   *dedicated* address instead, fallback is a tiny static-IP proxy/egress VPS
+   (QuotaGuard ~$19/mo or a $5 VPS) and pointing `PETPOOJA_SAVE_ORDER_URL`
+   traffic through it. Ask this explicitly in the reply.
 
 ## 4. Sandbox Dashboard — Endpoint Configuration
 
@@ -277,10 +309,14 @@ response is `content-length: 0`). Get Store Status intentionally drops
    expected response format.
 7. Fire one `push_rider_status()` and one `cancel_order()` call against the
    sandbox manually to confirm they don't error before relying on them live.
-8. When Petpooja sends production credentials: swap `.env`/Railway vars,
-   update all endpoint URLs if production URLs differ, re-run
-   `scripts/petpooja_test_orders.py` against production endpoints before
-   taking real customer orders through it.
+8. When Petpooja sends production credentials: swap `.env`/Fly secrets
+   (`fly secrets set PETPOOJA_*`), update all endpoint URLs if production URLs
+   differ, re-run `scripts/petpooja_test_orders.py` against production
+   endpoints before taking real customer orders through it.
+   - **Static egress IP is now a hard prerequisite (§3.7)** — enable Railway
+     Pro static outbound IPs for the service, get all assigned IPv4s
+     whitelisted with Petpooja and verified before production credentials
+     land; production Save Order will reject others.
 
 ## 6. Reference
 
