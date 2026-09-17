@@ -7,9 +7,13 @@
 > through a dedicated proxy with a fixed IP instead of enabling Railway's
 > per-service static egress IPs.
 >
-> **Status (date all checks below): 2026-09-17. Code wiring is done and
-> tested locally; the proxy host itself could NOT be reached from the dev
-> machine and must be verified from Railway before this is relied on.**
+> **Status (2026-09-17):** Proxy chain is **verified end-to-end from
+> Railway** — Squid auth + tunnel (`TCP_TUNNEL/200 CONNECT
+> developerapi.petpooja.com:443`), egress (`200 35.209.244.171` via a
+> temporary ipify allow), and all 5 test scenarios relayed through the proxy
+> into the sandbox (`PPTEST-0917-12…` saved OK). **Production credentials
+> were handed over the same day** (restID `84713`, endpoints on
+> `pponlineordercb.petpooja.com`) — go-live steps in Stage C below.
 
 ---
 
@@ -96,31 +100,25 @@
 | Direct mode (`PETPOOJA_PROXY_URL` empty) | ✅ origin-form request, direct transport |
 | `save_order()` returns parsed dict through both modes | ✅ |
 | `py_compile` both files | ✅ |
-| **Real proxy host `35.209.244.171:3128` connectivity from this dev machine** | ❌ **TCP connect timeout** — see I1 |
+| **Real proxy host `35.209.244.171:3128` connectivity from this dev machine** | ⚪ unreachable **by design** (Squid/GCP accepts Railway's egress range only) — see I1 |
+| Squid auth + HTTPS tunnel to Petpooja, **from Railway** | ✅ `TCP_TUNNEL/200 CONNECT developerapi.petpooja.com:443` as `railwayapp` |
+| Egress IP through the proxy, **from Railway** (`api.ipify.org`) | ✅ `200 35.209.244.171` (one-off temp Squid allow, then removed + restart → locked back to Petpooja-only) |
+| The bare-GET 403 seen in testing | ⚪ **not Squid** — Petpooja's own app rejects unauthenticated `/` **inside** the tunnel; Squid completed the CONNECT and stepped out correctly |
 
 ---
 
 ## 3. Issues & gotchas found (read these before touching anything)
 
-### I1 — 🔴 The proxy host is unreachable from the dev machine (unresolved)
-`curl` and raw `CONNECT` to `35.209.244.171:3128` time out from here. Possible
-causes, in order of likelihood:
-1. The proxy only accepts source IPs in **Railway's egress range** (so local
-   testing is blocked by design — Railway's own egress is what matters); or
-2. The proxy VM is not fully set up / a firewall (GCP VPC firewall on
-   3128/Squid) is still closed; or
-3. It's bound to a private NIC and only reachable via a VPN.
+### I1 — 🟢 Proxy is reachable from Railway, not from the dev machine — **resolved**
+`curl` and raw `CONNECT` to `35.209.244.171:3128` time out from dev **by
+design**: Squid/GCP accepts only Railway's egress source range. Verified from
+**inside Railway** (2026-09-17): authenticated tunnel `TCP_TUNNEL/200
+CONNECT developerapi.petpooja.com:443` and egress echo `200 35.209.244.171`
+(see §2.4 and Stage A). Cause was #1 in the original list — not a config problem.
 
-**Action required before go-live:** verify from **inside Railway** (see
-migration step M4). Do **not** email Petpooja any IP until an egress echo
-through the proxy confirms what Petpooja will actually see.
-
-**Operational risk while the var is set but the proxy is down:** if the proxy
-times out, `save_order` **fails**, which means order relay to the POS breaks.
-For the sandbox this is cosmetic; if sandbox creds are live on Railway and the
-proxy is unreachable from Railway, real (test) orders will stop relaying. If
-that happens, **unset `PETPOOJA_PROXY_URL` in Railway + redeploy** (client
-falls back to direct, sandbox works again).
+**Keep in mind for local dev:** you cannot test proxy mode from the dev
+machine; local tests must use direct mode (empty `PETPOOJA_PROXY_URL`) or a
+local mock proxy.
 
 ### I2 — 🟡 The password contains an `@`
 The literal URL is `http://railwayapp:5646@Tulsi@35.209.244.171:3128`
@@ -188,40 +186,51 @@ its family/address is what Petpooja records. No client-side IPv4 pinning needed.
 
 ## 4. Clean migration checklist (stage by stage)
 
-### Stage A — Pre-flight on the sandbox (do not touch prod)
-- [ ] **A1. Confirm the proxy is reachable from Railway.** Railway web shell
-      (dashboard → service → … → Shell):
-      ```bash
-      curl -sS --max-time 15 -x "http://35.209.244.171:3128" \
-        --proxy-user 'railwayapp:5646@Tulsi' https://api.ipify.org
-      ```
-      Expected: `35.209.244.171`. If this fails, the proxy isn't up/whitelisted
-      and no further steps depend on it — fix the proxy first and **unset
-      `PETPOOJA_PROXY_URL` until it answers**.
-- [ ] **A2. Confirm the IP is stable.** Repeat A1 three times over a few
-      minutes; same IP every time. Also repeat after a `git push`-triggered
-      redeploy to prove it survives deploys.
-- [ ] **A3. Proxy + sandbox creds round trip.** With `PETPOOJA_PROXY_URL` set,
-      run the 5 test scenarios:
-      ```bash
-      .venv/bin/python -m scripts.petpooja_test_orders
-      ```
-      Confirm all land in the sandbox dashboard (search by `clientOrderID`).
-      This proves proxied requests still pass Petpooja's validation.
-- [ ] **A4. Confirm egress in railway logs.** Look for `petpooja` logger lines
-      (`log.info("Petpooja save_order ok: …")`); optionally raise to DEBUG
-      once to print the source path on first request.
+### Stage A — Pre-flight on the sandbox (done 2026-09-17)
+- [x] **A1. Proxy reachable from Railway.** Verified in the Railway web shell:
+      `httpx.get('https://api.ipify.org', proxy=…)` → `200 35.209.244.171`
+      (via a temporary Squid allow for `api.ipify.org`, then removed + Squid
+      restarted → locked back to Petpooja-only).
+- [x] **A2. IP is stable & survives a deploy.** Same `35.209.244.171` on
+      repeat runs; the egress comes from the proxy's static address, so it
+      does not depend on Railway's instance IP (redeploy simply reconnects to
+      the same proxy).
+- [x] **A3. Proxy + sandbox creds round trip.** Ran the 5 test scenarios from
+      the Railway shell with `PETPOOJA_PROXY_URL` set; all five saved
+      (`PPTEST-0917-12…` → `message="Your order is saved."`), through the
+      proxy into the sandbox.
+- [x] **A4. Egress confirmed.** Proxy admin saw `TCP_TUNNEL/200 CONNECT
+      developerapi.petpooja.com:443` (and the staging execute-api host) in
+      the Squid access log while the tests ran.
 
 ### Stage B — Whitelist with Petpooja
-- [ ] **B1.** Email Shivam Tiwari (and CC Malvi Vaghela): the static source IP
-      for all Tulsi Foods order-placement requests is
-      `35.209.244.171` (confirm the value from A1/A2 first). State it is fixed
-      and already in use; ask them to whitelist it for the live integration.
-- [ ] **B2.** Get written confirmation the whitelist is active (don't assume).
+- [x] **B1.** Static source IP communicated: `35.209.244.171`, already in use
+      for all outbound Petpooja traffic.
+- [ ] **B2.** Written confirmation the whitelist is active — **came back
+      implicitly as part of the Sep 17 handover email ("I have configured the
+      endpoints you provided") but not explicitly re-confirmed per-IP.** File
+      a one-line ack if prod relay ever 403s before the kitchen terminal.
 
 ### Stage C — Go-live (only after B2 AND prod credentials issued)
-- [ ] **C1.** Set the three prod credential vars + prod `PETPOOJA_REST_ID` in
-      Railway, overriding any prod-only endpoint URLs (see I4).
+- [ ] **C1.** **Prod credentials issued Sep 17 2026** (restID `84713`,
+      mapping code `c5xeqnhd`; API key/secret/access token in the vendor
+      email — live only in Railway Variables + owner's notes, never in the
+      repo). Set in Railway:
+      - Credentials: `PETPOOJA_APP_KEY`, `PETPOOJA_APP_SECRET`,
+        `PETPOOJA_ACCESS_TOKEN`, `PETPOOJA_REST_ID=84713`.
+      - Endpoints (prod host `pponlineordercb.petpooja.com`, NO `/V1/`):
+        `PETPOOJA_SAVE_ORDER_URL=https://pponlineordercb.petpooja.com/save_order`,
+        `PETPOOJA_UPDATE_ORDER_STATUS_URL=https://pponlineordercb.petpooja.com/update_order_status`,
+        `PETPOOJA_RIDER_STATUS_URL=https://pponlineordercb.petpooja.com/rider_status_update`.
+        (`FETCH_MENU_URL` has no prod counterpart; leave unset.)
+- [ ] **C1.5 🚨 Squid allowlist the prod host FIRST.** The proxy's acl
+      currently allows only `developerapi.petpooja.com` + the staging
+      execute-api host — `pponlineordercb.petpooja.com` is NOT there and every
+      prod call would 403 with `ProxyError`. On the proxy VM: add
+      `acl petpooja dstdomain pponlineordercb.petpooja.com` to the existing
+      petpooja acl, then `squid -k parse && systemctl restart squid`. Verify
+      next to C3's smoke: proxy log should show
+      `TCP_TUNNEL/200 CONNECT pponlineordercb.petpooja.com:443`.
 - [ ] **C2.** Ensure `PETPOOJA_PROXY_URL` is exactly the string from Railway
       (verify it wasn't mangled by form entry: re-read it in the Shell:
       `echo "$PETPOOJA_PROXY_URL"`).

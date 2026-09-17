@@ -1,13 +1,35 @@
 # Petpooja POS Integration — Status & Go-Live Checklist
 
-Last updated: 2026-09-05, after a full sandbox testing session (staging restID
-`qa3xsbk42g`, "Tulsi Foods" demo restaurant). Read this before touching
-`app/petpooja/` or flipping to production credentials — it captures what's
-verified, what's fixed, and what's still open so going live doesn't mean
-re-discovering the same bugs.
+Last updated: 2026-09-17 — **production credentials issued** (restID `84713`,
+"Tulsi Foods", prod endpoints on `pponlineordercb.petpooja.com`). Staging
+work (below) used restID `qa3xsbk42g`, "Tulsi Foods" demo restaurant. Read
+this before touching `app/petpooja/` — it captures what's verified, what's
+fixed, and what's still open so going live doesn't mean re-discovering the
+same bugs.
 
 Contact: Shivam Tiwari (Associate PM), Malvi Vaghela / Rohan Sakhrani for
 API support (`malvi.vaghela@petpooja.com`, `rohan.sakhrani@petpooja.com`).
+
+---
+
+## 0. Production configuration (Sep 17 2026)
+
+Handed over by the Petpooja onboarding email ("Welcome on board"):
+
+| Item | Production value |
+|---|---|
+| API key / secret / token | in Railway Variables + owner's notes — **keep out of the repo** |
+| restID | `84713` (restaurant "Tulsi Foods", mapping code `c5xeqnhd`) |
+| Save Order | `https://pponlineordercb.petpooja.com/save_order` |
+| Update Order Status (cancel) | `https://pponlineordercb.petpooja.com/update_order_status` |
+| Rider status | `https://pponlineordercb.petpooja.com/rider_status_update` |
+| Menu fetch | **none handed over** — `fetch_menu()` stays staging/latent |
+| Proxy | `PETPOOJA_PROXY_URL` (set) — egress = static `35.209.244.171` |
+
+Three endpoint vars must be set as **env overrides** on Railway (the
+`config.py` defaults are the staging API Gateway, no `/V1/` prefix on prod —
+see `docs/PETPOOJA_PROXY_MIGRATION.md` Stage C). No prod menu endpoint was
+provided, so `fetch_menu()` remains unwired/latent.
 
 ---
 
@@ -114,26 +136,29 @@ reconciliation gap as item ids, §3.2) and the real `group_name` from that
 
 Ranked by how much it'll hurt if skipped.
 
-### 3.1 Order cancellation/status changes on OUR admin side never reach Petpooja
-`app/main.py`'s `POST /api/admin/orders/{id}/status` (used by `/kitchen` and
-any admin UI) allows `new/preparing → cancelled` and other transitions, but
-**only updates our own DB and sends the customer a WhatsApp** — it never
-calls `petpooja.client.cancel_order()` (the Update Order Status API,
-`status: "-1"`). `cancel_order()` exists and is fully written but is
-**dead code — nothing in the app calls it**.
+### 3.1 Order cancellation/status changes on OUR admin side never reach Petpooja — **mostly fixed 2026-09-17**
+`app/main.py`'s one-tap signed cancel (`/order-actions/{id}/cancel`, the link
+in Mom's Telegram alert) **does** call `petpooja.client.cancel_order()` when the
+order was synced (`petpooja_synced_at`) — see `app/main.py:961`. 
+
+**Still open**: the booking-kitchen path `POST /api/admin/orders/{id}/status`
+(used by `/kitchen` / admin.js / kitchen.js) only updates our own DB + sends
+WhatsApp; a `→ cancelled` transition there does **not** relay to Petpooja
+(`app/main.py:906`, no cancel call). If the kitchen tablet is a real place
+where orders get cancelled, wire the same guarded `cancel_order()` into
+`admin_update_order_status()` for transitions to `cancelled`.
 
 Concretely: if the kitchen cancels an order on the `/kitchen` tablet, or
 walks it through `preparing → ready → out_for_delivery → delivered`,
 Petpooja's own Order Listing will sit frozen at "Waiting For Acceptance"
 forever, out of sync with reality. Confirmed the callback *inbound* path
 (Petpooja → us) works; this is the missing *outbound* counterpart
-(us → Petpooja) for anything other than the initial Save Order call.
+(us → Petpooja) for the tablet path specifically.
 
-**Fix before go-live**: wire `admin_update_order_status()` (and wherever
-else order status changes — e.g. the WhatsApp cancel flow if one exists)
-to call `petpooja.client.cancel_order()` when transitioning to `cancelled`,
-guarded by `is_configured()` and `if o.get("petpooja_order_id") is not None`
-(mirror the existing pattern in `webhooks.py`'s
+**Fix remaining**: wire the same guarded `cancel_order()` into
+`admin_update_order_status()` when transitioning to `cancelled`, guarded by
+`is_configured()` and `if o.get("petpooja_order_id") is not None`
+(mirror the existing pattern in `app/main.py:961` and `webhooks.py`'s
 `_relay_rider_status_to_petpooja`). Note `cancel_order()` currently only
 supports status `-1`; the Update Order Status API's docs should be
 re-checked for whether it also accepts forward-progress statuses
@@ -228,29 +253,19 @@ record and the `66.241.125.250` A record in `tulsifoods.app_dns_records.csv`
 (they belong to the old Fly deployment). Railway deploy is Dockerfile-based,
 EXPOSE 8000, via `git push`-triggered rebuild.
 
-**Plan (go-live blocker):**
-1. **Railway Pro plan required** for static outbound IPs ($20/mo, covers the
-   first $20 of usage). Confirm the account already pays for Pro — if not,
-   upgrade first.
-2. In the Railway dashboard: Project → tulsifoods service → **Settings →
-   Networking → Enable Static IPs** (Pro). No CLI needed (not installed on the
-   dev machine). Traffic is load-balanced over the assigned IPv4s (3 by
-   default since the July 2026 HA migration), so **Petpooja must whitelist ALL
-   of them**, not one.
-3. **Redeploy the service** after enabling — IPs only take effect after that.
-4. Verify the machine really egresses from those IPs: Railway web-shell
-   (dashboard → service → … → Shell) → `curl https://api.ipify.org`. Repeat a
-   couple of times to confirm all 3 show up.
-5. Email Shivam the full list of IPv4s for whitelisting (all of them, with the
-   "3 addresses, load-balanced" note).
-6. **Caveat — may be SHARED, not dedicated:** Railway's static outbound IPs
-   are not guaranteed dedicated per-customer (they may be shared with other
-   Railway Pro customers' egress). For Petpooja's stated need — *verify all
-   order placement requests originate from a static IP* — a stable/static
-   address is what matters and these qualify. If Shivam turns out to need a
-   *dedicated* address instead, fallback is a tiny static-IP proxy/egress VPS
-   (QuotaGuard ~$19/mo or a $5 VPS) and pointing `PETPOOJA_SAVE_ORDER_URL`
-   traffic through it. Ask this explicitly in the reply.
+**Plan (go-live blocker) — SUPERSEDED 2026-09-17 by the proxy route** (`docs/PETPOOJA_PROXY_MIGRATION.md` is now the authority):
+1. ~~Railway Pro static outbound IPs ($20/mo)~~ — **not used.** Instead:
+   **all outbound Petpooja calls go through `PETPOOJA_PROXY_URL`** (a Squid
+   proxy on a Google-Cloud host with egress `35.209.244.171`, verified from
+   Railway: `TCP_TUNNEL/200` + `200 35.209.244.171`, and all 5 sandbox
+   scenarios relayed through it). This gives Petpooja a single static source
+   IP without Railway Pro or the shared-IP caveat.
+2. Proxy is **allowlisted to Petpooja domains only** (`developerapi.petpooja.com`,
+   the staging execute-api host, and — pending Stage C — the prod host
+   `pponlineordercb.petpooja.com`); everything else egresses direct from
+   Railway as before. Credential/password lives only in Railway Variables.
+3. Remaining: Squid acl for the prod host (Stage C1.5 in the migration doc),
+   then one real go-live smoke order (Stage C3).
 
 ## 4. Sandbox Dashboard — Endpoint Configuration
 

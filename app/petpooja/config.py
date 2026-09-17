@@ -6,10 +6,13 @@ Everything here is blank/inert until those arrive; setting the four
 credential vars is what flips the integration on (see `app/orders.py` and
 `app/webhooks.py`, both gated on PETPOOJA_APP_KEY).
 
-Endpoint URLs below are the "Dev URL"s documented at
-https://onlineorderingapisv210.docs.apiary.io — Petpooja's production URLs
-may differ and should be confirmed when credentials are handed over; override
-via env if so.
+Production facts (email, Sep 17 2026 — restID 84713 "Tulsi Foods", mapping
+code c5xeqnhd): the three outbound endpoints live on the host
+pponlineordercb.petpooja.com with NO /V1/ prefix (save_order,
+update_order_status, rider_status_update). No production menu endpoint was
+handed over, so fetch_menu stays staging/latent. Production ships as env
+overrides (see .env.example) — the defaults just below remain the sandbox
+API Gateway, which is what local/staging work still needs.
 """
 import os
 

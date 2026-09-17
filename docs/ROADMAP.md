@@ -121,11 +121,15 @@ entry. Positioning: the anti-commission, self-sustaining small-business model.
 ### R2-9. Dine-in QR ordering (table number → Petpooja, not WhatsApp) — `[x]`
 Sandbox integration done + verified end-to-end on the live server (order 15:
 Save Order → accept → callback flips `new → preparing → ready`). Full status
-in `docs/PETPOOJA_INTEGRATION.md`. **Remaining before go-live (all external):**
-(a) Railway Pro static egress IPs enabled + all IPs whitelisted with Petpooja
-(**required** — Shivam Sep 16, §3.7), (b) menu ID reconciliation vs their real catalog (§3.2),
-(c) wire admin cancel → `cancel_order()` (§3.1), (d) prod creds + re-run test
-scenarios. Dine-in QR flow itself still pending (see R2-10).
+in `docs/PETPOOJA_INTEGRATION.md`. **Static-IP blocker RESOLVED 2026-09-17**
+via the Squid proxy (`35.209.244.171`, verified from Railway — see
+`docs/PETPOOJA_PROXY_MIGRATION.md`); **production credentials issued**
+(restID `84713`, prod endpoints on `pponlineordercb.petpooja.com`).
+**Remaining before go-live:** (a) Squid acl for prod host + prod endpoint
+env vars on Railway + one real smoke order (§0/§3.7 + migration doc Stage C),
+(b) menu ID reconciliation vs their real catalog (§3.2), (c) wire admin
+kitchen cancel → `cancel_order()` (§3.1 tablet path). Dine-in QR flow itself
+still pending (see R2-10).
 
 ### R2-10. Local customer-flow research — `[ ]`
 People behave weirder than data predicts. Before R2-1/R2-9, spend time in the
