@@ -189,13 +189,21 @@ or the Online Orders dashboard. This was the pre-existing gap flagged in
 - **Caveats still open**: (a) `fetch_menu()` was never usable — its staging
   endpoint returns `{"success":"0","message":"unable to fetch Object from s3
   bucket"}` and no production menu-fetch endpoint was handed over; the push
-  covers this. (b) the catalogue marks items `tax_inclusive: true` (CGST
-  2.5% + SGST 2.5% = our 5% GST_RATE); the payload now mirrors that flag per
-  item so the POS doesn't re-add tax over the total the customer already
-  paid, while the item price and CGST/SGST lines still match what was
-  collected. (c) the real pushed payload currently
-  lives only on Railway's ephemeral FS — a redeploy wipes it until the next
-  Menu Trigger, so re-run the trigger after deployments.
+  covers this. (b) the catalogue marks all 155 items `tax_inclusive: true`
+  (CGST 2.5% + SGST 2.5% = our 5% GST_RATE, `gst_type: services`); the
+  payload now mirrors that flag per item so the POS doesn't re-add tax over
+  the total the customer already paid, while the item price and CGST/SGST
+  lines still match what was collected. Petpooja's onboarding note asks the
+  restaurant to enable backward tax calculation in the POS for inclusive
+  prices — Mom must configure this once in the POS menu settings. (c) the
+  real pushed payload now lives in `data/petpooja_menu_raw.json` (committed
+  for deterministic tests/coverage); Railway's ephemeral FS still gets wiped
+  on deploy, so re-run Menu Trigger after any deploy. (d) 2 of our 141
+  sellable items have no equivalent on the POS catalogue: **Onion Pakoda**
+  and **Raita (250ml)**. They degrade to the slug fallback + a logged
+  warning when relayed (the order still goes through, but the item won't
+  appear on the POS). Add these to the POS catalogue, or remove them from
+  `data/menu.json`, before they start appearing in real orders.
 
 ### 3.3 Order *modification* — behavior undocumented, unhandled
 The Order Callback payload includes an `"is_modified": "No"/"Yes"` field

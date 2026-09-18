@@ -23,6 +23,12 @@ Notes on matching:
 - Half portions (<id>__half) resolve to the base item's itemid when the POS
   has no separate " (Half)" entry — the receipt still shows the "(Half)"
   name and half price, both sent through in the Save Order payload.
+- SLUG_ALIASES maps the handful of slugs whose POS name is a differently-
+  spelled match that normalised equality can't catch (e.g.
+  "mutter-paneer" → catalog "Matter Paneer" itemid 1250363084). Items
+  genuinely absent from the catalogue stay deliberately unlisted, so they
+  degrade to the slug fallback + a logged warning instead of sending a
+  fake id.
 - Tax: the catalogue marks its items `tax_inclusive: true` and the pushed
   tax rates are CGST 2.5% + SGST 2.5% = 5%, matching our GST_RATE. The Save
   Order payload's per-item `tax_inclusive` now mirrors the catalogue's own
@@ -53,6 +59,22 @@ def _norm(name: str) -> str:
     return _NON_ALNUM.sub("", (name or "").lower())
 
 
+# Curated overrides for the handful of dishes whose POS catalogue name isn't
+# a normalized match of ours (typos/aliases that name-matching can't fix):
+#   chilli-cheeesetoast  -> "Chilli Cheese Toast Sandwich" (our "Cheeesetoast" typo)
+#   mutter-paneer        -> "Matter Paneer" (different spelling on the POS)
+#   vegetable-hakka-noodles -> "Veg Hakka Noodles"
+# Keyed by our data/menu.json item slug, values are the real `itemid` from
+# the pushed catalogue. Anything genuinely absent from the POS catalogue
+# (onion-pakoda, raita-250ml) deliberately stays unlisted so it degrades to
+# the slug fallback + warning instead of sending a made-up id.
+SLUG_ALIASES: dict[str, str] = {
+    "chilli-cheeesetoast": "1250363047",
+    "mutter-paneer": "1250363084",
+    "vegetable-hakka-noodles": "1250363102",
+}
+
+
 class Catalog:
     """Snapshot of the pushed menu, built once per request.
 
@@ -60,10 +82,15 @@ class Catalog:
     using the latest push, so no long-lived cache is kept.
     """
 
-    def __init__(self, raw: dict):
+    def __init__(self, raw: dict, aliases: dict[str, str] | None = None):
+        self._aliases = aliases or SLUG_ALIASES
         self._by_name: dict[str, dict] = {}
+        self._by_itemid: dict[str, dict] = {}
         self._addon_by_name: dict[str, str] = {}
         for it in raw.get("items") or []:
+            iid = str(it.get("itemid") or "")
+            if iid:
+                self._by_itemid[iid] = it
             n = _norm(it.get("itemname", ""))
             if not n:
                 continue
@@ -98,6 +125,14 @@ class Catalog:
         m = get_item(menu_item_id)
         if not m:
             return None, None
+        # Curated slug->itemid override first (name-matching can't reach a
+        # differently-spelled catalogue name). Half slugs alias via base.
+        alias_key = _base_id(menu_item_id) if menu_item_id.endswith(HALF_SUFFIX) else menu_item_id
+        target = self._aliases.get(alias_key)
+        if target:
+            rec = self._by_itemid.get(str(target))
+            if rec is not None:
+                return rec, m
         rec = self.item_by_name(m["name"])
         if rec is not None:
             return rec, m
@@ -190,12 +225,18 @@ def _coverage_report() -> None:
 
     matched, unmatched = [], []
     for m in items:
-        (matched if c.item_by_name(m["name"]) else unmatched).append(m)
+        rec, _ = c._match(m["id"])
+        if rec is not None:
+            matched.append(m)
+        else:
+            unmatched.append(m)
     print(f"menu.json sellable items: {len(items)}")
     print(f"  matched in Petpooja catalogue: {len(matched)}")
     print(f"  NOT found: {len(unmatched)}")
     for m in sorted(unmatched, key=lambda x: x["name"]):
         print(f"  - {m['name']}  ({m['id']})")
+    if unmatched:
+        print("(resolve each of these by adding it to the POS catalogue or pruning menu.json)")
     sys.exit(1 if unmatched else 0)
 
 
@@ -205,6 +246,8 @@ def _self_test() -> None:
         "items": [
             {"itemid": "1250363094", "itemname": "North Indian Thali",
              "itemallowaddon": "N", "active": 1, "tax_inclusive": True},
+            {"itemid": "1250363047", "itemname": "Chilli Cheese Toast Sandwich",
+             "active": 1, "tax_inclusive": True},
             {"itemid": "1277216995", "itemname": "Rajasthani Thali",
              "active": 0, "tax_inclusive": True},
             {"itemid": "1250363095", "itemname": "Mini Thali",
@@ -217,8 +260,9 @@ def _self_test() -> None:
                  "addonitem_price": 70}]},
         ],
     }
-    c = Catalog(sample)
+    c = Catalog(sample, aliases={"chilli-cheeesetoast": "1250363047"})
     assert c.resolve("north-indian-thali") == "1250363094"
+    assert c.resolve("chilli-cheeesetoast") == "1250363047"
     assert c.resolve("rajasthani-thali") == "1277216995"
     assert c.addon_item_id("Pepsi (300 Ml)") == "13652618"
     assert c.item_tax_inclusive("North Indian Thali") is True
