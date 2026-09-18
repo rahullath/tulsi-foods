@@ -88,6 +88,7 @@ def save_order(order: dict, callback_url: str, gst_rate: float) -> dict:
         "client_order_id": str(data.get("clientOrderID", "")),
         "message": str(data.get("message", "")),
         "rest_id": str(data.get("restID", "")),
+        "raw": data,
     }
 
 
