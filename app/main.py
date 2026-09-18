@@ -921,6 +921,30 @@ def admin_update_order_status(order_id: int, body: StatusIn,
     return {"ok": True, "order_id": order_id, "from": current, "to": target}
 
 
+@app.post("/api/admin/orders/{order_id}/petpooja-cancel")
+def admin_petpooja_cancel(order_id: int, x_admin_token: str | None = Header(None)):
+    """Tell Petpooja the order is cancelled (status -1) and return their raw
+    response verbatim.
+
+    Doubles as a diagnostic: it makes Petpooja's backend look up the order by
+    our clientOrderID, so the answer proves whether the order actually exists
+    on their side even when it's invisible on their dashboard (the blank
+    orderID + success=1 symptom). Does NOT touch our own order status here —
+    that flips when Petpooja's order-callback for the cancellation arrives."""
+    _check_admin(x_admin_token)
+    o = db.get_order(order_id)
+    if not o:
+        raise HTTPException(404, "Order not found")
+    from .petpooja.client import is_configured, cancel_order
+    if not is_configured():
+        raise HTTPException(400, "Petpooja not configured")
+    try:
+        raw = cancel_order(order_id, "Cancelled by admin (Petpooja-connect diagnostic)")
+    except Exception as e:
+        raise HTTPException(502, f"Petpooja cancel_order failed: {e}")
+    return {"order_id": order_id, "ok": str(raw.get("success")) == "1", "response": raw}
+
+
 def _action_page(heading: str) -> HTMLResponse:
     return HTMLResponse(
         "<html><body style='font-family:sans-serif;text-align:center;padding:70px 24px;"
