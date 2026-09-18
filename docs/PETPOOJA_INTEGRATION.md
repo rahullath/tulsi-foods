@@ -165,30 +165,37 @@ re-checked for whether it also accepts forward-progress statuses
 (preparing/ready/dispatched) or whether those are Save-Order-callback-only
 in the other direction.
 
-### 3.2 Menu/item ID reconciliation — still using placeholder IDs
-Every order relayed so far (including the 5 test scenarios and real order
-`15`) used item/addon/variation IDs we invented (`1001`, `2001`, `3001`,
-or our own `data/menu.json` item slugs like `"north-indian-thali"`) — **not**
-Petpooja's real catalog IDs. This is a pre-existing gap flagged in
-`mapping.py`'s docstring since before this session; still unresolved.
+### 3.2 Menu/item ID reconciliation — resolved (Sep 2026)
+Every order relayed before this fix (including the real order `21`) used our
+own `data/menu.json` slugs like `"north-indian-thali"` — **not** Petpooja's
+real catalog IDs. Petpooja accepted those calls (success=1) but the items
+didn't exist in the catalog, so none of the orders were visible on the POS
+or the Online Orders dashboard. This was the pre-existing gap flagged in
+`mapping.py`'s docstring.
 
-- Tried `fetch_menu()` against the sandbox this session: got back
-  `{"success":"0","message":"unable to fetch Object from s3 bucket"}` — no
-  menu has been configured for restID `qa3xsbk42g` yet on Petpooja's side.
-- The dashboard's Configuration page has **Type: Menu Push** selected
-  (not Menu Fetch) — meaning Petpooja is supposed to push their catalog to
-  *our* Menu Sharing Endpoint (`/webhook/petpooja/menu`), not the other way
-  around. That webhook exists in `webhooks.py` and just caches whatever it
-  receives to `data/petpooja_menu_raw.json` — **nothing reconciles it against
-  `data/menu.json` yet.**
-- **Before production**: (a) get Petpooja to actually push a real menu (or
-  configure/trigger it from the dashboard's Menu Management → Menu Trigger),
-  (b) write the reconciliation step that maps our `data/menu.json` item ids
-  → Petpooja's real catalog item/addon/variation ids, (c) have
-  `order_to_save_order_payload()` use the real ids. Untested whether the
-  sandbox's leniency about fake ids (everything we sent "succeeded") will
-  hold in production — production POS terminals may reject orders
-  referencing items outside their actual catalog.
+**Resolution** — `app/petpooja/catalog.py` now reconciles for production:
+- Petpooja's dashboard **Menu Management → Menu Trigger** pushes their whole
+  catalogue to our `/webhook/petpooja/menu` endpoint (webhook verified live:
+  correct `?t=` token → 200, wrong token → 403). The push is cached at
+  `data/petpooja_menu_raw.json` and is now the source of truth for real IDs
+  (restID `84713`; e.g. "North Indian Thali" = itemid `1250363094`,
+  "Mini Thali" = `1250363095`, addon group `553159`, addon item
+  `13652618`).
+- `catalog.Catalog` indexes the pushed items by normalized name and resolves
+  each order slug → real `itemid` (half portions share the base item's id).
+  `order_to_save_order_payload()` uses the mapped IDs, falling back to the
+  slug with a logged warning if unmapped. `--self-test` and a coverage
+  report (`python -m app.petpooja.catalog`) verify the mapping.
+- **Caveats still open**: (a) `fetch_menu()` was never usable — its staging
+  endpoint returns `{"success":"0","message":"unable to fetch Object from s3
+  bucket"}` and no production menu-fetch endpoint was handed over; the push
+  covers this. (b) the catalogue marks items `tax_inclusive: true` (CGST
+  2.5% + SGST 2.5% = our 5% GST_RATE); the payload now mirrors that flag per
+  item so the POS doesn't re-add tax over the total the customer already
+  paid, while the item price and CGST/SGST lines still match what was
+  collected. (c) the real pushed payload currently
+  lives only on Railway's ephemeral FS — a redeploy wipes it until the next
+  Menu Trigger, so re-run the trigger after deployments.
 
 ### 3.3 Order *modification* — behavior undocumented, unhandled
 The Order Callback payload includes an `"is_modified": "No"/"Yes"` field
@@ -312,13 +319,15 @@ response is `content-length: 0`). Get Store Status intentionally drops
    Shivam/Petpooja support to enter in the sandbox Configuration → Endpoint
    page.
 2. Get Petpooja's review response on the 5 test scenario order IDs.
-3. Ask Petpooja support to clarify 3.2 (menu push timing/format) and 3.3
-   (`is_modified` payload shape) — both are blocking unknowns, not things
-   we can resolve by guessing.
+3. Ask Petpooja support to clarify 3.3 (`is_modified` payload shape) — a
+   blocking unknown we can't resolve by guessing. (3.2's menu-push timing
+   question is now answered in production: Menu Trigger works and the
+   reconciliation is built.)
 4. Fix 3.1 (wire admin cancel → `cancel_order()`) — straightforward, no
    external dependency, should happen regardless of Petpooja's answers.
-5. Once Petpooja pushes/confirms a real menu: build the item/addon/variation
-   ID reconciliation (3.2) and switch `order_to_save_order_payload()` over.
+5. Done: item-ID reconciliation (§3.2) — `app/petpooja/catalog.py` maps
+   order slugs to real catalog IDs from the Menu Trigger push, and
+   `order_to_save_order_payload()` uses them.
 6. Test each endpoint by triggering from the dashboard (menu push, stock
    toggle, store status toggle) and confirming our handlers return the
    expected response format.
@@ -344,5 +353,6 @@ response is `content-length: 0`). Get Store Status intentionally drops
   regenerates unique client order IDs per run — **reusing an existing
   clientOrderID silently no-ops instead of updating the order**, confirmed
   the hard way, so don't hand-edit it to reuse old IDs when testing changes).
-- `app/petpooja/mapping.py`'s module docstring has the item-id and
-  GST-proration caveats inline; keep it in sync if 3.2/3.4 get resolved.
+- `app/petpooja/mapping.py`'s module docstring has the item-id (resolved via
+  `app/petpooja/catalog.py`) and GST-proration caveats inline; keep it in
+  sync if 3.3/3.4 get resolved.

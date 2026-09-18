@@ -10,14 +10,14 @@ Went with the newer guide since it's what Petpooja pointed at for the
 current sandbox review; flip back to the Apiary shape if the sandbox
 rejects it.
 
-KNOWN GAP, not yet resolved: `OrderItem.id` below is our own menu item_id
-(from data/menu.json, sourced from Swiggy exports), not Petpooja's item id.
-Petpooja's POS almost certainly expects *its own* catalog item ids in Save
-Order. We won't know those until we do a Fetch Menu call and reconcile it
-against data/menu.json — a real follow-up task, not a config toggle. Until
-that reconciliation happens, Save Order calls may be accepted but attribute
-items incorrectly (or get rejected) on Petpooja's side. Verify against a
-real sandbox order the moment credentials arrive.
+RESOLVED (Sep 2026, §3.2 reconciliation landed): OrderItem.id used to be our
+own menu item_id (the data/menu.json slug, sourced from Swiggy exports)
+instead of Petpooja's real catalog id — Save Order was accepted (success=1)
+but items didn't exist in the POS catalogue, so orders were invisible on the
+dashboard. Now app/petpooja/catalog.py resolves every slug to the catalogue's
+real `itemid` (the id Petpooja itself pushes in Menu Trigger, cached in
+data/petpooja_menu_raw.json), keyed by item name, and falls back to the slug
+with a warning if unmapped. Half portions share the base item's id.
 
 Also approximate, flagged inline: per-item/per-charge GST breakdown. Our
 order model keeps a single `gst_amount` on the order (see app/orders.py
@@ -99,8 +99,10 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
 
     # Prorate order-level GST across items by price share (see module docstring).
     taxable_base = subtotal + packing_fee
+    from .catalog import map_order_items
+    mapped_items = map_order_items(order["items"])
     item_lines = []
-    for it in order["items"]:
+    for it in mapped_items:
         unit_price = float(it["price"])
         line_total = unit_price * float(it["qty"])
         share = (line_total / taxable_base) if taxable_base else 0
@@ -112,9 +114,16 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         item_discount = float(it.get("item_discount") or 0)
         final_price = unit_price - item_discount
         item_lines.append({
-            "id": str(it["item_id"]),  # Petpooja catalog id TBD — see docstring
+            "id": it["petpooja_item_id"],  # real catalogue id (see app/petpooja/catalog.py)
             "name": it["name"],
-            "tax_inclusive": False,
+            # Mirror the catalogue's own tax treatment per item (Petpooja
+            # pushes `tax_inclusive: true` on these POS items): telling the
+            # POS "inclusive" stops it materializing GST again on top of the
+            # exact total we already collected from the customer. The item
+            # 'price' sent here stays as our checkout price and the tax
+            # lines below still reflect the GST line our customer actually
+            # paid — matching Petpooja's flag without changing the money.
+            "tax_inclusive": it.get("petpooja_tax_inclusive", False),
             "gst_liability": "restaurant",
             "item_tax": _split_cgst_sgst(item_gst, gst_rate * 100, str(it["item_id"])),
             "tax_percentage": f"{gst_rate * 100:.2f}",
