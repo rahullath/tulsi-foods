@@ -178,12 +178,26 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         # restaurant charge) — unlike pc_tax_percentage below, which isn't.
         "dc_tax_percentage": "0",
         "dc_tax_amount": "0",
+        # Present in Petpooja's official example but absent from our payload
+        # until now — the per-charge liability breakdown their guide's field
+        # table lists alongside the flat dc_tax_amount/pc_tax_amount above.
+        # Delivery is untaxed in our model either way (see dc_tax_amount);
+        # packing tax is ours to remit, so it's "restaurant", not "vendor".
+        "dc_gst_details": [
+            {"gst_liable": "vendor", "amount": "0"},
+            {"gst_liable": "restaurant", "amount": "0"},
+        ],
         "packing_charges": f"{packing_fee:.2f}",
         "pc_tax_percentage": f"{gst_rate * 100:.2f}",
         "pc_tax_amount": f"{pc_tax_amount:.2f}",
+        "pc_gst_details": [
+            {"gst_liable": "vendor", "amount": "0"},
+            {"gst_liable": "restaurant", "amount": f"{pc_tax_amount:.2f}"},
+        ],
         "order_type": _ORDER_TYPE_CODE.get(order_type, "H"),
         "advanced_order": "N",
         "urgent_order": False,
+        "urgent_time": 20,
         "payment_type": _PAYMENT_TYPE_CODE.get(payment_method, "COD"),
         "table_no": "",
         "no_of_persons": "0",
@@ -193,16 +207,22 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         "total": f"{restaurant_total:.2f}",
         "description": order.get("instructions") or "",
         "created_on": created_on,
-        # 0 = third-party rider, 1 = restaurant's own rider — NOT "is this a
-        # delivery order". Every Tulsi Foods delivery goes through Borzo (a
-        # third-party courier, see app/delivery/), never restaurant staff,
-        # so this must always be 0. Confirmed the hard way: with the old
-        # `1 if order_type == "delivery" else 0` logic, every sandbox test
-        # order's receipt showed "Home Delivery (Self delivery)" — wrong.
-        "enable_delivery": 0,
+        # Petpooja's own official Save Order example sends 1 for every
+        # home-delivery order regardless of courier — our prior read of this
+        # as "0 = third-party rider, 1 = restaurant's own rider" was inferred
+        # from a sandbox receipt saying "Self Delivery" at 1, not confirmed
+        # by Petpooja. Matching their documented example instead: 1 whenever
+        # we're actually delivering, 0 for pickup. If receipts start saying
+        # "Self Delivery" again, that's the tradeoff — revert to the order
+        # type check below if so.
+        "enable_delivery": 1 if order_type == "delivery" else 0,
         "min_prep_time": 20,
         "callback_url": callback_url,
         "collect_cash": f"{total:.2f}" if payment_method == "cod" else "0",
+        # Delivery-handoff OTP — present in Petpooja's example, no equivalent
+        # in our model (we don't generate one). Blank rather than omitted,
+        # since the field is otherwise documented as always present.
+        "otp": "",
     }
 
     customer_details = {

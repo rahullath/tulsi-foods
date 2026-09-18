@@ -1178,7 +1178,7 @@ def lookup_orders_by_phone(body: PhoneLookupIn):
     phone = "".join(ch for ch in body.phone if ch.isdigit())[-10:]
     if len(phone) < 10:
         raise HTTPException(422, "Enter a valid 10-digit phone number")
-    return {"orders": db.get_orders_by_phone(f"+91{phone}")}
+    return {"orders": db.get_orders_by_phone(phone)}
 
 
 class OrderAddressIn(BaseModel):

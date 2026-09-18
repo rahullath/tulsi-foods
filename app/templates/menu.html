@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block meta %}
-<meta name="description" content="Full menu, prices and daily availability for Tulsi Foods — pure vegetarian North Indian thalis, parathas, chaats, sabzi and more in Mylapore, Chennai. Order direct on WhatsApp.">
+<meta name="description" content="Full menu, prices and daily availability for Tulsi Foods — pure vegetarian North Indian thalis, parathas, chaats, sabzi and more in Mylapore, Chennai. Order online for delivery or pickup.">
 <title>Menu &amp; Prices | Tulsi Foods, Mylapore</title>
 {% endblock %}
 {% block canonical %}<link rel="canonical" href="https://tulsifoods.app/menu">{% endblock %}
@@ -270,6 +270,12 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   }
 
   const CART_KEY = "tulsi_menu_cart";
+  // Checkout form state (name/phone/address/etc.) — separate from the cart
+  // itself, which already persists. Without this, reopening the checkout
+  // panel (or a reload mid-typing) wipes everything the customer entered.
+  const DETAILS_KEY = "tulsi_checkout_details";
+  const DETAIL_FIELDS = ["name", "phone", "order_type", "address", "landmark",
+    "pincode", "payment_method", "pay_courier_direct", "instructions"];
   const cart = {};
   const PRICES = {};
   const NAMES = {};
@@ -458,10 +464,10 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           <div class="checkout-field" id="fee-mode-field" hidden>
             <label>Delivery fee</label>
             <select name="pay_courier_direct" id="fee-mode">
-              <option value="0">Include delivery in my total</option>
-              <option value="1">Pay the rider directly</option>
+              <option value="1" selected>Pay the rider directly</option>
+              <option value="0">Add it to my total — you collect and pay the rider</option>
             </select>
-            <div style="font-size:11px;color:#6F7468;margin-top:4px;">"Pay the rider directly" keeps the fee off your order total — the kitchen still records it so nothing is lost.</div>
+            <div style="font-size:11px;color:#6F7468;margin-top:4px;">The exact fee is set by the courier at pickup, not by us — so by default you pay the rider directly rather than us guessing at an amount upfront. Prefer not to deal with it? Choose the other option and we'll add the estimated fee to your total and pay the rider on your behalf.</div>
           </div>
           {% if upi_vpa %}
           <div class="checkout-field" id="upi-pay-field" hidden>
@@ -478,6 +484,42 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 
     overlay.querySelector("#checkout-close").addEventListener("click", () => overlay.remove());
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+
+    // Persist in-progress checkout details (separate from the cart, which
+    // already survives via CART_KEY) so closing the panel, reloading, or
+    // getting bumped off the page mid-checkout doesn't lose everything the
+    // customer already typed.
+    function saveDetails() {
+      try {
+        const data = {};
+        DETAIL_FIELDS.forEach(f => {
+          const el = form.querySelector(`[name=${f}]`);
+          if (el) data[f] = el.value;
+        });
+        data.lat = inputLat.value || "";
+        data.lng = inputLng.value || "";
+        data.preset = overlay.querySelector(".time-pill.active")?.dataset.preset || "asap";
+        localStorage.setItem(DETAILS_KEY, JSON.stringify(data));
+      } catch (_) { /* storage unavailable */ }
+    }
+
+    function restoreDetails() {
+      let saved;
+      try { saved = JSON.parse(localStorage.getItem(DETAILS_KEY) || "null"); } catch (_) { saved = null; }
+      if (!saved) return;
+      DETAIL_FIELDS.forEach(f => {
+        const el = form.querySelector(`[name=${f}]`);
+        if (el && saved[f]) el.value = saved[f];
+      });
+      typeSelect.dispatchEvent(new Event("change"));
+      if (paySelect) paySelect.dispatchEvent(new Event("change"));
+      if (saved.lat && saved.lng) movePin(saved.lat, saved.lng, false);
+      if (saved.preset && saved.preset !== "asap") {
+        const pill = overlay.querySelector(`.time-pill[data-preset="${saved.preset}"]`);
+        if (pill && !pill.hidden) pill.click();
+      }
+      refreshCheckoutSummary();
+    }
 
     // Small-cart nudge: cheap, quick-add items shown while the order is
     // light — no minimum order exists, but delivery costs the same either
@@ -627,6 +669,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     const inputLat = overlay.querySelector("#input-lat");
     const inputLng = overlay.querySelector("#input-lng");
     let gMap = null, gMarker = null, gGeocoder = null;
+    form.addEventListener("input", saveDetails);
+    form.addEventListener("change", saveDetails);
 
     const paySelect = overlay.querySelector("#payment-method");
     const upiField = overlay.querySelector("#upi-pay-field");
@@ -649,6 +693,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       inputLat.value = Number(lat).toFixed(6);
       inputLng.value = Number(lng).toFixed(6);
       if (geocode) reverseGeocode(lat, lng);
+      saveDetails();
     }
 
     function movePin(lat, lng, geocode = true) {
@@ -815,8 +860,11 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             updateScheduledAt();
           }
         }
+        saveDetails();
       });
     });
+
+    restoreDetails();
 
     // GPS location capture — centres the map and moves the pin there
     const gpsBtn = overlay.querySelector("#gps-btn");
@@ -905,6 +953,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           .filter(i => i.qty > 0);
         Object.keys(cart).forEach(k => delete cart[k]);
         updateCart();
+        try { localStorage.removeItem(DETAILS_KEY); } catch (_) { /* storage unavailable */ }
         document.querySelectorAll(".card-stepper .qty").forEach(el => el.textContent = "0");
         document.querySelectorAll(".card-note").forEach(el => el.value = "");
         const isDelivery = payload.order_type === "delivery" && payload.address;

@@ -8,6 +8,121 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 ---
 
+## Round 3 — Sep 2026 (owner's priorities, current — read this first)
+
+Long-term goal restated by the owner: make this a genuinely useful tool that
+works end-to-end for a non-tech-literate customer base, confidently
+shareable by Mom, and eventually a **template other small restaurants can
+use to leave Swiggy/Zomato** — a model that profits the restaurant and
+customer, not just the aggregator. Long game; ship in order below, clean up
+and document only after the app has been live and used for a while.
+
+### UX / core flow
+- `[ ]` **Persist cart + customer details across the session.** Right now
+  the cart/checkout state disappears if the customer navigates away or
+  leaves the tab — should survive at least the session (localStorage), so
+  half-finished orders aren't lost.
+- `[ ]` **Improve cart & checkout flow generally** — no single bug named,
+  revisit the whole flow for friction once cart persistence lands.
+- `[ ]` **Delivery fee messaging, rewritten**: stop quoting a zone-based fee
+  as if it's precise/final. Don't fold it into the default total. Tell the
+  customer up front they'll owe a delivery fee (amount TBD by the courier),
+  and offer to collect it on their behalf and pay the rider, if they'd
+  rather not deal with it directly. (Note: `pay_courier_direct` already
+  exists as the inverse toggle — this is about the *default* messaging and
+  framing, not new plumbing.)
+
+### Payments — "how does Mom actually get paid"
+- `[ ]` **Payment confirmation, not just a UPI deep link.** `upiLink()` in
+  `menu.html` already builds a `upi://pay?...&am=<exact amount>&tr=<order
+  id>` intent link — the "QR with a specific amount" ask is functionally
+  already there (tapping opens GPay/PhonePe pre-filled). What's missing is
+  **confirmation that the money actually arrived** — right now it's an
+  honor system. Look at a real payment gateway for server-side
+  confirmation/webhooks. **Cashfree ruled out (2026-09-19)**: requires
+  company KYC docs (CIN/GST-registered entity docs) a sole proprietorship
+  doesn't have, unless their onboarding budges on that — not promising.
+  Need a gateway that actually onboards sole proprietors on individual
+  PAN + bank account (worth checking Razorpay Payment Links, Instamojo,
+  PhonePe/Paytm Business — verify each one's KYC tier before assuming).
+
+### SEO
+- `[ ]` **Standing priority, not a one-off.** Keep auditing per
+  `docs/SEO_PLAYBOOK.md`; this is called out as the primary lever for
+  growth going forward — always worth another pass.
+
+### Petpooja / Admin
+- `[ ]` **Pull pricing/menu from the Petpooja push, not `data/menu.json`.**
+  The Menu Trigger webhook already caches the real pushed catalogue at
+  `data/petpooja_menu_raw.json` (used today only for item-ID reconciliation
+  in `app/petpooja/catalog.py`) — make it the actual source of truth for
+  prices/availability shown on the site, not just an ID-mapping lookup.
+  Check whether the last push actually persisted (Railway volume is
+  confirmed mounted at `/data` — see chat history) before assuming it's
+  gone.
+- `[ ]` **Every Petpooja→us callback must be bulletproof.** Once the
+  Online-Orders-queue issue is resolved by their support, admin is
+  effectively *driven by Petpooja* (accept/food-ready/dispatch/cancel all
+  arrive as webhooks) — audit `app/webhooks.py`'s handlers so nothing 500s
+  or silently drops a callback. This becomes the primary admin surface;
+  it can't be flaky.
+
+### Delivery / rider tracking (currently "a random hope kinda thing")
+- `[ ]` **Untested end-to-end.** Needs real exploration, not just code
+  review:
+  - Surface live rider status to the *customer* on `/track/{token}` (not
+    just our internal status enum) — pull whatever Petpooja's rider-status
+    relay / Borzo webhook actually gives us.
+  - Give Mom visibility into whether a booked rider will actually show,
+    with enough lead time to arrange a backup.
+  - A way to **override/reassign** a delivery if the assigned rider
+    flakes — right now there's no manual escape hatch once
+    `dispatch_rider()` has committed to a provider.
+
+### Growth / marketing infra
+- `[ ]` **Print flyers** for Mom to slip into existing Swiggy/Zomato
+  orders, pitching the direct-order site to those same customers.
+- `[ ]` **Real discount infrastructure**, replacing the hardcoded DIRECT10
+  WhatsApp-only promo (see Archived below): UTM-tagged QR codes that both
+  deep-link into the web-app *and* auto-apply a discount, redeemable once
+  per device (needs a device-fingerprint or localStorage-flag check, not
+  bulletproof but good enough to deter casual reuse). This is roadmap §7
+  ("Discounts / promo codes") done properly, QR-first.
+- `[ ]` **PWA / installable web app** — manifest + service worker + icons,
+  so regular customers can "Add to Home Screen" instead of rebrowsing.
+- `[ ]` **Loyalty mechanic** — e.g. every N orders (with a minimum order
+  value) earns a free item. Explicitly framed by the owner as standard
+  marketing-incentive theater, not a real value driver — keep it cheap to
+  build, don't over-invest.
+
+### Reviews / Testimonials + order recoverability
+- `[ ]` **Review system**: collected per-order, surfaced on a
+  Testimonials/blog-style page (extend `/updates`?), with an admin way to
+  hide/delete bad-faith reviews.
+- `[ ]` **Fix the "customer loses their order" gap.** Right now if someone
+  closes the browser without saving the `/track/{token}` link, they have no
+  way back in except remembering it. Needs a real recovery path — e.g. bind
+  orders to phone number + a "look up my order" flow (there's already a
+  phone-lookup entry point per `/track` — confirm it actually works and
+  surface it more), and/or SMS the tracking link automatically at order
+  time regardless of WhatsApp status.
+
+### Support
+- `[ ]` **WhatsApp chat-bubble widget.** Simpler than it sounds — a
+  persistent floating button linking to `wa.me/<number>` or
+  `api.whatsapp.com/send`. `landing.html` already has exactly this
+  (`.float-wa`, just relabelled to "Message us on WhatsApp" this session)
+  — the ask is really "make it a site-wide persistent widget", not a new
+  capability. No WhatsApp Business API needed for this, that's a separate
+  (Meta-gated) thing.
+
+### Explicitly NOT a priority right now
+- Telegram bot — **no further work planned.** It was a stopgap while
+  Petpooja wasn't live; Petpooja should be done within days. Don't spend
+  time here.
+
+---
+
 ## Round 2 — Sep 2026 backlog (from owners' notes)
 
 Long-term **why**: Tulsi Foods should become the working model of a small
@@ -243,7 +358,7 @@ Grounded in a scan of `app/templates/*.html` (h1/h2/meta on each page):
 
 ---
 
-## 3. "Order on WhatsApp" → "Order Now" (stop sending users to a dead chat)
+## 3. "Order on WhatsApp" → "Order Now" (stop sending users to a dead chat) — `[x]`
 
 Current problem: CTAs say "Order direct on WhatsApp" and the checkout nudge sends
 people to `wa.me/919940062840`, but WhatsApp answers are unreliable while Meta
@@ -254,13 +369,18 @@ WhatsApp CTAs are misleading.
 Fix: reposition WhatsApp as optional "talk to us" support, and make the on-site
 flow the primary ordering path.
 
-- **[ ]** Change base/meta + landing copy from "Order on WhatsApp" →
-  "Order online for delivery or pickup in Alwarpet".
-- **[ ]** `menu.html` / `landing.html` / `index.html`: point the primary CTA to
-  `#checkout` / `/menu` (on-site cart), *not* `wa.me`.
-- **[ ]** Keep WhatsApp only as a support/fallback link (e.g. "Message us on
-  WhatsApp" beside order issues), labelled clearly so it's not implied as the
-  ordering channel.
+- **[x]** Changed base/meta + landing/menu/bio/category copy from "Order on
+  WhatsApp" → "Order online" / "Order online for delivery or pickup".
+  (`index.html` skipped — it's dead/unrouted, `/` is served by
+  `landing_page()`; candidate for deletion, see R2-12.)
+- **[x]** `landing.html` / `category.html` / `bio.html`: primary CTAs now
+  point to `/menu` (on-site cart), not `wa.me`. `menu.html`'s cart bar
+  already had this right (Checkout → primary, "or continue on WhatsApp"
+  secondary).
+- **[x]** WhatsApp demoted to a labelled support/fallback link ("Message us
+  on WhatsApp") everywhere except `bio.html`'s DIRECT10 section, which is a
+  deliberate WhatsApp-only promo mechanic, not stale copy — see Archived
+  below for why that's getting replaced anyway.
 - **[ ]** Once `WHATSAPP_ACTIVE=1` (post-Meta), add a "Get updates on WhatsApp"
   opt-in that actually works — until then prefer the tracking page as the status
   surface.
@@ -281,11 +401,43 @@ flow the primary ordering path.
 
 ## Backlog / parked
 
-- **Petpooja relay** — awaiting staging creds from Malvi (two-way POS like
-  Swiggy/Zomato; the kitchen-first path).
+- **Petpooja relay** — production creds issued, save/cancel calls work, but
+  orders don't surface in Petpooja's own Online Orders queue or POS
+  terminal despite that. Root-caused (Sep 18-19 session) to a Petpooja-side
+  channel-wiring gap, not our code — support ticket filed. See
+  `docs/PETPOOJA_INTEGRATION.md`.
 - **Borzo live dispatch** — needs wallet balance (`non_cash` payment configured,
   token valid; only funding blocks `create-order`).
 - **SMS** — Twilio stays trial (skips, 572006); real SMS only worth it post-upgrade
   + DLT sender, and it's more expensive than WhatsApp.
 - **WhatsApp mini flow** — once verified, the in-conversation service reply is free,
   making it the long-term channel (see `docs/META_CONTINGENCY_PLAN.md`).
+
+---
+
+## Archived — decided against (kept for context, not for re-doing)
+
+These were real plans at some point. Explicitly not happening now — don't
+resurrect without asking first, but don't re-litigate them from scratch
+either if they come up in old docs/design files.
+
+- **Telegram Kitchen Console mini-app** (§1 above). Was meant to give Mom a
+  native-feeling kitchen interface while Petpooja wasn't live. Petpooja is
+  expected to be fully working within days, at which point its own
+  POS/terminal replaces this need entirely. No further Telegram work
+  planned — the whole §1 section is now historical, not a queue.
+- **`design/Tulsi Foods v2.dc.html` mockup's checkout vision** (Aug 22):
+  WhatsApp Flows in-chat multi-screen checkout, live-location share inside
+  WhatsApp, Razorpay UPI intents, and a WhatsApp-catalog-driven bot
+  (interactive list menus, media carousels, text-command stock toggles).
+  Superseded by the real on-site web checkout + Petpooja POS integration
+  that actually shipped — a fundamentally different (and simpler)
+  architecture. The mockup's **web ordering / landing page** sections are
+  largely superseded too (current landing page took a different structural
+  direction), though a few copy ideas (stat callouts, sold-out-with-return-
+  date instead of greying out) are still fair game to revisit deliberately,
+  not because the old mockup says so.
+- **DIRECT10 WhatsApp-only discount code** (`bio.html`). Being replaced by
+  real discount infrastructure — UTM-tagged QR codes that deep-link into
+  the web-app and auto-apply a discount, once-per-device. See Round 3 →
+  Growth / marketing infra above.

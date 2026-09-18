@@ -36,6 +36,17 @@ def _new_tracking_token() -> str:
 _LANDMARK_RE = re.compile(r"\s*\(Landmark:\s*(.*?)\)\s*$", re.IGNORECASE)
 
 
+def _normalize_phone(phone: str) -> str:
+    """Canonical bare-10-digit form. Checkout submits whatever the customer
+    typed with no country-code normalization, so `customers.phone` has
+    accumulated a mix of "+91XXXXXXXXXX", "91XXXXXXXXXX" and bare
+    "XXXXXXXXXX" — which silently broke the /track phone lookup for anyone
+    not stored in exactly the format the query assumed. Normalize once here,
+    at the door, so storage is consistent going forward."""
+    digits = re.sub(r"\D", "", phone or "")
+    return digits[-10:] if len(digits) >= 10 else digits
+
+
 def _parse_iso(scheduled_at: str) -> datetime:
     s = scheduled_at
     if s.endswith("Z"):
@@ -269,9 +280,18 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                  scheduled_at: str | None = None,
                  lat: str | None = None, lng: str | None = None,
                  scheduled_window: str | None = None,
-                 pay_courier_direct: bool = False) -> dict:
+                 # Default true: quote the customer a delivery fee estimate but
+                 # don't fold it into what we charge — the rider's actual fee
+                 # is set at pickup, not by our zone table, so bundling an
+                 # estimate into the total risks over/undercharging. They pay
+                 # the rider directly by default; opting into `False` here
+                 # means WE collect the (estimated) fee and pay the rider
+                 # ourselves instead, for customers who'd rather not deal
+                 # with it at the door.
+                 pay_courier_direct: bool = True) -> dict:
     if order_type not in ("delivery", "pickup"):
         raise OrderError("Invalid order_type", 400)
+    phone = _normalize_phone(phone)
     store = db.get_store_status()
     if not store["is_open"]:
         raise OrderError(store["reason"] or "We're closed for online orders right now", 400)

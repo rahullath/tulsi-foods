@@ -454,14 +454,22 @@ def get_order_by_token(tracking_token: str) -> dict | None:
 
 def get_orders_by_phone(phone: str, limit: int = 5) -> list[dict]:
     """Recent orders for a phone number (for the /track lookup). Cancelled
-    orders excluded so customers only see live ones."""
+    orders excluded so customers only see live ones.
+
+    `phone` must already be a bare 10-digit string (app.orders._normalize_phone).
+    Matches on the last 10 digits of the stored value with '+'/spaces
+    stripped, not on exact equality — `customers.phone` has historically
+    accumulated a mix of "+91XXXXXXXXXX" / "91XXXXXXXXXX" / bare
+    "XXXXXXXXXX" (pre-dating normalization at write time), and this keeps
+    lookups working for those existing rows without a data migration."""
     conn = get_conn()
     rows = conn.execute(
         "SELECT o.id, o.tracking_token, o.status, o.total, o.created_at, "
         "       o.scheduled_at, o.scheduled_window, o.order_type, "
         "       o.delivery_fee, o.pay_courier_direct "
         "FROM orders o JOIN customers c ON c.id=o.customer_id "
-        "WHERE c.phone=? AND o.status != 'cancelled' "
+        "WHERE substr(replace(replace(c.phone,'+',''),' ',''), -10) = ? "
+        "AND o.status != 'cancelled' "
         "ORDER BY o.id DESC LIMIT ?",
         (phone, limit),
     ).fetchall()
