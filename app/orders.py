@@ -360,6 +360,7 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                 "petpooja_order_id": result["petpooja_order_id"],
                 "client_order_id": result["client_order_id"],
                 "petpooja_message": result.get("message", ""),
+                "petpooja_rest_id": result.get("rest_id", ""),
             }
     except Exception as e:
         petpooja_info = {"petpooja_error": str(e)[:300]}
