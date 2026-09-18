@@ -57,6 +57,41 @@ provided, so `fetch_menu()` remains unwired/latent.
   guard was a no-op and any token (or none) was accepted. Fixed by adding the
   var to Railway; confirmed a wrong token now gets a real `403`.
 
+## 1b. Checkout, tracking & rider dispatch (Sep 18 2026)
+
+- **WhatsApp is no longer a required checkout step.** Orders go straight to
+  the Petpooja POS; the success panel just shows "Order placed — the kitchen
+  has it" with an *optional* WhatsApp link for queries/custom swaps
+  (`app/templates/menu.html`). This closes the old loop where a delivery
+  order depended on a wa.me tap before Petpooja ever heard about it.
+- **Tracking/status is driven by Petpooja callbacks**, not the admin panel:
+  `accepted → preparing`, `5 → ready` (Food Ready), `4 → out_for_delivery`,
+  `10 → delivered`, `-1 → cancelled` (`petpooja_status_to_order_status` in
+  `mapping.py`). `app/webhooks.py` `petpooja_order_callback` now matches the
+  callback by **either** `clientOrderID` (= our own order id, primary-key
+  match) **or** Petpooja's `orderID` (numeric id, then the stored
+  `petpooja_order_id` column via `db.get_order_by_petpooja`), so a callback
+  can't silently drop whichever id production actually sends.
+- **Rider booking now happens automatically on "Food Ready"**: when the POS
+  callback flips an order to `ready`, `_maybe_auto_dispatch` books a Borzo
+  rider (Shiprocket if no Borzo token) for delivery orders via the shared
+  `orders.dispatch_rider()`. It's guarded — skipped for pickup, missing/flagged
+  addresses, or already-dispatched orders — and best-effort (never blocks the
+  callback's 200; the admin Dispatch button remains as a manual fallback).
+  The customer gets a dispatch notification via `notify_dispatch`.
+- **Sample order placed to verify the chain**: `order_id=22`,
+  `TEST ORDER - IGNORE`, pickup, North Indian Thali ×1, via the *deployed*
+  app. `petpooja_synced_at` is set (save_order acked `success=1`) but
+  `petpooja_order_id` came back **blank** and nothing appeared on the
+  dashboard — the same invisible-order failure as before §3.2's fix, last
+  seen when the deployed code was still sending slugs. See §5 step 9.
+- **Self-diagnosing POS pushes**: `create_order` now merges the relay
+  outcome into the `/api/orders` response — `petpooja_order_id`,
+  `client_order_id`, `petpooja_message` on success, or a truncated
+  `petpooja_error` on failure — so the next test order reports exactly what
+  Petpooja returned (a blank orderID + error message shows immediately in
+  the API reply instead of hiding in Railway logs).
+
 ## 2. Bugs fixed this session (in `app/petpooja/`)
 
 All in [mapping.py](../app/petpooja/mapping.py) unless noted:
@@ -349,6 +384,22 @@ response is `content-length: 0`). Get Store Status intentionally drops
      Pro static outbound IPs for the service, get all assigned IPv4s
      whitelisted with Petpooja and verified before production credentials
      land; production Save Order will reject others.
+9. **Confirm sample order 22 on the production Online Ordering dashboard**
+   (Order Listing, search `clientOrderID=22` / "TEST ORDER - IGNORE",
+   pickup, North Indian Thali ×1). It was pushed from the deployed app
+   (`petpooja_synced_at` set, `success=1`) but the echoed `orderID` came back
+   blank — verify it actually shows on the POS queue, then have mom Accept →
+   Food Ready once and watch:
+   - the order-callback we receive, to confirm **which field carries the order
+     id in production** (`orderID` vs `clientOrderID`) — the handler now
+     accepts both, but seeing one real payload removes all doubt;
+   - the callback flips `new → preparing` and `preparing → ready` in the
+     admin panel, and the `/track/{token}` page updates;
+   - it's a pickup order so no rider is auto-booked (delivery orders with a
+     valid address would go to Borzo automatically on Food Ready).
+10. After that proves out, redeploy (this session's changes) and push the
+    Menu Trigger again (Railway's FS is ephemeral — catalog + menu data need
+    re-uploading after any deploy) before taking real orders.
 
 ## 6. Reference
 

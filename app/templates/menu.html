@@ -943,27 +943,21 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           <button class="checkout-close" id="checkout-close-2">✕</button>
           <div class="checkout-success">
             <div class="checkout-success-icon">${isUpi ? "₹" : "✓"}</div>
-            <div class="checkout-title">${isUpi ? "One last step — confirm & pay" : "Order placed — one tap to confirm"}</div>
+            <div class="checkout-title">${isUpi ? "Order placed — pay to confirm" : "Order placed — the kitchen has it"}</div>
             <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}.<br>
-              Your order is in; send the kitchen the details below so nothing is missed.</p>
+              It's gone straight to the kitchen's POS — no confirmation text needed.
+              Tracking updates as it's accepted, cooked and dispatched.</p>
 
-            <div class="confirm-step">
-              <div class="confirm-step-no">Step 1 · Confirm your order</div>
-              <a class="checkout-place" target="_blank" rel="noopener"
-                 id="wa-confirm" style="text-decoration:none;display:inline-block;margin-bottom:10px;background:#25D366;color:#fff"
-                 href="${confirmHref}">Confirm on WhatsApp →</a>
-              <p class="confirm-state" id="wa-confirm-state" style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
-                One tap sends your full order, address and total above to the kitchen — nothing to type.</p>
-            </div>
             ${isUpi ? `
               <a class="checkout-place" id="upi-pay-now" style="text-decoration:none;display:inline-block;margin-bottom:10px"
-                 href="${upiLink(data.total, data.order_id)}">Step 2 · Pay ₹${data.total} with UPI →</a>
+                 href="${upiLink(data.total, data.order_id)}">Pay ₹${data.total} with UPI →</a>
               <p style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
-                Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Your UPI app will open pre-filled.
-                We confirm the payment, then start your order.</p>
+                Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Your UPI app will open pre-filled — your order starts once the kitchen accepts it.</p>
             ` : ""}
             <a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px" href="/track/${data.tracking_token}">Track my order ↳</a>
             <button class="checkout-place" id="checkout-continue">Continue browsing</button>
+            <p class="confirm-state" style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
+              Have a query or a custom swap? <a id="wa-optional" href="${confirmHref}" target="_blank" rel="noopener" style="color:#25D366;font-weight:600">Message us on WhatsApp</a> — your order's already placed, nothing else to confirm.</p>
             ${isDelivery ? `<div class="edit-window" id="edit-window">
               <div class="edit-window-text">Wrong address? You have <span id="edit-countdown">3:00</span> to fix it.</div>
               <button type="button" class="edit-window-btn" id="edit-address-btn">Change the address</button>
@@ -973,11 +967,6 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         const closeAndReset = () => overlay.remove();
         overlay.querySelector("#checkout-close-2").addEventListener("click", closeAndReset);
         overlay.querySelector("#checkout-continue").addEventListener("click", closeAndReset);
-        overlay.querySelector("#wa-confirm").addEventListener("click", () => {
-          const st = overlay.querySelector("#wa-confirm-state");
-          st.textContent = "✓ Sent! The kitchen confirms your time & payment QR there — tracking is live.";
-          st.style.color = "#16a34a";
-        });
 
         if (isDelivery) {
           const editWindow = overlay.querySelector("#edit-window");

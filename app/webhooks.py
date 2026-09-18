@@ -307,32 +307,85 @@ async def petpooja_order_callback(request: Request, t: str | None = Query(None))
     from .petpooja.mapping import petpooja_status_to_order_status
 
     order_id_raw = body.get("orderID")
+    client_order_id_raw = body.get("clientOrderID") or body.get("client_order_id")
     status_code = body.get("status")
-    if not order_id_raw or status_code is None:
-        raise HTTPException(status_code=400, detail="Missing orderID or status")
+    if (not order_id_raw and not client_order_id_raw) or status_code is None:
+        raise HTTPException(status_code=400, detail="Missing orderID/clientOrderID or status")
 
     mapped = petpooja_status_to_order_status(status_code)
     if not mapped:
-        log.info("Petpooja callback: unrecognised status %s for order %s", status_code, order_id_raw)
+        log.info("Petpooja callback: unrecognised status %s for order %s", status_code, order_id_raw or client_order_id_raw)
         return Response(status_code=200, media_type="application/json")
 
-    try:
-        order_id = int(order_id_raw)
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="Invalid orderID")
-
-    o = db.get_order(order_id)
+    from . import db
+    # Prefer the id Petpooja echoes back that is *ours* (clientOrderID is
+    # documented as == our own order id) — primary key match, no ambiguity.
+    # Fall back to their orderID: try it as our numeric id too, then the
+    # stored petpooja_order_id column. Accepting both costs nothing and keeps
+    # callbacks working whichever field production sends.
+    o = None
+    if client_order_id_raw:
+        try:
+            o = db.get_order(int(client_order_id_raw))
+        except (TypeError, ValueError):
+            pass
+    if o is None and order_id_raw:
+        try:
+            o = db.get_order(int(order_id_raw))
+        except (TypeError, ValueError):
+            pass
+        if o is None:
+            o = db.get_order_by_petpooja(str(order_id_raw))
     if not o:
-        log.info("Petpooja callback: order %s not found", order_id)
+        log.info("Petpooja callback: order %s not found", order_id_raw or client_order_id_raw)
         return Response(status_code=200, media_type="application/json")
     if o["status"] in ("delivered", "cancelled"):
-        log.info("Petpooja callback: no-op for order %s (already closed)", order_id)
+        log.info("Petpooja callback: no-op for order %s (already closed)", order_id_raw or client_order_id_raw)
         return Response(status_code=200, media_type="application/json")
 
+    order_id = o["id"]
     db.update_order_status(order_id, mapped)
     log.info("Order %s: %s -> %s (Petpooja callback: %s)", order_id, o["status"], mapped, status_code)
     _send_status_whatsapp_if_needed(db.get_order(order_id), mapped)
+    # Rider booking: the POS "Food Ready" tap books the courier automatically
+    # for delivery orders (guarded — see _maybe_auto_dispatch).
+    if mapped == "ready":
+        _maybe_auto_dispatch(order_id)
     return Response(status_code=200, media_type="application/json")
+
+
+def _maybe_auto_dispatch(order_id: int) -> None:
+    """Book a rider when the POS reports food ready on a delivery order.
+
+    This is how rider booking happens now: mom taps Food Ready on the
+    Petpooja terminal → callback → we dispatch on Borzo (or Shiprocket).
+    Skipped without error when the order isn't a delivery, the address is
+    incomplete or flagged (a human should confirm first), or a rider was
+    already booked. Best-effort — never blocks the callback's 200."""
+    from . import db
+    o = db.get_order(order_id)
+    if not o or o["order_type"] != "delivery":
+        return
+    if o.get("sr_order_id"):
+        return
+    if not (o.get("delivery_address") and o.get("delivery_pincode")):
+        log.info("Petpooja callback: order %s food-ready but missing address/pincode — holding dispatch", order_id)
+        return
+    if o.get("address_flagged"):
+        log.info("Petpooja callback: order %s food-ready but address flagged — holding dispatch for review", order_id)
+        return
+    try:
+        from .orders import dispatch_rider
+        result = dispatch_rider(order_id)
+        log.info("Order %s auto-dispatched on Petpooja food-ready (%s)", order_id, result.get("provider"))
+    except Exception:
+        log.exception("Auto-dispatch failed for order %s (Petpooja food-ready); use the admin Dispatch button", order_id)
+        return
+    from .notify import notify_dispatch
+    try:
+        notify_dispatch(db.get_order(order_id), result)
+    except Exception:
+        log.exception("Dispatch notification failed for order %s", order_id)
 
 
 @router.post("/petpooja/menu")

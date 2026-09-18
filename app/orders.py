@@ -342,7 +342,11 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
         pass
 
     # Push to Petpooja POS — no-op until PETPOOJA_APP_KEY etc. are set (see
-    # app/petpooja/config.py); never blocks order creation on failure.
+    # app/petpooja/config.py); never blocks order creation on failure. The
+    # relay outcome is surfaced back in the API response so a silent
+    # success=1-with-blank-orderID is visible to whoever placed the order
+    # (dashboard/Cli), not just in server logs.
+    petpooja_info: dict = {}
     try:
         from .petpooja.client import is_configured, save_order as petpooja_save_order
         if is_configured():
@@ -352,7 +356,13 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
             callback_url = f"{TULSI_ADMIN_URL}/webhook/petpooja/order-callback?t={PETPOOJA_WEBHOOK_TOKEN}"
             result = petpooja_save_order(order_row, callback_url, GST_RATE)
             db.update_order_petpooja(oid, result["petpooja_order_id"])
-    except Exception:
+            petpooja_info = {
+                "petpooja_order_id": result["petpooja_order_id"],
+                "client_order_id": result["client_order_id"],
+                "petpooja_message": result.get("message", ""),
+            }
+    except Exception as e:
+        petpooja_info = {"petpooja_error": str(e)[:300]}
         import logging
         logging.getLogger("petpooja").exception("save_order push failed for order %s", oid)
 
@@ -361,7 +371,8 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
             "delivery_fee": delivery_fee, "total": round(total, 2),
             "tracking_token": tracking_token,
             "scheduled_window": scheduled_window, "pay_courier_direct": pay_courier_direct,
-            "schedule_label": _window_label(scheduled_window, scheduled_at)}
+            "schedule_label": _window_label(scheduled_window, scheduled_at),
+            **petpooja_info}
 
 
 def edit_address(order_id: int, address: str, pincode: str | None = None,
@@ -395,3 +406,73 @@ def delivery_fee_from_pincode(pincode: str, subtotal: float) -> float:
         return 0.0
     # Default to Zone A fee as estimate; dispatch corrects if needed
     return DELIVERY_ZONES[0]["fee"]
+
+
+def dispatch_rider(order_id: int) -> dict:
+    """Book a rider for a food-ready delivery order.
+
+    Borzo when its token is set, else Shiprocket Quick. Raises OrderError on
+    invalid orders and the provider's own exception on a failed booking; on
+    success updates the DB to out_for_delivery with courier details and
+    returns {"provider": ...} merged with the provider result.
+
+    Called both by the admin dispatch endpoint and automatically when
+    Petpooja's order-callback reports the order as food-ready — see
+    app/webhooks.py `_maybe_auto_dispatch` (that's how rider booking
+    happens now: the POS "Food Ready" tap books the courier).
+    """
+    o = db.get_order(order_id)
+    if not o:
+        raise OrderError("Order not found", 404)
+    if o["order_type"] != "delivery":
+        raise OrderError("Cannot dispatch pickup orders", 400)
+    if o["status"] != "ready":
+        raise OrderError(f"Order must be ready before booking a rider (currently {o['status']})", 400)
+    if not o.get("delivery_address") or not o.get("delivery_pincode"):
+        raise OrderError("Order missing delivery address or pincode", 400)
+    if o.get("sr_order_id"):
+        raise OrderError("Rider already booked for this order", 400)
+
+    from .delivery.config import BORZO_AUTH_TOKEN
+    provider = "borzo" if BORZO_AUTH_TOKEN else "shiprocket"
+
+    try:
+        if provider == "borzo":
+            from .delivery.borzo import create_order as borzo_create
+            result = borzo_create(
+                order_id=order_id,
+                customer_name=o.get("customer_name") or "Customer",
+                customer_phone=o.get("customer_phone") or "",
+                delivery_address=o["delivery_address"],
+                items=o["items"],
+                total=o["total"],
+                payment_method=o["payment_method"],
+                cod_amount=o["total"] if o["payment_method"] == "cod" else 0,
+                delivery_lat=o.get("delivery_lat"),
+                delivery_lng=o.get("delivery_lng"),
+            )
+        else:
+            from .delivery.shiprocket import dispatch_order
+            result = dispatch_order(
+                order_id=order_id,
+                customer_name=o.get("customer_name") or "Customer",
+                customer_phone=o.get("customer_phone") or "",
+                delivery_address=o["delivery_address"],
+                delivery_pincode=o["delivery_pincode"],
+                items=o["items"],
+                total=o["total"],
+                payment_method=o["payment_method"],
+                delivery_lat=o.get("delivery_lat"),
+                delivery_lng=o.get("delivery_lng"),
+            )
+    except Exception:
+        raise
+
+    db.update_order_dispatch(
+        order_id=order_id,
+        sr_order_id=result["sr_order_id"],
+        awb=result.get("sr_awb") or result.get("awb_code", ""),
+        courier=result.get("sr_courier") or result.get("courier_name", ""),
+        tracking_url=result.get("sr_tracking_url") or result.get("tracking_url", ""),
+    )
+    return {"provider": provider, **result}

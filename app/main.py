@@ -1201,61 +1201,16 @@ def admin_scheduled_orders(x_admin_token: str | None = Header(None)):
 def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)):
     """Mom taps 'Food Ready' — triggers rider dispatch via Borzo (primary) or Shiprocket (fallback)."""
     _check_admin(x_admin_token)
-    o = db.get_order(order_id)
-    if not o:
-        raise HTTPException(404, "Order not found")
-    if o["order_type"] != "delivery":
-        raise HTTPException(400, "Cannot dispatch pickup orders")
-    if o["status"] != "ready":
-        raise HTTPException(400, f"Order must be ready before booking a rider (currently {o['status']})")
-    if not o.get("delivery_address") or not o.get("delivery_pincode"):
-        raise HTTPException(400, "Order missing delivery address or pincode")
-
-    # Try Borzo first, fall back to Shiprocket
-    from .delivery.config import BORZO_AUTH_TOKEN
-    provider = "borzo" if BORZO_AUTH_TOKEN else "shiprocket"
-
+    from .orders import dispatch_rider
     try:
-        if provider == "borzo":
-            from .delivery.borzo import create_order as borzo_create, BorzoError
-            result = borzo_create(
-                order_id=order_id,
-                customer_name=o.get("customer_name") or "Customer",
-                customer_phone=o.get("customer_phone") or "",
-                delivery_address=o["delivery_address"],
-                items=o["items"],
-                total=o["total"],
-                payment_method=o["payment_method"],
-                cod_amount=o["total"] if o["payment_method"] == "cod" else 0,
-                delivery_lat=o.get("delivery_lat"),
-                delivery_lng=o.get("delivery_lng"),
-            )
-        else:
-            from .delivery.shiprocket import dispatch_order, DispatchError
-            result = dispatch_order(
-                order_id=order_id,
-                customer_name=o.get("customer_name") or "Customer",
-                customer_phone=o.get("customer_phone") or "",
-                delivery_address=o["delivery_address"],
-                delivery_pincode=o["delivery_pincode"],
-                items=o["items"],
-                total=o["total"],
-                payment_method=o["payment_method"],
-                delivery_lat=o.get("delivery_lat"),
-                delivery_lng=o.get("delivery_lng"),
-            )
-
-        db.update_order_dispatch(
-            order_id=order_id,
-            sr_order_id=result["sr_order_id"],
-            awb=result.get("sr_awb") or result.get("awb_code", ""),
-            courier=result.get("sr_courier") or result.get("courier_name", ""),
-            tracking_url=result.get("sr_tracking_url") or result.get("tracking_url", ""),
-        )
-        _send_dispatch_whatsapp(o, result)
-        return {"ok": True, "provider": provider, **result}
+        result = dispatch_rider(order_id)
+    except orders.OrderError as e:
+        raise HTTPException(e.status, e.message)
     except Exception as e:
-        raise HTTPException(500, f"Dispatch failed ({provider}): {e}")
+        raise HTTPException(500, f"Dispatch failed: {e}")
+    o = db.get_order(order_id)
+    _send_dispatch_whatsapp(o, result)
+    return {"ok": True, **result}
 
 
 def _send_dispatch_whatsapp(order: dict, dispatch: dict) -> None:

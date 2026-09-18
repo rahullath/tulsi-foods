@@ -81,8 +81,8 @@ def save_order(order: dict, callback_url: str, gst_rate: float) -> dict:
             raise PetpoojaError("save_order", payload, r.text)
         if str(data.get("success")) != "1":
             raise PetpoojaError("save_order", payload, data)
-    log.info("Petpooja save_order ok: our order %s -> petpooja order %s (client order %s)",
-              order["id"], data.get("orderID"), data.get("clientOrderID"))
+    log.info("Petpooja save_order ok: our order %s -> petpooja order %s (client order %s): %s",
+             order["id"], data.get("orderID"), data.get("clientOrderID"), data.get("message", ""))
     return {
         "petpooja_order_id": str(data.get("orderID", "")),
         "client_order_id": str(data.get("clientOrderID", "")),

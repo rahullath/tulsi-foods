@@ -402,6 +402,34 @@ def get_order(order_id: int) -> dict | None:
     return d
 
 
+def get_order_by_petpooja(petpooja_order_id: str) -> dict | None:
+    """Look up an order by the id Petpooja's order-callback sends.
+
+    The callback's `orderID` is Petpooja's own order number (the `orderID`
+    echoed back by Save Order), not our sequential id — so callbacks for
+    statuses like POS-accept / food-ready must match on the stored
+    `petpooja_order_id` instead of our `id`."""
+    conn = get_conn()
+    o = conn.execute(
+        "SELECT o.*, c.name AS customer_name, c.phone AS customer_phone, "
+        "       c.address AS customer_address "
+        "FROM orders o LEFT JOIN customers c ON c.id=o.customer_id "
+        "WHERE o.petpooja_order_id=?",
+        (str(petpooja_order_id),),
+    ).fetchone()
+    if not o:
+        conn.close()
+        return None
+    items = conn.execute(
+        "SELECT item_id, name, price, qty FROM order_items WHERE order_id=?",
+        (o["id"],),
+    ).fetchall()
+    conn.close()
+    d = dict(o)
+    d["items"] = [dict(i) for i in items]
+    return d
+
+
 def get_order_by_token(tracking_token: str) -> dict | None:
     """Look up an order by its unguessable tracking token (public tracking)."""
     conn = get_conn()
