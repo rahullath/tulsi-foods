@@ -387,8 +387,57 @@ def _item_product_schema(item: dict, item_url: str, photo_url: str,
             "itemCondition": "https://schema.org/NewCondition",
             "availability": ("https://schema.org/InStock" if available
                              else "https://schema.org/OutOfStock"),
+            # Freshly cooked food can't be returned — state that explicitly
+            # rather than leaving the field out, per Google's Merchant
+            # structured-data requirements (Search Console flagged this as
+            # missing, not as "no returns" — those read differently to
+            # their validator).
+            "hasMerchantReturnPolicy": {
+                "@type": "MerchantReturnPolicy",
+                "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
+                "applicableCountry": "IN",
+            },
+            # Real numbers, not placeholders: cheapest zone's delivery fee,
+            # the actual ~7 km delivery radius from the kitchen (DELIVERY_ZONES'
+            # outer band), and the same 30–60 min window quoted elsewhere on
+            # the site.
+            "shippingDetails": {
+                "@type": "OfferShippingDetails",
+                "shippingRate": {
+                    "@type": "MonetaryAmount",
+                    "value": str(DELIVERY_ZONES[0]["fee"]),
+                    "currency": "INR",
+                },
+                "shippingDestination": {
+                    "@type": "DefinedRegion",
+                    "addressCountry": "IN",
+                    "geoMidpoint": {
+                        "@type": "GeoCoordinates",
+                        "latitude": PICKUP_LAT,
+                        "longitude": PICKUP_LNG,
+                    },
+                    "geoRadius": str(int(DELIVERY_ZONES[-1]["max_km"] * 1000)),
+                },
+                "deliveryTime": {
+                    "@type": "ShippingDeliveryTime",
+                    "handlingTime": {
+                        "@type": "QuantitativeValue",
+                        "minValue": 0, "maxValue": 0, "unitCode": "DAY",
+                    },
+                    "transitTime": {
+                        "@type": "QuantitativeValue",
+                        "minValue": 0.5, "maxValue": 1, "unitCode": "HUR",
+                    },
+                },
+            },
         },
     }
+    # aggregateRating/review deliberately omitted — we have no real per-dish
+    # review data (the `reviews` table is curated restaurant-level
+    # testimonials, not per-item ratings). Fabricating either would violate
+    # Google's structured-data policy and risks a manual action; fill this
+    # in honestly once the per-order review system (see docs/ROADMAP.md)
+    # actually exists.
     if photo_url:
         schema["image"] = photo_url
     else:
