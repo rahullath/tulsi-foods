@@ -1,11 +1,23 @@
 # Petpooja POS Integration — Status & Go-Live Checklist
 
-Last updated: 2026-09-17 — **production credentials issued** (restID `84713`,
-"Tulsi Foods", prod endpoints on `pponlineordercb.petpooja.com`). Staging
-work (below) used restID `qa3xsbk42g`, "Tulsi Foods" demo restaurant. Read
-this before touching `app/petpooja/` — it captures what's verified, what's
-fixed, and what's still open so going live doesn't mean re-discovering the
-same bugs.
+Last updated: 2026-09-19 — **root cause of the "orders don't reach the
+POS/Online Orders queue" saga confirmed and fixed**: `PETPOOJA_REST_ID` on
+Railway was set to the numeric outlet id `84713` instead of the mapping
+code `c5xeqnhd`. Petpooja support confirmed the `restID` field in every API
+call must carry the mapping code — the numeric id gets accepted
+(`save_order` returns success, the order is real and even cancellable) but
+never routed to the terminal. Fixed value: **`PETPOOJA_REST_ID=c5xeqnhd`**.
+See `app/petpooja/config.py`'s module docstring and
+`docs/PETPOOJA_PROXY_MIGRATION.md` Stage C1 for the full history — sandbox
+had this right the whole time (`qa3xsbk42g` is itself a mapping code, not
+an outlet number), production just wasn't set to match.
+
+Production credentials issued 2026-09-17 (outlet `84713` "Tulsi Foods",
+mapping code `c5xeqnhd`, prod endpoints on `pponlineordercb.petpooja.com`).
+Staging work (below) used restID `qa3xsbk42g`, "Tulsi Foods" demo
+restaurant. Read this before touching `app/petpooja/` — it captures what's
+verified, what's fixed, and what's still open so going live doesn't mean
+re-discovering the same bugs.
 
 Contact: Shivam Tiwari (Associate PM), Malvi Vaghela / Rohan Sakhrani for
 API support (`malvi.vaghela@petpooja.com`, `rohan.sakhrani@petpooja.com`).
@@ -19,7 +31,8 @@ Handed over by the Petpooja onboarding email ("Welcome on board"):
 | Item | Production value |
 |---|---|
 | API key / secret / token | in Railway Variables + owner's notes — **keep out of the repo** |
-| restID | `84713` (restaurant "Tulsi Foods", mapping code `c5xeqnhd`) |
+| restID (`PETPOOJA_REST_ID`) | **`c5xeqnhd`** — the mapping code, not the numeric outlet id `84713`. Was set to `84713` and is the confirmed root cause of orders never reaching the Online Orders queue/terminal. |
+| Outlet number (reference only, not an API value) | `84713` "Tulsi Foods" |
 | Save Order | `https://pponlineordercb.petpooja.com/save_order` |
 | Update Order Status (cancel) | `https://pponlineordercb.petpooja.com/update_order_status` |
 | Rider status | `https://pponlineordercb.petpooja.com/rider_status_update` |

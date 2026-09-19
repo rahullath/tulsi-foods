@@ -212,12 +212,19 @@ its family/address is what Petpooja records. No client-side IPv4 pinning needed.
       a one-line ack if prod relay ever 403s before the kitchen terminal.
 
 ### Stage C — Go-live (only after B2 AND prod credentials issued)
-- [ ] **C1.** **Prod credentials issued Sep 17 2026** (restID `84713`,
+- [x] **C1.** **Prod credentials issued Sep 17 2026** (outlet `84713`,
       mapping code `c5xeqnhd`; API key/secret/access token in the vendor
       email — live only in Railway Variables + owner's notes, never in the
       repo). Set in Railway:
       - Credentials: `PETPOOJA_APP_KEY`, `PETPOOJA_APP_SECRET`,
-        `PETPOOJA_ACCESS_TOKEN`, `PETPOOJA_REST_ID=84713`.
+        `PETPOOJA_ACCESS_TOKEN`, **`PETPOOJA_REST_ID=c5xeqnhd`** — NOT
+        `84713`. This was set to `84713` originally and is the confirmed
+        root cause (Petpooja support, Sep 2026) of orders never reaching
+        the Online Orders queue/POS terminal despite `save_order` returning
+        success — their routing keys off the mapping code, not the numeric
+        outlet id. Sandbox's `PETPOOJA_REST_ID=qa3xsbk42g` was already the
+        correct alphanumeric-code shape; production just wasn't set to
+        match it. See `app/petpooja/config.py`'s module docstring.
       - Endpoints (prod host `pponlineordercb.petpooja.com`, NO `/V1/`):
         `PETPOOJA_SAVE_ORDER_URL=https://pponlineordercb.petpooja.com/save_order`,
         `PETPOOJA_UPDATE_ORDER_STATUS_URL=https://pponlineordercb.petpooja.com/update_order_status`,

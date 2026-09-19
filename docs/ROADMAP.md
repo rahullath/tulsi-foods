@@ -401,11 +401,15 @@ flow the primary ordering path.
 
 ## Backlog / parked
 
-- **Petpooja relay** — production creds issued, save/cancel calls work, but
-  orders don't surface in Petpooja's own Online Orders queue or POS
-  terminal despite that. Root-caused (Sep 18-19 session) to a Petpooja-side
-  channel-wiring gap, not our code — support ticket filed. See
-  `docs/PETPOOJA_INTEGRATION.md`.
+- **Petpooja relay — root cause found and fixed (2026-09-19).** `PETPOOJA_REST_ID`
+  on Railway was the numeric outlet id (`84713`) instead of the mapping
+  code (`c5xeqnhd`) — confirmed by Petpooja support. That's why save/cancel
+  calls always worked (a real, valid order) but nothing ever reached the
+  Online Orders queue or POS terminal. **Action needed: update
+  `PETPOOJA_REST_ID=c5xeqnhd` in Railway Variables and redeploy** (not done
+  from here — no Railway access this session). Once set, place one more
+  test order and confirm it shows up in Online Orders → Tulsi API tab
+  before calling this fully closed. See `docs/PETPOOJA_INTEGRATION.md`.
 - **Borzo live dispatch** — needs wallet balance (`non_cash` payment configured,
   token valid; only funding blocks `create-order`).
 - **SMS** — Twilio stays trial (skips, 572006); real SMS only worth it post-upgrade

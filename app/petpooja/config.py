@@ -6,13 +6,25 @@ Everything here is blank/inert until those arrive; setting the four
 credential vars is what flips the integration on (see `app/orders.py` and
 `app/webhooks.py`, both gated on PETPOOJA_APP_KEY).
 
-Production facts (email, Sep 17 2026 — restID 84713 "Tulsi Foods", mapping
+Production facts (email, Sep 17 2026 — outlet 84713 "Tulsi Foods", mapping
 code c5xeqnhd): the three outbound endpoints live on the host
 pponlineordercb.petpooja.com with NO /V1/ prefix (save_order,
 update_order_status, rider_status_update). No production menu endpoint was
 handed over, so fetch_menu stays staging/latent. Production ships as env
 overrides (see .env.example) — the defaults just below remain the sandbox
 API Gateway, which is what local/staging work still needs.
+
+CONFIRMED BUG (Petpooja support, Sep 2026): PETPOOJA_REST_ID must be the
+**mapping code** (`c5xeqnhd` in production), not the numeric outlet id
+(`84713`). This was set wrong on Railway. Sandbox actually had the right
+shape the whole time — PETPOOJA_REST_ID there is `qa3xsbk42g`, itself an
+alphanumeric mapping code, not a numeric id — but production wasn't set up
+to match that pattern. Save Order with the numeric outlet id still returns
+success=1 and a real, cancellable order (Petpooja's backend accepts it
+fine), but the order never reaches the Online Orders queue or the POS
+terminal — their routing keys off the mapping code specifically, not the
+outlet id. This is very likely the entire cause of every "order not
+showing up" investigation before this fix. See docs/PETPOOJA_INTEGRATION.md.
 """
 import os
 
