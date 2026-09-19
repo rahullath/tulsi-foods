@@ -18,19 +18,20 @@ customer, not just the aggregator. Long game; ship in order below, clean up
 and document only after the app has been live and used for a while.
 
 ### UX / core flow
-- `[ ]` **Persist cart + customer details across the session.** Right now
-  the cart/checkout state disappears if the customer navigates away or
-  leaves the tab — should survive at least the session (localStorage), so
-  half-finished orders aren't lost.
-- `[ ]` **Improve cart & checkout flow generally** — no single bug named,
-  revisit the whole flow for friction once cart persistence lands.
-- `[ ]` **Delivery fee messaging, rewritten**: stop quoting a zone-based fee
-  as if it's precise/final. Don't fold it into the default total. Tell the
-  customer up front they'll owe a delivery fee (amount TBD by the courier),
-  and offer to collect it on their behalf and pay the rider, if they'd
-  rather not deal with it directly. (Note: `pay_courier_direct` already
-  exists as the inverse toggle — this is about the *default* messaging and
-  framing, not new plumbing.)
+- `[x]` **Persist cart + customer details across the session.** Done
+  2026-09-19 (`7e0984c`) — checkout details (name/phone/address/schedule/
+  pin) persist to `localStorage` separately from the cart, restored on
+  reopen or reload, cleared only on a successful order. Verified live.
+- `[~]` **Improve cart & checkout flow generally** — the big piece of this
+  landed 2026-09-19 (`3ece12f`): inline +/− quantity edit directly in the
+  checkout summary (design v-final screen 1c direction), synced with the
+  menu grid's steppers, closes the panel if the cart empties out. Open-
+  ended item, keep revisiting for friction as it comes up.
+- `[x]` **Delivery fee messaging, rewritten.** Done 2026-09-19 (`7e0984c`):
+  `pay_courier_direct` now defaults `True` (customer pays the rider
+  directly, fee excluded from the total) instead of bundling a zone-based
+  estimate in by default; opting the other way is now framed as "we
+  collect it and pay the rider for you."
 
 ### Payments — "how does Mom actually get paid"
 - `[ ]` **Payment confirmation, not just a UPI deep link.** `upiLink()` in
@@ -47,9 +48,12 @@ and document only after the app has been live and used for a while.
   PhonePe/Paytm Business — verify each one's KYC tier before assuming).
 
 ### SEO
-- `[ ]` **Standing priority, not a one-off.** Keep auditing per
-  `docs/SEO_PLAYBOOK.md`; this is called out as the primary lever for
-  growth going forward — always worth another pass.
+- `[~]` **Standing priority, not a one-off.** 2026-09-19 (`2d94dd8`):
+  reposted 18 real Instagram captions (the ones with actual content — 9
+  with no caption at all were skipped rather than padded) to `/updates`,
+  flowing automatically into the existing Blog JSON-LD and RSS feed, no
+  new code needed. Keep auditing per `docs/SEO_PLAYBOOK.md` — this is the
+  primary growth lever, always worth another pass.
 
 ### Petpooja / Admin
 - `[ ]` **Pull pricing/menu from the Petpooja push, not `data/menu.json`.**
@@ -60,12 +64,13 @@ and document only after the app has been live and used for a while.
   Check whether the last push actually persisted (Railway volume is
   confirmed mounted at `/data` — see chat history) before assuming it's
   gone.
-- `[ ]` **Every Petpooja→us callback must be bulletproof.** Once the
-  Online-Orders-queue issue is resolved by their support, admin is
-  effectively *driven by Petpooja* (accept/food-ready/dispatch/cancel all
-  arrive as webhooks) — audit `app/webhooks.py`'s handlers so nothing 500s
-  or silently drops a callback. This becomes the primary admin surface;
-  it can't be flaky.
+- `[ ]` **Every Petpooja→us callback must be bulletproof.** The
+  Online-Orders-queue issue is now resolved (`PETPOOJA_REST_ID` fix,
+  2026-09-19 — see `docs/PETPOOJA_INTEGRATION.md`), so admin really is
+  now *driven by Petpooja* live (accept/food-ready/dispatch/cancel all
+  arrive as webhooks) — this item just got a lot more load-bearing. Audit
+  `app/webhooks.py`'s handlers so nothing 500s or silently drops a
+  callback. This is the primary admin surface now; it can't be flaky.
 
 ### Delivery / rider tracking (currently "a random hope kinda thing")
 - `[ ]` **Untested end-to-end.** Needs real exploration, not just code
@@ -81,15 +86,30 @@ and document only after the app has been live and used for a while.
 
 ### Growth / marketing infra
 - `[ ]` **Print flyers** for Mom to slip into existing Swiggy/Zomato
-  orders, pitching the direct-order site to those same customers.
+  orders, pitching the direct-order site to those same customers. First
+  attempt 2026-09-19 rejected by the owner ("this flyer sucks") — worth a
+  fresh direction next time rather than iterating on that draft. Note
+  from that attempt worth keeping: the `/f?c=...` QR redirect + scan-
+  logging infra already exists
+  and works (`app/qr.py`, `qr_scans` table) — no auto-discount mechanism
+  behind it though, so don't print a QR promising a discount that isn't
+  wired up (see the discount-infra item below).
 - `[ ]` **Real discount infrastructure**, replacing the hardcoded DIRECT10
   WhatsApp-only promo (see Archived below): UTM-tagged QR codes that both
   deep-link into the web-app *and* auto-apply a discount, redeemable once
   per device (needs a device-fingerprint or localStorage-flag check, not
   bulletproof but good enough to deter casual reuse). This is roadmap §7
-  ("Discounts / promo codes") done properly, QR-first.
-- `[ ]` **PWA / installable web app** — manifest + service worker + icons,
-  so regular customers can "Add to Home Screen" instead of rebrowsing.
+  ("Discounts / promo codes") done properly, QR-first. Genuinely blocking
+  the flyer item above from making an honest discount claim.
+- `[~]` **PWA / installable web app.** Installability shipped 2026-09-19
+  (`3ece12f`) — manifest, service worker (deliberately minimal: only
+  caches the static logo/icon shell, never `/menu`/`/api/*`/checkout,
+  since stale cached pricing on a live ordering site is a real risk),
+  192/512 icons generated from the existing logo, `start_url=/menu`. What's
+  still open: a bespoke condensed "app shell" home screen (design v-final's
+  Home mockup, confirmed by the owner as the PWA-launch view, not a
+  landing-page replacement) — deferred as its own template build, not
+  done yet. Right now `start_url` just launches into `/menu`.
 - `[ ]` **Loyalty mechanic** — e.g. every N orders (with a minimum order
   value) earns a free item. Explicitly framed by the owner as standard
   marketing-incentive theater, not a real value driver — keep it cheap to
@@ -99,22 +119,24 @@ and document only after the app has been live and used for a while.
 - `[ ]` **Review system**: collected per-order, surfaced on a
   Testimonials/blog-style page (extend `/updates`?), with an admin way to
   hide/delete bad-faith reviews.
-- `[ ]` **Fix the "customer loses their order" gap.** Right now if someone
-  closes the browser without saving the `/track/{token}` link, they have no
-  way back in except remembering it. Needs a real recovery path — e.g. bind
-  orders to phone number + a "look up my order" flow (there's already a
-  phone-lookup entry point per `/track` — confirm it actually works and
-  surface it more), and/or SMS the tracking link automatically at order
-  time regardless of WhatsApp status.
+- `[x]` **Fix the "customer loses their order" gap.** Done 2026-09-19
+  (`e9f8a9e`) — `/track` rebuilt as "My Orders" (design v4 screen 1f):
+  device-local order history (no login, no reference number), each order
+  fetched live by token so status is always current, "Track this order" /
+  "Order again" per card, phone-lookup kept as the fallback for a new
+  device. Also found and fixed a real bug while building this: the phone
+  lookup was silently broken (checkout stored digits with no
+  country-code normalization while the lookup hardcoded `+91`) — fixed at
+  both the write (`orders._normalize_phone`) and read (`db.py`) side, the
+  latter tolerant of the already-inconsistent legacy data. SMS-the-link-
+  automatically is still not done — Twilio stays trial-mode, low priority.
 
 ### Support
-- `[ ]` **WhatsApp chat-bubble widget.** Simpler than it sounds — a
-  persistent floating button linking to `wa.me/<number>` or
-  `api.whatsapp.com/send`. `landing.html` already has exactly this
-  (`.float-wa`, just relabelled to "Message us on WhatsApp" this session)
-  — the ask is really "make it a site-wide persistent widget", not a new
-  capability. No WhatsApp Business API needed for this, that's a separate
-  (Meta-gated) thing.
+- `[x]` **WhatsApp chat-bubble widget.** Done 2026-09-19 (`7e0984c`) —
+  moved from `landing.html`-only into `base.html`, so it's a persistent
+  floating button (`.site-wa`) on every public page, hidden on
+  `/admin`/`/kitchen` via the existing `hide_nav` flag. No WhatsApp
+  Business API involved, that's a separate (Meta-gated) thing.
 
 ### Explicitly NOT a priority right now
 - Telegram bot — **no further work planned.** It was a stopgap while
