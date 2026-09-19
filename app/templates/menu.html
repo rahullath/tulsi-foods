@@ -429,7 +429,14 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         <form id="checkout-form">
           <div class="checkout-field"><label>Name</label><input name="name" required placeholder="Your name"></div>
           <div class="checkout-field"><label>Phone</label><input name="phone" required placeholder="10-digit number" pattern="[0-9]{10,}"></div>
-          <div class="checkout-field"><label>Order type</label><select name="order_type"><option value="delivery">Delivery</option><option value="pickup">Pickup</option></select></div>
+          <div class="checkout-field">
+            <label>Order type</label>
+            <input type="hidden" name="order_type" value="delivery">
+            <div class="time-pills" id="order-type-tiles">
+              <button type="button" class="time-pill active" data-value="delivery">Delivery</button>
+              <button type="button" class="time-pill" data-value="pickup">Pickup</button>
+            </div>
+          </div>
           <div class="checkout-field">
             <label>When do you want it?</label>
             <select id="schedule-date" class="schedule-date-select"></select>
@@ -463,10 +470,14 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             <div style="font-size:11px;color:#6F7468;margin-top:4px;">This is the one thing riders actually ask for.</div>
           </div>
           <div class="checkout-field" id="pin-field"><label>Pincode</label><input name="pincode" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode"></div>
-          <div class="checkout-field"><label>Payment</label><select name="payment_method" id="payment-method">
-            <option value="cod">Cash on delivery</option>
-            {% if upi_vpa %}<option value="upi">Pay by UPI</option>{% endif %}
-          </select></div>
+          <div class="checkout-field">
+            <label>Payment</label>
+            <input type="hidden" name="payment_method" id="payment-method" value="cod">
+            <div class="time-pills" id="payment-tiles">
+              <button type="button" class="time-pill active" data-value="cod">Cash on delivery</button>
+              {% if upi_vpa %}<button type="button" class="time-pill" data-value="upi">Pay by UPI</button>{% endif %}
+            </div>
+          </div>
           <div class="checkout-field" id="fee-mode-field" hidden>
             <label>Delivery fee</label>
             <select name="pay_courier_direct" id="fee-mode">
@@ -517,6 +528,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         const el = form.querySelector(`[name=${f}]`);
         if (el && saved[f]) el.value = saved[f];
       });
+      syncTapTiles("order-type-tiles", typeSelect.value);
+      if (paySelect) syncTapTiles("payment-tiles", paySelect.value);
       typeSelect.dispatchEvent(new Event("change"));
       if (paySelect) paySelect.dispatchEvent(new Event("change"));
       if (saved.lat && saved.lng) movePin(saved.lat, saved.lng, false);
@@ -705,8 +718,32 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     form.addEventListener("input", saveDetails);
     form.addEventListener("change", saveDetails);
 
+    // Order type / payment are tap-tiles over a hidden input, not a <select> —
+    // same pattern the schedule tiles already used. Clicking a tile sets the
+    // hidden input's value and fires a real "change" event, so every existing
+    // listener on that input (form submit, checkout summary refresh, address
+    // field show/hide, details persistence) keeps working unmodified.
+    function wireTapTiles(containerId, hiddenInput) {
+      const container = overlay.querySelector("#" + containerId);
+      if (!container) return;
+      container.querySelectorAll(".time-pill").forEach(btn => {
+        btn.addEventListener("click", () => {
+          container.querySelectorAll(".time-pill").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          hiddenInput.value = btn.dataset.value;
+          hiddenInput.dispatchEvent(new Event("change"));
+        });
+      });
+    }
+    function syncTapTiles(containerId, value) {
+      const container = overlay.querySelector("#" + containerId);
+      if (!container) return;
+      container.querySelectorAll(".time-pill").forEach(b => b.classList.toggle("active", b.dataset.value === value));
+    }
+
     const paySelect = overlay.querySelector("#payment-method");
     const upiField = overlay.querySelector("#upi-pay-field");
+    wireTapTiles("payment-tiles", paySelect);
     if (paySelect && upiField) {
       const syncPaymentUI = () => { upiField.hidden = paySelect.value !== "upi"; };
       paySelect.addEventListener("change", syncPaymentUI);
@@ -777,6 +814,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     }
 
     const typeSelect = form.querySelector('[name=order_type]');
+    wireTapTiles("order-type-tiles", typeSelect);
     const addrField = overlay.querySelector("#addr-field");
     const landmarkField = overlay.querySelector("#landmark-field");
     const pinField = overlay.querySelector("#pin-field");
@@ -878,9 +916,14 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       updateScheduledAt();
     });
 
-    overlay.querySelectorAll(".time-pill").forEach(pill => {
+    // Scoped to #time-pills specifically, not the whole overlay — the
+    // order-type and payment fields reuse this same .time-pill class for
+    // visual consistency (see wireTapTiles above), and an overlay-wide
+    // sweep here was wiping their active state on every schedule click.
+    const timePillsContainer = overlay.querySelector("#time-pills");
+    timePillsContainer.querySelectorAll(".time-pill").forEach(pill => {
       pill.addEventListener("click", () => {
-        overlay.querySelectorAll(".time-pill").forEach(p => p.classList.remove("active"));
+        timePillsContainer.querySelectorAll(".time-pill").forEach(p => p.classList.remove("active"));
         pill.classList.add("active");
         updateScheduledAt();
         // If the picked window has already passed today, quietly fall back to
@@ -888,7 +931,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         if (dateSelect.value === "0" && scheduledInput.value) {
           const when = new Date(scheduledInput.value);
           if (when.getTime() < Date.now()) {
-            overlay.querySelectorAll(".time-pill").forEach(p => p.classList.remove("active"));
+            timePillsContainer.querySelectorAll(".time-pill").forEach(p => p.classList.remove("active"));
             asapPill.classList.add("active");
             updateScheduledAt();
           }
