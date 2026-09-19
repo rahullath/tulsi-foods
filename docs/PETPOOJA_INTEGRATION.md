@@ -12,6 +12,14 @@ See `app/petpooja/config.py`'s module docstring and
 had this right the whole time (`qa3xsbk42g` is itself a mapping code, not
 an outlet number), production just wasn't set to match.
 
+**VERIFIED LIVE, same day**: order #33 (test order via the site) appeared
+under Online Orders → **Tulsi API** tab on billing.petpooja.com for the
+first time ever, went through `Accepted`, and rang on the restaurant's live
+terminal — Mom cancelled it since she didn't know it was a test and it
+interrupted her real workflow. The integration is confirmed end-to-end
+live; the only remaining task is an operational one (warn her ahead of
+test orders, or name them unmistakably as tests going forward).
+
 Production credentials issued 2026-09-17 (outlet `84713` "Tulsi Foods",
 mapping code `c5xeqnhd`, prod endpoints on `pponlineordercb.petpooja.com`).
 Staging work (below) used restID `qa3xsbk42g`, "Tulsi Foods" demo

@@ -401,15 +401,18 @@ flow the primary ordering path.
 
 ## Backlog / parked
 
-- **Petpooja relay — root cause found and fixed (2026-09-19).** `PETPOOJA_REST_ID`
+- **Petpooja relay — CLOSED (2026-09-19).** Root cause: `PETPOOJA_REST_ID`
   on Railway was the numeric outlet id (`84713`) instead of the mapping
-  code (`c5xeqnhd`) — confirmed by Petpooja support. That's why save/cancel
-  calls always worked (a real, valid order) but nothing ever reached the
-  Online Orders queue or POS terminal. **Action needed: update
-  `PETPOOJA_REST_ID=c5xeqnhd` in Railway Variables and redeploy** (not done
-  from here — no Railway access this session). Once set, place one more
-  test order and confirm it shows up in Online Orders → Tulsi API tab
-  before calling this fully closed. See `docs/PETPOOJA_INTEGRATION.md`.
+  code (`c5xeqnhd`) — confirmed by Petpooja support. Fixed on Railway and
+  verified live: order #33 (test order, placed via the site) appeared
+  under Online Orders → Tulsi API tab for the first time ever, went through
+  `Accepted`, and rang on Mom's terminal for real — she cancelled it
+  because she didn't realize it was a test and it interrupted her live
+  workflow. **Operational follow-up**: give her a heads-up before any
+  future test order, or use an unmistakable test name (e.g. "TEST ORDER —
+  IGNORE" as the customer name, as earlier sandbox tests did) so she can
+  tell it apart from a real one at a glance. See
+  `docs/PETPOOJA_INTEGRATION.md`.
 - **Borzo live dispatch** — needs wallet balance (`non_cash` payment configured,
   token valid; only funding blocks `create-order`).
 - **SMS** — Twilio stays trial (skips, 572006); real SMS only worth it post-upgrade
