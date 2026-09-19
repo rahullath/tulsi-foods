@@ -398,9 +398,15 @@ def _item_product_schema(item: dict, item_url: str, photo_url: str,
 
 @app.get("/track", response_class=HTMLResponse)
 def track_landing_page(request: Request):
-    """SEO entry point for order tracking. From here a customer finds their
-    order by tracking reference or phone and lands on /track/{ref}."""
-    return templates.TemplateResponse(request, "track-landing.html", {"categories": all_categories()})
+    """Order recovery / "My Orders". Primary path is device-local: orders
+    placed from this browser are cached client-side (see menu.html) and
+    fetched live by tracking token on load — no login, no reference number
+    to remember. Phone lookup stays as the fallback for a new/changed
+    device (see /api/orders/lookup)."""
+    return templates.TemplateResponse(
+        request, "track-landing.html",
+        {"categories": all_categories(), "dish_photos": sorted(dish_photo_ids())},
+    )
 
 
 @app.get("/track/{ref}", response_class=HTMLResponse)

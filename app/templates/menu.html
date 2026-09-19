@@ -949,11 +949,20 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Order failed");
         const placedItems = ids
-          .map(id => ({ name: NAMES[id], price: PRICES[id], qty: cart[id] }))
+          .map(id => ({ item_id: id, name: NAMES[id], price: PRICES[id], qty: cart[id] }))
           .filter(i => i.qty > 0);
         Object.keys(cart).forEach(k => delete cart[k]);
         updateCart();
         try { localStorage.removeItem(DETAILS_KEY); } catch (_) { /* storage unavailable */ }
+        // Device-local order history for /track's "My Orders" recovery page —
+        // just enough to look the order up live by token; that page fetches
+        // full/current details from the server rather than trusting this.
+        try {
+          const MY_ORDERS_KEY = "tulsi_my_orders";
+          const mine = JSON.parse(localStorage.getItem(MY_ORDERS_KEY) || "[]");
+          mine.unshift({ tracking_token: data.tracking_token, order_id: data.order_id });
+          localStorage.setItem(MY_ORDERS_KEY, JSON.stringify(mine.slice(0, 20)));
+        } catch (_) { /* storage unavailable */ }
         document.querySelectorAll(".card-stepper .qty").forEach(el => el.textContent = "0");
         document.querySelectorAll(".card-note").forEach(el => el.value = "");
         const isDelivery = payload.order_type === "delivery" && payload.address;
