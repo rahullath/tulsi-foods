@@ -28,7 +28,10 @@ def _status_template(order: dict, status: str):
     else:
         templates["ready"] = ("order_confirmed", t(cname, oid))
     templates["delivered"] = ("order_delivered", t(cname, oid))
-    templates["cancelled"] = ("order_cancelled_1", t(cname, oid, "0"))
+    # COD is never pre-charged, so there's nothing to refund; UPI orders are
+    # paid upfront, so a cancellation owes back the actual order total.
+    refund = order["total"] if order.get("payment_method") == "upi" else 0
+    templates["cancelled"] = ("order_cancelled_1", t(cname, oid, round(refund)))
     templates["out_for_delivery"] = ("delivery_confirmation_1", t(cname, oid))
     return templates.get(status)
 
