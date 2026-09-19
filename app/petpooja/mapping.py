@@ -196,8 +196,16 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         ],
         "order_type": _ORDER_TYPE_CODE.get(order_type, "H"),
         "advanced_order": "N",
+        # urgent_time is documented as conditional — "if urgent, specify prep
+        # time" (temp/api_guide.txt) — not a field to send unconditionally.
+        # Sending it on every order regardless of urgent_order (as a prior
+        # version of this code briefly did, 2026-09-19) is suspected of
+        # causing a POS terminal to treat every normal order as urgent —
+        # persistent ringing/instability on one client while another
+        # (presumably reading the urgent_order boolean correctly instead)
+        # handled the same order fine. Omit entirely; we have no concept of
+        # urgent orders in our model.
         "urgent_order": False,
-        "urgent_time": 20,
         "payment_type": _PAYMENT_TYPE_CODE.get(payment_method, "COD"),
         "table_no": "",
         "no_of_persons": "0",
@@ -207,15 +215,16 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         "total": f"{restaurant_total:.2f}",
         "description": order.get("instructions") or "",
         "created_on": created_on,
-        # Petpooja's own official Save Order example sends 1 for every
-        # home-delivery order regardless of courier — our prior read of this
-        # as "0 = third-party rider, 1 = restaurant's own rider" was inferred
-        # from a sandbox receipt saying "Self Delivery" at 1, not confirmed
-        # by Petpooja. Matching their documented example instead: 1 whenever
-        # we're actually delivering, 0 for pickup. If receipts start saying
-        # "Self Delivery" again, that's the tradeoff — revert to the order
-        # type check below if so.
-        "enable_delivery": 1 if order_type == "delivery" else 0,
+        # Petpooja's own field table is explicit: "0 = Third-party Rider,
+        # 1 = Restaurant Rider" (temp/api_guide.txt) — their worked example
+        # showing 1 for a delivery order was for an unknown restaurant's own
+        # setup, not a universal convention, and briefly (2026-09-19) got
+        # mistaken for one. Every Tulsi Foods delivery goes through Borzo, a
+        # third-party courier, never restaurant staff — this must always be
+        # 0. Also confirmed the hard way earlier: with `1 if order_type ==
+        # "delivery" else 0`, sandbox receipts said "Home Delivery (Self
+        # delivery)" — wrong on both counts.
+        "enable_delivery": 0,
         "min_prep_time": 20,
         "callback_url": callback_url,
         "collect_cash": f"{total:.2f}" if payment_method == "cod" else "0",
