@@ -32,6 +32,16 @@ and document only after the app has been live and used for a while.
   directly, fee excluded from the total) instead of bundling a zone-based
   estimate in by default; opting the other way is now framed as "we
   collect it and pay the rider for you."
+- `[x]` **Checkout order-type/payment as tap-tiles.** Done 2026-09-19
+  (`c9bb46c`): replaced the `<select>` dropdowns for order type
+  (delivery/pickup) and payment method (COD/UPI) with tap-tile buttons,
+  matching the "Final Site" mockup and the existing schedule-time tile
+  pattern. Found and fixed a real bug along the way: the schedule tiles'
+  click handler swept the whole checkout overlay for `.time-pill`
+  elements, so clicking any tile wiped active state off the other groups
+  (they now share that class for visual consistency). Scoped the sweep to
+  `#time-pills`. Verified live — reload-restore path and live-click path
+  both confirmed with no cross-contamination.
 
 ### Payments — "how does Mom actually get paid"
 - `[ ]` **Payment confirmation, not just a UPI deep link.** `upiLink()` in
