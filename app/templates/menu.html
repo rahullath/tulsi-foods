@@ -191,6 +191,12 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .checkout-row { display: flex; justify-content: space-between; padding: 4px 0; }
 .checkout-row.total { font-weight: 700; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; font-size: 16px; }
 .checkout-row-note { font-size: 11px; color: var(--sub); text-align: right; margin-top: 2px; }
+.checkout-item-row { align-items: center; gap: 8px; }
+.checkout-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.checkout-item-qty { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; flex: none; }
+.qty-btn { border: none; background: none; color: var(--g); font-size: 15px; line-height: 1; padding: 4px 2px; cursor: pointer; font-weight: 700; }
+.qty-val { font-weight: 600; font-size: 13px; min-width: 12px; text-align: center; }
+.checkout-item-price { flex: none; width: 52px; text-align: right; }
 .checkout-nudge { background: #FBF0DE; border: 1px solid #EFDFC2; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
 .checkout-nudge-title { font-size: 13px; font-weight: 600; color: #8A5A12; }
 .checkout-nudge-sub { font-size: 12px; color: #8A5A12; opacity: .85; margin-top: 3px; line-height: 1.5; }
@@ -631,7 +637,17 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       const rawFee = effQuote && !effQuote.outside ? (Number(effQuote.fee) || 0) : 0;
       const deliveryFee = payDirect ? 0 : rawFee;
       overlay.querySelector(".checkout-summary").innerHTML =
-        currentIds.map(id => `<div class="checkout-row"><span>${NAMES[id]} × ${cart[id]}</span><span>₹${(PRICES[id] || 0) * cart[id]}</span></div>`).join("")
+        currentIds.map(id => `
+          <div class="checkout-row checkout-item-row">
+            <span class="checkout-item-name">${NAMES[id]}</span>
+            <div class="checkout-item-qty">
+              <button type="button" class="qty-btn" data-id="${id}" data-delta="-1" aria-label="Remove one ${NAMES[id]}">−</button>
+              <span class="qty-val">${cart[id]}</span>
+              <button type="button" class="qty-btn" data-id="${id}" data-delta="1" aria-label="Add one ${NAMES[id]}">+</button>
+            </div>
+            <span class="checkout-item-price">₹${(PRICES[id] || 0) * cart[id]}</span>
+          </div>
+        `).join("")
         + (currentSubtotal > 0 ? `
           <div class="checkout-row"><span>Subtotal</span><span>₹${currentSubtotal}</span></div>
           ${packing ? `<div class="checkout-row"><span>Packing charge</span><span>₹${packing}</span></div>` : ""}
@@ -640,6 +656,23 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         + (deliveryRow ? deliveryRow : "")
         + `<div class="checkout-row total"><span>Total</span><span>₹${(currentSubtotal + packing + gst + deliveryFee).toFixed(2)}</span></div>
            <div class="checkout-row-note">${deliveryNote || "No hidden charges — this is the final total."}</div>`;
+
+      // Let the customer adjust quantities without leaving checkout — closing
+      // the panel to go back to the menu grid just to change a "2" to a "1"
+      // was the only way to do this before.
+      overlay.querySelectorAll(".qty-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          const delta = Number(btn.dataset.delta);
+          cart[id] = (cart[id] || 0) + delta;
+          if (cart[id] <= 0) delete cart[id];
+          updateCart();
+          const stepperQty = document.querySelector(`.card-stepper[data-id="${id}"] .qty`);
+          if (stepperQty) stepperQty.textContent = String(cart[id] || 0);
+          if (Object.keys(cart).length === 0) { overlay.remove(); return; }
+          refreshCheckoutSummary();
+        });
+      });
 
       const nudge = overlay.querySelector("#checkout-nudge");
       const candidates = UPSELL_ITEMS.filter(id => !cart[id] && PRICES[id] != null && AVAILABLE[id]);

@@ -1,0 +1,16 @@
+{
+  "name": "Tulsi Foods",
+  "short_name": "Tulsi Foods",
+  "description": "Order direct from Tulsi Foods, Mylapore — no aggregator commission, straight to the kitchen.",
+  "start_url": "/menu?source=pwa",
+  "id": "/menu",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FBF8F2",
+  "theme_color": "#0E7A45",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

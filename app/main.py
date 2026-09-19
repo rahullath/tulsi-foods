@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -554,6 +554,15 @@ SITE_URL = "https://tulsifoods.app"
 def google_site_verification():
     # Google Search Console domain ownership verification (HTML file method).
     return PlainTextResponse("google-site-verification: googlee69732d81b8747c7.html")
+
+
+@app.get("/sw.js")
+def service_worker():
+    """Served at the root, not /static/sw.js — a service worker's default
+    scope is the directory it's served from, and it needs to cover the
+    whole site (/, /menu, etc.) to actually control page loads, not just
+    /static/ assets."""
+    return FileResponse("app/static/sw.js", media_type="application/javascript")
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse)

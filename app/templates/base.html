@@ -9,6 +9,12 @@
   {% endblock %}
   {% block canonical %}{% endblock %}
   <link rel="icon" type="image/png" href="/static/logo.png">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0E7A45">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tulsi Foods">
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-NM9MWZ7VSC"></script>
   <script>
@@ -97,5 +103,12 @@
   @media (min-width: 769px) { .site-wa { display: none; } }
   </style>
   {% endif %}
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () { /* installability is a bonus, not a blocker */ });
+    });
+  }
+  </script>
 </body>
 </html>
