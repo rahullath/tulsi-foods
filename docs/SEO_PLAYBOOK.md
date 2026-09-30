@@ -110,3 +110,23 @@ with c:  # context manager triggers db.init_db() startup
     assert not bad_ld, bad_ld
     print("SEO AUDIT GREEN:", len(pages), "pages")
 ```
+
+## 6. Dish aliases, "near me" and broad intents (Sep 2026)
+
+Data lives in `app/seo_aliases.py`. It feeds:
+
+- **Dish page** (`/menu/{id}`): alias in `<title>` ("Paneer Butter Masala (Paneer Makhani) ₹365 · Order Online, Mylapore Chennai"),
+  aliases in meta description, visible "Also known as" line, a "{dish} near you in Chennai"
+  section naming real delivery neighbourhoods, 3-question dish FAQ (+ `FAQPage` JSON-LD),
+  `alternateName` on the `Product` JSON-LD.
+- **/menu**: `alternateName` on each `MenuItem`; the search box matches aliases ("chole", "golgappa", "rose milk").
+- **Category pages**: broad intents (`CATEGORY_KEYWORDS`, e.g. Sabzi → "paneer curry, veg curry") in title, meta and a visible line.
+- **Home**: `areaServed` (every `NEARBY_AREAS` entry) + wider `servesCuisine` on the `Restaurant` JSON-LD.
+- **llms.txt**: "Dish names people also search for" section.
+
+Rules:
+1. An alias must be the **same dish** (another spelling, Hindi/Tamil/regional name). Never a
+   dish we don't cook (no "Paneer Lababdar" on PBM). That's a mismatch, not a ranking win.
+2. New menu item → add its aliases to `DISH_ALIASES` (an id missing from the menu is harmless but dead).
+3. "near me" ranking comes mostly from the **Google Business Profile** (proximity, reviews,
+   categories, photos, posts). On-page, the lever is naming neighbourhoods, not repeating "near me".
