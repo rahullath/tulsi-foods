@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block meta %}
-<meta name="description" content="{{ item_description }} — {{ item.price }} INR, pure vegetarian, home-style, Mylapore Chennai. Order online on this site, no platform fees.">
-<title>{{ item.name }} @ ₹{{ item.price }} | Tulsi Foods, Mylapore</title>
+<meta name="description" content="{{ item_description }}{% if aliases %} Also called {{ aliases[:3] | join(', ') }}.{% endif %} ₹{{ item.price }}, pure veg, cooked fresh near you in Mylapore, Alwarpet &amp; Teynampet, Chennai. Order online, no platform fees.">
+<title>{{ item.name }}{% if aliases %} ({{ aliases[0] }}){% endif %} Price ₹{{ item.price }} · Order Online in Chennai | Tulsi Foods</title>
 <meta property="og:type" content="product">
 <meta property="og:title" content="{{ item.name }} | Tulsi Foods, Mylapore">
 <meta property="og:description" content="{{ item_description }}">
@@ -43,6 +43,7 @@
       <h1>{{ item.name }}</h1>
       {% if item.popular %}<span class="pop">popular</span>{% endif %}
     </div>
+    {% if aliases %}<p class="aka">Also known as {{ aliases | join(' · ') }}</p>{% endif %}
     <div class="cat"><span class="veg-mark" aria-hidden="true"></span>{{ item.group }} · {{ "Half portion available" if half else "Full portion" }} · pure veg</div>
 
     <div class="status">
@@ -78,6 +79,11 @@
     <p class="facts">Made fresh to order at Tulsi Foods, a home-style pure vegetarian kitchen in Mylapore, Chennai — no aggregator, no platform fees.</p>
   </section>
 
+  <section class="near">
+    <h2>{{ item.name }} near you in Chennai</h2>
+    <p>Looking for {{ item.name | lower }}{% if aliases %} ({{ aliases[:2] | join(' / ') | lower }}){% endif %} near you? Our kitchen is on Murrays Gate Road, Alwarpet, and delivers it hot to {{ nearby_areas[:-1] | join(', ') }} and {{ nearby_areas[-1] }}.</p>
+  </section>
+
   <section class="thali" id="thali" hidden>
     <h2>What's in this {{ 'thali' if 'thali' in (item.group | lower) else 'dish' }}?</h2>
     <ul class="thali-pills" id="thali-pills" aria-label="Everything included"></ul>
@@ -94,6 +100,16 @@
       <li><b>Delivery</b> — {{ ordering.zones }}.</li>
       <li><b>Hours</b> — {{ ordering.hours }}.</li>
     </ul>
+  </section>
+
+  <section class="dish-faq">
+    <h2>{{ item.name }}: questions people ask</h2>
+    {% for f in dish_faqs %}
+    <details{% if loop.first %} open{% endif %}>
+      <summary>{{ f.q }}</summary>
+      <p>{{ f.a }}</p>
+    </details>
+    {% endfor %}
   </section>
 
   {% if related %}
@@ -176,6 +192,12 @@ h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; line-heigh
 section { padding: 22px 18px 0; }
 section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; margin-bottom: 8px; line-height: 1.2; }
 
+.aka { font-size: 13px; color: var(--sub); margin-top: 6px; line-height: 1.45; }
+.near p { font-size: 14px; line-height: 1.65; color: #3C4137; }
+.dish-faq details { border-bottom: 1px dashed var(--line2); padding: 10px 0; }
+.dish-faq summary { font-size: 14px; font-weight: 600; cursor: pointer; line-height: 1.4; }
+.dish-faq details p { font-size: 14px; line-height: 1.6; color: #3C4137; margin-top: 6px; }
+
 .about p { font-size: 14px; line-height: 1.65; color: #3C4137; }
 .about .facts { font-size: 13px; color: var(--sub); margin-top: 8px; }
 
@@ -218,6 +240,7 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
 
 <script type="application/ld+json">{{ item_schema | tojson }}</script>
 <script type="application/ld+json">{{ breadcrumb_schema | tojson }}</script>
+<script type="application/ld+json">{{ faq_schema | tojson }}</script>
 <script>
 (function () {
   const CART_KEY = "tulsi_menu_cart";

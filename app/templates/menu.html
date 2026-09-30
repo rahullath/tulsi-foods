@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block meta %}
 <meta name="description" content="Full menu, prices and daily availability for Tulsi Foods — pure vegetarian North Indian thalis, parathas, chaats, sabzi and more in Mylapore, Chennai. Order online for delivery or pickup.">
-<title>Menu &amp; Prices | Tulsi Foods, Mylapore</title>
+<title>Tulsi Foods Menu &amp; Prices · Tulsi Restaurant, Alwarpet &amp; Mylapore, Chennai</title>
 {% endblock %}
 {% block canonical %}<link rel="canonical" href="https://tulsifoods.app/menu">{% endblock %}
 {% block fonts %}
@@ -33,7 +33,7 @@
     <section class="group" id="g-{{ loop.index }}">
       <h2>{{ g["group"] }} <a class="cat-link" href="/category/{{ g.get('slug', '') }}">view full category &rarr;</a></h2>
       {% for it in g["items"] %}
-      <div class="menu-card{% if not it.available %} off{% endif %}" data-id="{{ it.id }}" data-name="{{ it.name|lower }}" data-popular="{{ 'true' if it.popular else 'false' }}">
+      <div class="menu-card{% if not it.available %} off{% endif %}" data-id="{{ it.id }}" data-name="{{ (it.name ~ ' ' ~ aliases_for(it.id) | join(' ')) | lower }}" data-popular="{{ 'true' if it.popular else 'false' }}">
         {% if it.photo_id in dish_photos %}
         <div class="card-photo">
           <img src="/static/img/dishes/{{ it.photo_id }}.jpg" alt="{{ it.name }}" loading="lazy">

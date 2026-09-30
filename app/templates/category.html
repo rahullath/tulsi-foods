@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block meta %}
-<meta name="description" content="Browse every {{ group }} at Tulsi Foods — {{ count }} item{{ '' if count == 1 else 's' }} with today's prices, from ₹{{ price_low }}. Pure vegetarian, home-style North Indian food in Mylapore, Chennai, delivered on WhatsApp.">
-<title>{{ group }} Menu &amp; Prices | Tulsi Foods, Mylapore Chennai</title>
+<meta name="description" content="{% if keywords %}Order {{ keywords[:3] | join(', ') }} near you — {% endif %}every {{ group }} at Tulsi Foods, {{ count }} item{{ '' if count == 1 else 's' }} from ₹{{ price_low | int }}. Pure veg, home-style North Indian food delivered in Mylapore, Alwarpet &amp; Teynampet, Chennai.">
+<title>{{ group }}{% if keywords %}: {{ keywords[:2] | join(', ') | title }}{% endif %} Menu &amp; Prices | Tulsi Foods, Mylapore Chennai</title>
 {% endblock %}
 {% block canonical %}<link rel="canonical" href="https://tulsifoods.app/category/{{ slug }}">{% endblock %}
 {% block fonts %}
@@ -18,6 +18,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 
 .page { max-width: 1120px; margin: 0 auto; padding: 48px 40px 64px; }
 .crumb { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--sub); }
+.page-kw { font-size: 14px; line-height: 1.6; color: var(--sub); margin-top: 14px; max-width: 720px; }
 .crumb a { color: var(--g); text-decoration: none; }
 .crumb a:hover { text-decoration: underline; }
 .page-tag { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--g); letter-spacing: .05em; text-transform: uppercase; margin-top: 22px; }
@@ -79,6 +80,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
     {% if price_high and price_high != price_low %}<span>up to ₹{{ price_high }}</span>{% endif %}
     <span>pure veg · no onion-garlic &amp; Jain on request</span>
   </div>
+  {% if keywords %}<p class="page-kw">Looking for {{ keywords | join(', ') }} near Mylapore? Everything below is cooked to order in our Alwarpet kitchen and delivered across South Chennai.</p>{% endif %}
   {% if hero %}
   <div class="cat-hero"><img src="{{ hero.src }}" alt="{{ hero.alt }}" loading="eager" fetchpriority="high"></div>
   {% endif %}

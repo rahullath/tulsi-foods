@@ -13,7 +13,7 @@ from fastapi.templating import Jinja2Templates
 from xml.sax.saxutils import escape as xml_escape
 from pydantic import BaseModel, Field
 
-from . import catalog, db, faqs, menu, orders, reviews
+from . import catalog, db, faqs, menu, orders, reviews, seo_aliases
 from .config import (
     ADMIN_TOKEN,
     DELIVERY_ZONES,
@@ -41,6 +41,7 @@ app.include_router(webhook_router)
 app.include_router(qr_router)
 
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["aliases_for"] = seo_aliases.aliases_for
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 DISH_PHOTO_DIR = Path("app/static/img/dishes")
@@ -207,7 +208,9 @@ def landing_page(request: Request):
         request, "landing.html",
         {"picks": picks, "google_stats": google_stats, "google_review_link": GOOGLE_REVIEW_LINK,
          "faqs": faqs.landing_faqs(DELIVERY_ZONES, FREE_DELIVERY_ABOVE, price_range, bool(UPI_VPA)),
-         "categories": all_categories(), "latest_updates": load_updates()[:3]},
+         "categories": all_categories(), "latest_updates": load_updates()[:3],
+         "area_served": [{"@type": "Place", "name": f"{a}, Chennai"}
+                         for a in seo_aliases.NEARBY_AREAS]},
     )
 
 
@@ -228,6 +231,7 @@ def build_menu_schema(groups: list[dict]) -> dict:
                     {
                         "@type": "MenuItem",
                         "name": it["name"],
+                        **({"alternateName": a} if (a := seo_aliases.aliases_for(it["id"])) else {}),
                         "url": f"{SITE_URL}/menu/{it['id'].split('__')[0]}",
                         "offers": {
                             "@type": "Offer",
@@ -353,27 +357,41 @@ def menu_item_page(request: Request, item_id: str):
         ],
     }
 
+    aliases = seo_aliases.aliases_for(base_id)
+    dish_faqs = seo_aliases.item_faqs(item["name"], aliases, item["price"], item["group"])
+    faq_schema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {"@type": "Question", "name": f["q"],
+             "acceptedAnswer": {"@type": "Answer", "text": f["a"]}}
+            for f in dish_faqs
+        ],
+    }
+
     return templates.TemplateResponse(
         request,
         "item.html",
-        {"item": item, "has_photo": has_photo, "photo_url": photo_url,
+        {"item": item, "aliases": aliases, "dish_faqs": dish_faqs,
+         "faq_schema": faq_schema, "nearby_areas": seo_aliases.NEARBY_AREAS, "has_photo": has_photo, "photo_url": photo_url,
          "available": available, "unavailable_reason": reason,
          "status_text": status_text, "half": item.get("half_price"),
          "related": related, "dish_photos": photos, "wa_link": wa_link,
          "item_url": item_url, "item_description": desc, "ordering": ordering,
          "category_slug": _group_slug(item["group"]),
          "categories": all_categories(),
-         "item_schema": _item_product_schema(item, item_url, photo_url, desc, available),
+         "item_schema": _item_product_schema(item, item_url, photo_url, desc, available, aliases),
          "breadcrumb_schema": breadcrumb},
     )
 
 
 def _item_product_schema(item: dict, item_url: str, photo_url: str,
-                         desc: str, available: bool) -> dict:
+                         desc: str, available: bool, aliases: list[str] = ()) -> dict:
     schema = {
         "@context": "https://schema.org",
         "@type": "Product",
         "name": item["name"],
+        **({"alternateName": list(aliases)} if aliases else {}),
         "description": desc,
         "url": item_url,
         "category": item["group"],
@@ -645,7 +663,7 @@ def llms_txt():
         "- Also known as: Tulasi Foods, Thulasi Restaurant (common misspellings/mishearings of the same restaurant)",
         "- Location: 34 Murrays Gate Road, Alwarpet, Chennai 600018, Tamil Nadu, India",
         "- Hours: Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM",
-        "- Delivery: Mylapore, Alwarpet, Teynampet and nearby areas within ~7 km, by Borzo courier at live rates",
+        "- Delivery: " + ", ".join(seo_aliases.NEARBY_AREAS) + " and nearby areas within ~7 km, by Borzo courier at live rates",
         "- Order: on this website, or WhatsApp at +91 99400 62840",
         "- Phone: +91 99406 21800",
         "- Prices: ₹45–₹400 per dish; most mains available as half portions",
@@ -675,6 +693,17 @@ def llms_txt():
     ]
     for m in popular:
         lines.append(f"- {m['name']} — ₹{m['price']}: {SITE_URL}/menu/{m['id']}")
+    lines += [
+        "",
+        "## Dish names people also search for",
+        "",
+        "Same dish, other names or spellings, so a search for the alias finds the right page.",
+        "",
+    ]
+    for m in menu_items:
+        if aliases := seo_aliases.aliases_for(m["id"]):
+            lines.append(f"- {m['name']} (₹{m['price']}) — also: {', '.join(aliases)}: "
+                         f"{SITE_URL}/menu/{m['id']}")
     return PlainTextResponse("\n".join(lines))
 
 
@@ -1145,7 +1174,8 @@ def category_page(request: Request, slug: str):
         {"group": group, "slug": slug, "items": items, "categories": all_categories(),
          "count": len(items), "price_low": low, "price_high": high,
          "blurb": CATEGORY_BLURBS.get(group) or "",
-"bestsellers": [m for m in items if m.get("popular")][:4],
+         "keywords": seo_aliases.CATEGORY_KEYWORDS.get(group, []),
+         "bestsellers": [m for m in items if m.get("popular")][:4],
           "category_url": category_url, "dish_photos": photos,
           "hero": category_hero(slug)},
     )
