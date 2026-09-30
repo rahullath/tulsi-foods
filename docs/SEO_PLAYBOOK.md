@@ -130,3 +130,12 @@ Rules:
 2. New menu item → add its aliases to `DISH_ALIASES` (an id missing from the menu is harmless but dead).
 3. "near me" ranking comes mostly from the **Google Business Profile** (proximity, reviews,
    categories, photos, posts). On-page, the lever is naming neighbourhoods, not repeating "near me".
+
+### 6a. What Search Console queries showed (Jul–Sep 2026)
+
+~80% of impressions are **brand searches**, spelled every way: tulsi foods (234 imp, pos 9.7),
+tulsi restaurant, thulasi/tulasi/thulsi restaurant, tulsi veg restaurant, tulsi alwarpet.
+So titles lead with the brand: home = "Tulsi Foods (Thulasi Restaurant) · Pure Veg Restaurant
+in Alwarpet & Mylapore", /menu = "Tulsi Foods Menu & Prices", /about = "Tulsi Foods Reviews,
+Timings & Our Story". The spelling variants go in the footer aka-line + `Restaurant.alternateName`.
+Dish titles say "Price ₹X · Order Online" because "{dish} price" / "{dish} order online" queries exist.

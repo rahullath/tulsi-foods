@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block meta %}
 <meta name="description" content="{{ item_description }}{% if aliases %} Also called {{ aliases[:3] | join(', ') }}.{% endif %} ₹{{ item.price }}, pure veg, cooked fresh near you in Mylapore, Alwarpet &amp; Teynampet, Chennai. Order online, no platform fees.">
-<title>{{ item.name }}{% if aliases %} ({{ aliases[0] }}){% endif %} ₹{{ item.price }} · Order Online, Mylapore Chennai | Tulsi Foods</title>
+<title>{{ item.name }}{% if aliases %} ({{ aliases[0] }}){% endif %} Price ₹{{ item.price }} · Order Online in Chennai | Tulsi Foods</title>
 <meta property="og:type" content="product">
 <meta property="og:title" content="{{ item.name }} | Tulsi Foods, Mylapore">
 <meta property="og:description" content="{{ item_description }}">

@@ -22,7 +22,7 @@ NEARBY_AREAS = [
 
 DISH_ALIASES: dict[str, list[str]] = {
     # Thalis & Combos
-    "north-indian-thali": ["North Indian Meals", "Veg Thali", "North Indian Veg Meals"],
+    "north-indian-thali": ["North Indian Meals", "Veg Thali", "North Indian Thaali", "North Thali"],
     "mini-thali": ["Mini Meals", "Small Veg Thali"],
     "rajasthani-thali": ["Marwari Thali", "Dal Baati Thali", "Rajasthani Meals"],
     "executive-combo": ["Roti Sabzi Combo", "Phulka Combo", "Veg Lunch Combo"],
@@ -93,6 +93,7 @@ DISH_ALIASES: dict[str, list[str]] = {
     "bread-chat": ["Bread Chaat"],
     "churmur-chat": ["Churmur", "Churmur Chaat"],
     "fruit-chaat": ["Fruit Chat"],
+    "jhal-puri": ["Jhalpuri"],
     "chilli-cheeesetoast": ["Chilli Cheese Toast", "Cheese Chilli Toast"],
     "garlic-bread-cheese": ["Cheese Garlic Bread", "Cheesy Garlic Bread"],
     "vegetable-sandwich": ["Veg Sandwich"],
