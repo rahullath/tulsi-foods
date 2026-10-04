@@ -51,6 +51,22 @@ from ..menu import HALF_SUFFIX, _base_id, get_item
 log = logging.getLogger("petpooja.catalog")
 
 CACHE_FILE = DATA_DIR / "petpooja_menu_raw.json"
+# Production mounts a volume over /app/data, so the committed catalogue never
+# reaches the running container; the Dockerfile ships it here as a fallback.
+# Without it a fresh volume (no Menu Push yet) sent every order out with
+# made-up item ids.
+BUNDLED_FILE = DATA_DIR.parent / "petpooja_menu_raw.json.bundled"
+
+
+def _source_file():
+    """The pushed catalogue on the volume if present, else the bundled copy."""
+    for f in (CACHE_FILE, BUNDLED_FILE):
+        try:
+            if f.stat().st_size > 2:
+                return f
+        except OSError:
+            continue
+    return None
 
 _NON_ALNUM = re.compile(r"[^a-z0-9]+")
 
@@ -164,11 +180,12 @@ class Catalog:
 
 def _catalog() -> "Catalog | None":
     try:
-        raw = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        return None
+        src = _source_file()
+        if src is None:
+            return None
+        raw = json.loads(src.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
-        log.exception("Petpooja catalog: could not read %s", CACHE_FILE)
+        log.exception("Petpooja catalog: could not read the catalogue")
         return None
     return Catalog(raw)
 
@@ -188,8 +205,11 @@ def tax_ids() -> dict[str, str]:
     """
     ids = dict(_DEFAULT_TAX_IDS)
     try:
-        raw = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        src = _source_file()
+        if src is None:
+            return ids
+        raw = json.loads(src.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
         return ids
     for t in raw.get("taxes") or []:
         name = str(t.get("taxname", "")).strip().upper()
@@ -208,10 +228,10 @@ def off_pos_ids() -> frozenset:
     from .client import is_configured
     if not is_configured():
         return frozenset()
-    try:
-        mtime = CACHE_FILE.stat().st_mtime
-    except OSError:
+    src = _source_file()
+    if src is None:
         return frozenset()
+    mtime = (str(src), src.stat().st_mtime)
     if _off_pos_cache["mtime"] != mtime:
         from .. import menu as menu_mod
         c = _catalog()

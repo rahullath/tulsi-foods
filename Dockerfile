@@ -9,6 +9,7 @@ COPY app ./app
 COPY scripts ./scripts
 COPY tests ./tests
 COPY data/menu.json /app/menu.json.bundled
+COPY data/petpooja_menu_raw.json /app/petpooja_menu_raw.json.bundled
 
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
