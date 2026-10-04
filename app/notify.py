@@ -104,16 +104,18 @@ def notify_delivery_fee(order: dict) -> None:
     text = (f"Tulsi Foods: your rider is booked for order #{order['id']}. "
             f"Delivery charge (Porter fare): ₹{float(fee):g}. "
             f"Pay it by UPI here: {_track_url(order)}")
+    # Both channels: Meta accepts free-form text to a customer outside the
+    # 24 h window and only fails it later (async), so a WhatsApp "success"
+    # here proves nothing. This message is how we get paid — SMS always.
+    if WHATSAPP_ACTIVE:
+        try:
+            whatsapp.client.send_text(phone, text)
+        except Exception:
+            log.info("WhatsApp fare message failed for order %s; SMS still goes", order.get("id"))
     try:
-        if WHATSAPP_ACTIVE:
-            try:
-                whatsapp.client.send_text(phone, text)
-                return
-            except Exception:
-                pass  # outside the 24 h window: fall through to SMS
         sms.twilio.send_status(phone, text, status="out_for_delivery")
     except Exception:
-        log.exception("notify_delivery_fee failed for order %s", order.get("id"))
+        log.exception("notify_delivery_fee SMS failed for order %s", order.get("id"))
 
 
 def notify_dispatch(order: dict, dispatch: dict) -> None:
