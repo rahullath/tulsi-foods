@@ -136,5 +136,6 @@ inbound admin messages). Admin panel "Book" still works as a backup.
 - `ADMIN_PHONE` = Mom's personal WhatsApp in wa_id form, e.g. `919XXXXXXXXX`.
   It must NOT be the business number itself (a number can't message itself).
 - `KITCHEN_WA_TEMPLATE` = name of an approved UTILITY template whose body is
-  just `Kitchen alert: {{1}}` (language `en`). Without it, alerts only reach
+  `Kitchen alert: {{1}} — Tulsi Foods` (language `en`; a body may not end on a
+  variable, see docs/WHATSAPP_TEMPLATES.md). Without it, alerts only reach
   Mom within 24 h of her last message to the business number.

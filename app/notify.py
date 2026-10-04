@@ -92,67 +92,82 @@ def _track_url(order: dict) -> str:
     return f"https://tulsifoods.app/track/{order.get('tracking_token') or order['id']}"
 
 
+# WhatsApp templates for delivery messages. Create each in WhatsApp Manager
+# as category UTILITY, language "en", with exactly these numbered variables
+# (docs/WHATSAPP_TEMPLATES.md has the body text to paste):
+#   delivery_fare     {{1}} name, {{2}} order no., {{3}} fare, {{4}} track link
+#   rider_on_the_way  {{1}} name, {{2}} order no., {{3}} track link
+TPL_DELIVERY_FARE = "delivery_fare"
+TPL_RIDER_ON_THE_WAY = "rider_on_the_way"
+
+
+def _params(*values) -> list[dict]:
+    return [{"type": "text", "text": str(v)} for v in values]
+
+
+def _send_wa(phone: str, template: str, params: list[dict], fallback_text: str,
+             order_id) -> bool:
+    """Template first (the only thing Meta delivers outside the 24 h window),
+    then free text (delivered only if the customer wrote to us in the last
+    24 h). Returns True if WhatsApp accepted either."""
+    from . import whatsapp
+    try:
+        whatsapp.client.send_template(phone, template, "en", params)
+        return True
+    except Exception:
+        log.warning("template %s failed for order %s (not approved yet?); trying text",
+                    template, order_id)
+    try:
+        whatsapp.client.send_text(phone, fallback_text)
+        return True
+    except Exception:
+        log.exception("WhatsApp text failed for order %s", order_id)
+        return False
+
+
 def notify_delivery_fee(order: dict) -> None:
-    """Tell the customer the real delivery charge once the rider is booked,
-    with the link to their tracking page (which has the UPI pay button)."""
-    from . import sms, whatsapp
+    """The real delivery charge once the rider is booked, with the tracking
+    page link (which carries the UPI pay button). WhatsApp template; SMS only
+    when WhatsApp is off, since unregistered (non-DLT) SMS is dropped."""
+    from . import sms
 
     phone = order.get("customer_phone")
     fee = order.get("delivery_fee_final")
     if not phone or not fee:
         return
+    name = order.get("customer_name") or "there"
+    fare = f"{float(fee):g}"
     text = (f"Tulsi Foods: your rider is booked for order #{order['id']}. "
-            f"Delivery charge (Porter fare): ₹{float(fee):g}. "
-            f"Pay it by UPI here: {_track_url(order)}")
-    # Both channels: Meta accepts free-form text to a customer outside the
-    # 24 h window and only fails it later (async), so a WhatsApp "success"
-    # here proves nothing. This message is how we get paid — SMS always.
-    if WHATSAPP_ACTIVE:
-        try:
-            whatsapp.client.send_text(phone, text)
-        except Exception:
-            log.info("WhatsApp fare message failed for order %s; SMS still goes", order.get("id"))
+            f"Delivery charge (Porter fare): ₹{fare}. "
+            f"Track and pay it by UPI here: {_track_url(order)}")
     try:
-        sms.twilio.send_status(phone, text, status="out_for_delivery")
+        if WHATSAPP_ACTIVE:
+            _send_wa(phone, TPL_DELIVERY_FARE, _params(name, order["id"], fare, _track_url(order)),
+                     text, order.get("id"))
+        else:
+            sms.twilio.send_status(phone, text, status="out_for_delivery")
     except Exception:
-        log.exception("notify_delivery_fee SMS failed for order %s", order.get("id"))
+        log.exception("notify_delivery_fee failed for order %s", order.get("id"))
 
 
 def notify_dispatch(order: dict, dispatch: dict) -> None:
-    """Notify the customer that their order has been dispatched/assigned."""
-    from . import sms, whatsapp
+    """Rider booked / order on its way. One message: the fare template when
+    the fare is known (it carries the link too), else rider_on_the_way."""
+    from . import sms
 
     phone = order.get("customer_phone")
     if not phone:
         return
     if order.get("delivery_fee_final"):
-        # Its own message: the order_shipped template can't carry the fare.
         notify_delivery_fee(order)
+        return
+    name = order.get("customer_name") or "there"
+    text = f"Order #{order['id']} is on its way! Track it here: {_track_url(order)}"
     try:
         if WHATSAPP_ACTIVE:
-            try:
-                params = [
-                    {"type": "text", "text": str(order.get("customer_name") or "there")},
-                    {"type": "text", "text": str(order["id"])},
-                ]
-                whatsapp.client.send_template(phone, "order_shipped", "en", params)
-                return
-            except Exception:
-                pass
-            whatsapp.client.send_text(
-                phone,
-                f"Your order #{order['id']} is on its way!\n"
-                f"Courier: {dispatch.get('courier_name')}\n"
-                f"Track: {dispatch.get('tracking_url')}\n",
-            )
-            return
+            _send_wa(phone, TPL_RIDER_ON_THE_WAY, _params(name, order["id"], _track_url(order)),
+                     text, order.get("id"))
         else:
-            sms.twilio.send_status(
-                phone,
-                f"Order #{order['id']} is on its way! "
-                f"Track: {dispatch.get('tracking_url')}\n",
-                status="out_for_delivery",
-            )
-            return
+            sms.twilio.send_status(phone, text, status="out_for_delivery")
     except Exception:
         log.exception("notify_dispatch failed for order %s", order.get("id"))
