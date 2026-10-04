@@ -173,6 +173,31 @@ def _catalog() -> "Catalog | None":
     return Catalog(raw)
 
 
+# Production outlet's tax ids (from the pushed menu's `taxes` block, Sep 2026)
+# — used if the cache file is missing so we never fall back to made-up ids.
+_DEFAULT_TAX_IDS = {"CGST": "128315", "SGST": "128316"}
+
+
+def tax_ids() -> dict[str, str]:
+    """{"CGST": taxid, "SGST": taxid} from the POS catalogue's own tax table.
+
+    Save Order's item_tax/Tax.details ids must be these real ids: the
+    catalogue declares every item as `item_tax: "128315,128316"`, and an id
+    the POS can't resolve is the leading suspect for the terminal app
+    crashing on every incoming order (see docs/PETPOOJA_INTEGRATION.md §3.9).
+    """
+    ids = dict(_DEFAULT_TAX_IDS)
+    try:
+        raw = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return ids
+    for t in raw.get("taxes") or []:
+        name = str(t.get("taxname", "")).strip().upper()
+        if name in ids and t.get("taxid") and str(t.get("active", "1")) == "1":
+            ids[name] = str(t["taxid"])
+    return ids
+
+
 def petpooja_item_id(menu_item_id: str) -> str:
     """1-item convenience wrapper around Catalog.resolve()."""
     c = _catalog()

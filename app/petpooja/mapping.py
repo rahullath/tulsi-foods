@@ -59,15 +59,18 @@ _ORDER_TYPE_CODE = {"delivery": "H", "pickup": "P"}
 _PAYMENT_TYPE_CODE = {"cod": "COD", "upi": "ONLINE"}
 
 
-def _split_cgst_sgst(amount: float, rate_pct: float, tax_id_base: str) -> list[dict]:
+def _split_cgst_sgst(amount: float, rate_pct: float, tax_ids: dict[str, str]) -> list[dict]:
+    # ids are the POS catalogue's real tax ids (catalog.tax_ids()), NOT
+    # anything derived from our item slug: until Oct 2026 this sent
+    # "<slug>-c"/"<slug>-s", ids the POS has never heard of.
     half = round(amount / 2, 2)
     return [
-        {"id": f"{tax_id_base}-c", "name": "CGST", "tax_percentage": str(rate_pct / 2), "amount": str(half)},
-        {"id": f"{tax_id_base}-s", "name": "SGST", "tax_percentage": str(rate_pct / 2), "amount": str(half)},
+        {"id": tax_ids["CGST"], "name": "CGST", "tax_percentage": f"{rate_pct / 2:.2f}", "amount": f"{half:.2f}"},
+        {"id": tax_ids["SGST"], "name": "SGST", "tax_percentage": f"{rate_pct / 2:.2f}", "amount": f"{half:.2f}"},
     ]
 
 
-def _order_level_tax_details(gst_amount: float, rate_pct: float) -> list[dict]:
+def _order_level_tax_details(gst_amount: float, rate_pct: float, tax_ids: dict[str, str]) -> list[dict]:
     """Order-level `Tax.details` — a separate, required breakdown from the
     per-item `item_tax` above (see the "Tax & Discounts" section of the Sep
     2026 Save Order API guide in temp/). restaurant_liable_amt mirrors the
@@ -75,9 +78,9 @@ def _order_level_tax_details(gst_amount: float, rate_pct: float) -> list[dict]:
     half_amt = round(gst_amount / 2, 2)
     half_rate = round(rate_pct / 2, 2)
     return [
-        {"id": "1", "title": "CGST", "type": "P", "price": f"{half_rate}%",
+        {"id": tax_ids["CGST"], "title": "CGST", "type": "P", "price": f"{half_rate}%",
          "tax": f"{half_amt:.2f}", "restaurant_liable_amt": f"{half_amt:.2f}"},
-        {"id": "2", "title": "SGST", "type": "P", "price": f"{half_rate}%",
+        {"id": tax_ids["SGST"], "title": "SGST", "type": "P", "price": f"{half_rate}%",
          "tax": f"{half_amt:.2f}", "restaurant_liable_amt": f"{half_amt:.2f}"},
     ]
 
@@ -99,8 +102,9 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
 
     # Prorate order-level GST across items by price share (see module docstring).
     taxable_base = subtotal + packing_fee
-    from .catalog import map_order_items
+    from .catalog import map_order_items, tax_ids as catalog_tax_ids
     mapped_items = map_order_items(order["items"])
+    tax_ids = catalog_tax_ids()
     item_lines = []
     for it in mapped_items:
         unit_price = float(it["price"])
@@ -125,7 +129,7 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
             # paid — matching Petpooja's flag without changing the money.
             "tax_inclusive": it.get("petpooja_tax_inclusive", False),
             "gst_liability": "restaurant",
-            "item_tax": _split_cgst_sgst(item_gst, gst_rate * 100, str(it["item_id"])),
+            "item_tax": _split_cgst_sgst(item_gst, gst_rate * 100, tax_ids),
             "tax_percentage": f"{gst_rate * 100:.2f}",
             "item_discount": str(it.get("item_discount", "0")),
             "price": f"{unit_price:.2f}",
@@ -239,8 +243,8 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         "name": order.get("customer_name") or "Customer",
         "address": order.get("delivery_address") or "",
         "phone": order.get("customer_phone") or "",
-        "latitude": order.get("delivery_lat") or "",
-        "longitude": order.get("delivery_lng") or "",
+        "latitude": str(order.get("delivery_lat") or ""),
+        "longitude": str(order.get("delivery_lng") or ""),
     }
 
     # Docs' Save Order example carries the order-level discount here as well as
@@ -269,7 +273,7 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
             "Customer": {"details": customer_details},
             "Order": {"details": order_details},
             "OrderItem": {"details": item_lines},
-            "Tax": {"details": _order_level_tax_details(gst_amount, gst_rate * 100)},
+            "Tax": {"details": _order_level_tax_details(gst_amount, gst_rate * 100, tax_ids)},
             "Discount": {"details": discount_lines},
         }
     }
