@@ -30,6 +30,13 @@ from .config import (
 from .config import UPI_PAYEE_NAME, UPI_VPA
 from .delivery.config import PICKUP_LAT, PICKUP_LNG
 
+# uvicorn only configures its own loggers; without this every app-level
+# INFO line (Petpooja save_order results, callbacks, store-status flips) was
+# silently dropped in Railway logs — which is why POS incidents left no trace.
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(message)s")
+# httpx logs every request URL at INFO — Google Maps calls carry the API key
+# in the query string, so keep it at WARNING.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("main")
 
 app = FastAPI(title="Tulsi Foods Direct Ordering", version="0.2.0")
@@ -1186,7 +1193,9 @@ async def not_found_handler(request: Request, exc):
     """Branded 404 so a mistyped slug lands on a page with working links out,
     not a bare not-found line. API callers (/api/...) still get clean JSON."""
     if request.url.path.startswith("/api/"):
-        raise exc
+        # Re-raising here turned every unknown /api/ path (bots probing
+        # /api/.env) into a 500 + traceback; answer the 404 as JSON instead.
+        return JSONResponse({"detail": getattr(exc, "detail", "Not Found")}, status_code=404)
     return templates.TemplateResponse(request, "404.html", {"categories": all_categories()}, status_code=404)
 
 

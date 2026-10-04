@@ -436,3 +436,28 @@ response is `content-length: 0`). Get Store Status intentionally drops
 - `app/petpooja/mapping.py`'s module docstring has the item-id (resolved via
   `app/petpooja/catalog.py`) and GST-proration caveats inline; keep it in
   sync if 3.3/3.4 get resolved.
+
+### 3.9 POS terminal app crashes/stops on every incoming order — Oct 4 2026
+
+Evidence (Railway logs, orders 13:04–13:47 UTC Oct 4): our side is clean.
+Every `POST /api/orders` that passed validation returned 200, no
+`save_order push failed` exception was logged, and Petpooja's
+`order-callback` arrived 20–60 s after each order, so Petpooja's cloud
+accepted every order. The failure is in the POS app rendering the order.
+The 5 checkout 400s at 13:03 were the store being marked closed until the POS
+reopened it at 13:04:13 (`store-status/update`).
+
+Leading suspect, present on EVERY order: tax ids. The catalogue's tax
+table is `128315` CGST / `128316` SGST (every item: `item_tax:
+"128315,128316"`), but we sent `"<slug>-c"`/`"<slug>-s"` per item and
+`"1"`/`"2"` in `Tax.details`. Fixed: both now use `catalog.tax_ids()` (real
+ids from the pushed menu). Also: lat/lng now sent as strings, and app-level
+INFO logging is on (it was being dropped entirely, so save_order results and
+callback statuses never reached the Railway logs).
+
+Still open: (a) Onion Pakoda + Raita (250ml) are not in the POS catalogue
+and go out with slug ids. Add them on the POS or pull them from the menu.
+(b) half portions go out under the base item id at the half price (no
+variation on the POS). If crashes continue after this deploy, send Petpooja
+support the order ids + crash times and ask for the terminal's crash log.
+That is the only place the actual exception is visible.
