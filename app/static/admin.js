@@ -278,6 +278,7 @@
           <a class="porter-btn ghost" href="${b.porter_url || "https://porter.in/"}" target="_blank" rel="noopener">Open Porter</a>
         </div>
         <label class="porter-label">Porter tracking link<input id="porter-url" type="url" placeholder="https://…" autocomplete="off"></label>
+        <label class="porter-label">Porter fare (₹) — the customer pays this<input id="porter-fare" type="number" inputmode="decimal" min="10" max="1000" placeholder="e.g. 86"></label>
         <label class="porter-label">Rider name<input id="porter-rider" type="text" autocomplete="off"></label>
         <label class="porter-label">Rider phone<input id="porter-phone" type="tel" autocomplete="off"></label>
         <div class="porter-row">
@@ -303,6 +304,7 @@
             tracking_url: sheet.querySelector("#porter-url").value.trim(),
             rider_name: sheet.querySelector("#porter-rider").value.trim(),
             rider_phone: sheet.querySelector("#porter-phone").value.trim(),
+            fare: Number(sheet.querySelector("#porter-fare").value) || null,
           }),
         });
         toast(`Order #${orderId} → out for delivery`);

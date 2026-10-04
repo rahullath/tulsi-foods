@@ -60,52 +60,81 @@ def porter_card(order: dict, reason: str) -> list[str]:
     from html import escape
     from .delivery import porter
     card = porter.booking_text(order)
-    tail = ("\n\nBooked? Forward the Porter tracking link here "
-            f"(add #{order['id']} if more than one order is waiting).")
+    tail = ("\n\nBooked? Send the Porter tracking link AND the fare here, "
+            f"e.g. \"<link> ₹86\" (add #{order['id']} if more than one order is waiting).")
     return send(f"{reason}\n\n{card}{tail}",
                 f"{escape(reason)}\n\n<pre>{escape(card)}</pre>{escape(tail)}")
 
 
 _URL = re.compile(r"https?://\S+")
+_FARE = re.compile(r"(?:₹|\brs\.?|\binr|\bfare)\s*:?\s*(\d{2,4}(?:\.\d{1,2})?)", re.I)
 _ORDER_REF = re.compile(r"#\s*(\d{1,7})\b")
 _PHONE = re.compile(r"(?<!\d)(?:\+?91[\s-]?)?([6-9]\d{4}[\s-]?\d{5})(?!\d)")
 
 
 def looks_like_tracking_link(text: str) -> bool:
-    return bool(_URL.search(text or ""))
+    """A courier link and/or a fare ("₹86", "Rs 86", "fare 86") from Mom."""
+    return bool(_URL.search(text or "") or _FARE.search(text or ""))
+
+
+def _fare(text: str) -> float | None:
+    m = _FARE.search(_URL.sub(" ", text or ""))
+    return float(m.group(1)) if m else None
 
 
 def handle_admin_tracking_link(text: str) -> str:
-    """Mom forwarded a courier tracking link: attach it to the right order.
+    """Mom sent a courier link and/or the fare: attach it to the right order.
 
-    Order = "#<id>" in the message, else the single delivery order today that
-    is preparing/ready with no rider yet. Returns the reply for Mom."""
+    Link (+ optional fare): the waiting delivery order (preparing/ready, no
+    rider yet) — "#<id>" picks one when several wait. Fare alone: the order
+    that has a rider but no fare yet. Returns the reply for Mom."""
     from . import db, orders
-    url = _URL.search(text).group(0).rstrip(").,")
+    m_url = _URL.search(text)
+    url = m_url.group(0).rstrip(").,") if m_url else ""
+    fare = _fare(text)
     ref = _ORDER_REF.search(text)
-    waiting = [o for o in db.today_orders()
-               if o.get("order_type") == "delivery" and o.get("status") in ("preparing", "ready")
-               and not (o.get("sr_courier") or o.get("sr_tracking_url"))]
-    if ref:
-        target = next((o for o in waiting if o["id"] == int(ref.group(1))), None)
-        if not target:
-            return f"Order #{ref.group(1)} isn't waiting for a rider (already sent, or not a delivery)."
-    elif len(waiting) == 1:
-        target = waiting[0]
-    elif not waiting:
-        return "No delivery order is waiting for a rider right now."
+    today = [o for o in db.today_orders() if o.get("order_type") == "delivery"]
+    if url:
+        pool = [o for o in today if o.get("status") in ("preparing", "ready")
+                and not (o.get("sr_courier") or o.get("sr_tracking_url"))]
+        none_msg = "No delivery order is waiting for a rider right now."
     else:
-        ids = ", ".join(f"#{o['id']}" for o in waiting)
-        return f"Which order is this for? Waiting: {ids}. Send the link again with the number, e.g. #{waiting[0]['id']}."
-    phone = _PHONE.search(_URL.sub(" ", text))
+        pool = [o for o in today if (o.get("sr_courier") or o.get("sr_tracking_url"))
+                and not o.get("delivery_fee_final") and o.get("status") != "cancelled"]
+        none_msg = "No booked order is waiting for its fare. Send the Porter link with the fare."
+    if ref:
+        target = next((o for o in pool if o["id"] == int(ref.group(1))), None)
+        if not target:
+            return f"Order #{ref.group(1)} isn't waiting for that (already done, or not a delivery)."
+    elif len(pool) == 1:
+        target = pool[0]
+    elif not pool:
+        return none_msg
+    else:
+        ids = ", ".join(f"#{o['id']}" for o in pool)
+        return f"Which order is this for? Waiting: {ids}. Send it again with the number, e.g. #{pool[0]['id']}."
+
+    from .notify import notify_dispatch, notify_delivery_fee
     try:
-        result = orders.record_manual_dispatch(target["id"], url, "",
-                                               re.sub(r"\D", "", phone.group(1)) if phone else "")
+        if url:
+            phone = _PHONE.search(_URL.sub(" ", text))
+            result = orders.record_manual_dispatch(
+                target["id"], url, "", re.sub(r"\D", "", phone.group(1)) if phone else "", fare)
+        else:
+            orders.record_delivery_fee(target["id"], fare)
     except orders.OrderError as e:
         return f"Couldn't save it: {e.message}"
-    from .notify import notify_dispatch
     try:
-        notify_dispatch(db.get_order(target["id"]), result)
+        o = db.get_order(target["id"])
+        if url:
+            notify_dispatch(o, result)
+        elif fare:
+            notify_delivery_fee(o)
     except Exception:
-        log.exception("notify_dispatch failed for order %s", target["id"])
-    return f"✅ Order #{target['id']} is out for delivery. The customer has the tracking link."
+        log.exception("customer notification failed for order %s", target["id"])
+    if url and not fare:
+        return (f"✅ Order #{target['id']} is out for delivery. What did Porter charge? "
+                f"Reply e.g. \"#{target['id']} ₹86\" so the customer can pay it.")
+    if url:
+        return f"✅ Order #{target['id']} is out for delivery. Customer has the link and the ₹{fare:g} delivery charge."
+    return f"✅ Delivery ₹{fare:g} saved for order #{target['id']}. The customer has been asked to pay it."

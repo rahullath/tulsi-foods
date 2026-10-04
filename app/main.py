@@ -495,6 +495,7 @@ def track_page(request: Request, ref: str):
     if not ref.isdigit():
         return templates.TemplateResponse(
             request, "track.html", {"order_id": o["id"], "tracking_token": token,
+                                    "upi_vpa": UPI_VPA, "upi_payee_name": UPI_PAYEE_NAME,
                                     "categories": all_categories()}
         )
     return RedirectResponse(f"/track/{token}", status_code=301)
@@ -1348,6 +1349,7 @@ class ManualDispatchIn(BaseModel):
     tracking_url: str = ""
     rider_name: str = ""
     rider_phone: str = ""
+    fare: float | None = None   # the Porter fare, charged to the customer
 
 
 @app.post("/api/admin/orders/{order_id}/manual-dispatch")
@@ -1357,7 +1359,7 @@ def admin_manual_dispatch(order_id: int, body: ManualDispatchIn,
     _check_admin(x_admin_token)
     try:
         result = orders.record_manual_dispatch(order_id, body.tracking_url,
-                                               body.rider_name, body.rider_phone)
+                                               body.rider_name, body.rider_phone, body.fare)
     except orders.OrderError as e:
         raise HTTPException(e.status, e.message)
     _send_dispatch_whatsapp(db.get_order(order_id), result)

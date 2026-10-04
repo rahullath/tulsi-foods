@@ -88,6 +88,34 @@ def notify_status(order: dict, status: str) -> None:
         log.exception("notify_status failed for order %s", order.get("id"))
 
 
+def _track_url(order: dict) -> str:
+    return f"https://tulsifoods.app/track/{order.get('tracking_token') or order['id']}"
+
+
+def notify_delivery_fee(order: dict) -> None:
+    """Tell the customer the real delivery charge once the rider is booked,
+    with the link to their tracking page (which has the UPI pay button)."""
+    from . import sms, whatsapp
+
+    phone = order.get("customer_phone")
+    fee = order.get("delivery_fee_final")
+    if not phone or not fee:
+        return
+    text = (f"Tulsi Foods: your rider is booked for order #{order['id']}. "
+            f"Delivery charge (Porter fare): ₹{float(fee):g}. "
+            f"Pay it by UPI here: {_track_url(order)}")
+    try:
+        if WHATSAPP_ACTIVE:
+            try:
+                whatsapp.client.send_text(phone, text)
+                return
+            except Exception:
+                pass  # outside the 24 h window: fall through to SMS
+        sms.twilio.send_status(phone, text, status="out_for_delivery")
+    except Exception:
+        log.exception("notify_delivery_fee failed for order %s", order.get("id"))
+
+
 def notify_dispatch(order: dict, dispatch: dict) -> None:
     """Notify the customer that their order has been dispatched/assigned."""
     from . import sms, whatsapp
@@ -95,6 +123,9 @@ def notify_dispatch(order: dict, dispatch: dict) -> None:
     phone = order.get("customer_phone")
     if not phone:
         return
+    if order.get("delivery_fee_final"):
+        # Its own message: the order_shipped template can't carry the fare.
+        notify_delivery_fee(order)
     try:
         if WHATSAPP_ACTIVE:
             try:

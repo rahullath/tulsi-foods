@@ -552,6 +552,16 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       return 2 * R * Math.asin(Math.sqrt(s));
     }
 
+    // Same rough range the server shows on the tracking page: around the live
+    // courier price when we have it, else a Porter-like 45 + 10/km.
+    function feeRange(eff) {
+      const r5 = x => Math.round(x / 5) * 5;
+      if (eff.fee_low && eff.fee_high) return [eff.fee_low, eff.fee_high];
+      const mid = 45 + 10 * (eff.km || 0);
+      const lo = Math.max(40, r5(mid * 0.85));
+      return [lo, Math.max(lo + 10, r5(mid * 1.2))];
+    }
+
     function quoteDelivery(subtotal) {
       const lat = parseFloat(overlay.querySelector("#input-lat")?.value);
       const lng = parseFloat(overlay.querySelector("#input-lng")?.value);
@@ -618,22 +628,21 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           deliveryRow = `<div class="checkout-row" style="color:#B3261E"><span>Delivery</span><span>Outside our area — pickup instead</span></div>`;
           deliveryNote = `<span style="color:#B3261E">We don't deliver ${eff.km ? Math.round(eff.km) + " km away" : "that far"}. Pickup is in Alwarpet.</span>`;
         } else if (eff) {
-          const liveFee = Number(eff.fee) || 0;
-          deliveryRow = `<div class="checkout-row"><span>Delivery${eff.km ? ` (${eff.km.toFixed(1)} km)` : ""}</span><span>${liveFee ? "₹" + Math.round(liveFee) : "FREE"}</span></div>`;
-          deliveryNote = `Delivery is included in the total — nothing extra to pay the rider.${
+          const [lo, hi] = feeRange(eff);
+          deliveryRow = `<div class="checkout-row"><span>Delivery${eff.km ? ` (${eff.km.toFixed(1)} km)` : ""} · paid later</span><span>~₹${lo}–${hi}</span></div>`;
+          deliveryNote = `<b>Delivery isn't in this total.</b> We book a Porter rider for you when your food is ready, then send you the exact fare (usually ₹${lo}–${hi} here) with a UPI link. You pay exactly what the rider costs, nothing added.${
             currentSubtotal && currentSubtotal < eff.min_order
             ? ` <span style="color:#B3261E">Minimum order here is ₹${eff.min_order}.</span>` : ""}`;
         } else {
-          deliveryRow = `<div class="checkout-row"><span>Delivery</span><span>Add address</span></div>`;
-          deliveryNote = "Add your address to see the delivery charge. It's included in the total, nothing extra to pay the rider.";
+          deliveryRow = `<div class="checkout-row"><span>Delivery · paid later</span><span>Add address</span></div>`;
+          deliveryNote = "Add your address to see a delivery estimate. Delivery is charged separately at the actual rider fare, once the rider is booked.";
         }
       } else {
         deliveryNote = PICKUP_NOTE;
       }
 
-      const effQuote = (liveQuote && liveQuote.serviceable) ? liveQuote : q;
-      const rawFee = effQuote && !effQuote.outside ? (Number(effQuote.fee) || 0) : 0;
-      const deliveryFee = rawFee;
+      // Delivery is settled after booking, so it never goes into the total.
+      const deliveryFee = 0;
       overlay.querySelector(".checkout-summary").innerHTML =
         currentIds.map(id => `
           <div class="checkout-row checkout-item-row">
@@ -652,11 +661,12 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           ${gst ? `<div class="checkout-row"><span>GST (${(GST_RATE * 100).toFixed(0)}%)</span><span>₹${gst.toFixed(2)}</span></div>` : ""}
         ` : "")
         + (deliveryRow ? deliveryRow : "")
-        + `<div class="checkout-row total"><span>Total</span><span>₹${(currentSubtotal + packing + gst + deliveryFee).toFixed(2)}</span></div>
+        + `<div class="checkout-row total"><span>${isDelivery ? "Food total (pay now)" : "Total"}</span><span>₹${(currentSubtotal + packing + gst + deliveryFee).toFixed(2)}</span></div>
            <div class="checkout-row-note">${deliveryNote || "No hidden charges — this is the final total."}</div>`;
       const grand = Math.round((currentSubtotal + packing + gst + deliveryFee) * 100) / 100;
       const placeBtn = overlay.querySelector("#place-btn");
-      if (placeBtn && !placeBtn.disabled) placeBtn.textContent = currentSubtotal ? `Place order · ₹${grand.toFixed(2).replace(/\.00$/, "")}` : "Place order";
+      if (placeBtn && !placeBtn.disabled) placeBtn.textContent = currentSubtotal
+        ? `Place order · ₹${grand.toFixed(2).replace(/\.00$/, "")}${isDelivery ? " + delivery" : ""}` : "Place order";
 
       // Let the customer adjust quantities without leaving checkout — closing
       // the panel to go back to the menu grid just to change a "2" to a "1"
@@ -1089,8 +1099,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           `Subtotal ₹${data.subtotal}`,
           ...(data.packing_fee ? [`Packing ₹${data.packing_fee}`] : []),
           ...(data.gst_amount ? [`GST ₹${data.gst_amount}`] : []),
-          ...(data.delivery_fee ? [`Delivery ₹${data.delivery_fee}`] : []),
-          `Total: ₹${data.total}`,
+          `Food total: ₹${data.total}`,
+          ...(data.delivery_fee_low ? [`Delivery: actual rider fare (~₹${data.delivery_fee_low}–${data.delivery_fee_high}), paid after booking`] : []),
           "",
           isDelivery ? `Deliver to: ${payload.address}` : "Pickup at 34 Murrays Gate Road, Alwarpet",
           `Name: ${payload.name} · ${payload.phone}`,
@@ -1109,7 +1119,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           <div class="checkout-success">
             <div class="checkout-success-icon">${isUpi ? "₹" : "✓"}</div>
             <div class="checkout-title">${isUpi ? "Order placed — pay to confirm" : "Order placed — the kitchen has it"}</div>
-            <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}.<br>
+            <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total} for the food.<br>
+              ${data.delivery_fee_low ? `Delivery comes separately: once your rider is booked we'll message you the exact fare (around ₹${data.delivery_fee_low}–${data.delivery_fee_high}) with a UPI link.<br>` : ""}
               It's gone straight to the kitchen's POS — no confirmation text needed.
               Tracking updates as it's accepted, cooked and dispatched.</p>
 

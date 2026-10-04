@@ -21,7 +21,7 @@ _TTL_S = 300
 # calculate-order price for the same pin tracks Porter's 2-wheeler fares
 # closely, so it stays the live price reference. The zone table is the
 # fallback when the call fails.
-USE_BORZO_QUOTES = True
+USE_BORZO_QUOTES = False  # Oct 2026: Borzo's ₹90 floor overstated short Porter trips
 _cache: dict[tuple, dict] = {}
 
 
@@ -46,6 +46,29 @@ def _zone_quote(lat: float, lng: float, subtotal: float, km_hint: float | None =
     }
 
 
+def _round5(x: float) -> int:
+    return int(5 * round(x / 5))
+
+
+def _with_range(result: dict) -> dict:
+    """Delivery is no longer a fixed charge (Oct 2026): the kitchen books a
+    Porter rider after the order and the real fare is sent to the customer
+    then. Checkout shows a rough range around the best point estimate.
+
+    Point estimate = Borzo's live price for the pin (tracks Porter's
+    2-wheeler fares) or, offline, a Porter-like 45 + 10/km formula. The
+    range is -15% / +20% of it, never below ₹40."""
+    if not result.get("serviceable"):
+        return result
+    mid = float(result.get("fee") or 0)
+    if result.get("provider") != "borzo":
+        mid = 45 + 10 * float(result.get("km") or 0)
+    result["fee"] = _round5(mid)
+    result["fee_low"] = max(40, _round5(mid * 0.85))
+    result["fee_high"] = max(result["fee_low"] + 10, _round5(mid * 1.2))
+    return result
+
+
 def estimate(lat: float, lng: float, subtotal: float = 0.0,
              address: str | None = None, km_hint: float | None = None) -> dict:
     """Return the best delivery-fee estimate for a pin.
@@ -65,6 +88,7 @@ def estimate(lat: float, lng: float, subtotal: float = 0.0,
     if not USE_BORZO_QUOTES:
         # Porter has no quote API for us yet, so checkout charges the zone
         # table fee (close to Porter's 2-wheeler fares in our 7 km radius).
+        result = _with_range(result)
         result["at"] = now
         _cache[key] = result
         return {k: v for k, v in result.items() if k != "at"}
@@ -83,6 +107,7 @@ def estimate(lat: float, lng: float, subtotal: float = 0.0,
     except Exception:
         pass  # keep the zone fallback
 
+    result = _with_range(result)
     result["at"] = now
     _cache[key] = result
     return {k: v for k, v in result.items() if k != "at"}
