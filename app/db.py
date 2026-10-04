@@ -167,6 +167,13 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE orders ADD COLUMN scheduled_window TEXT")
     if not _has_col("orders", "pay_courier_direct"):
         conn.execute("ALTER TABLE orders ADD COLUMN pay_courier_direct INTEGER NOT NULL DEFAULT 0")
+    # Delivery settled after booking (Oct 2026): estimate range shown at
+    # checkout, the real Porter fare recorded once the rider is booked.
+    for col, ddl in (("delivery_fee_low", "REAL"), ("delivery_fee_high", "REAL"),
+                     ("delivery_fee_final", "REAL"),
+                     ("delivery_paid", "INTEGER NOT NULL DEFAULT 0")):
+        if not _has_col("orders", col):
+            conn.execute(f"ALTER TABLE orders ADD COLUMN {col} {ddl}")
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_tracking_token ON orders(tracking_token)")
     # Backfill a token for any older orders that predate this column, so every
     # order — new and old — gets a guess-proof tracking reference.
@@ -389,6 +396,24 @@ def update_order_dispatch(order_id: int, sr_order_id: int, awb: str,
         "sr_courier=?, sr_tracking_url=?, dispatched_at=? WHERE id=?",
         (sr_order_id, awb, courier, tracking_url, datetime.utcnow().isoformat(), order_id),
     )
+    conn.commit()
+    conn.close()
+
+
+def set_delivery_estimate(order_id: int, low: float | None, high: float | None) -> None:
+    conn = get_conn()
+    conn.execute("UPDATE orders SET delivery_fee_low=?, delivery_fee_high=? WHERE id=?",
+                 (low, high, order_id))
+    conn.commit()
+    conn.close()
+
+
+def set_delivery_fee_final(order_id: int, fee: float) -> None:
+    """The actual Porter fare, once known. Kept separate from `total` (the
+    food amount the customer paid at checkout / owes in cash)."""
+    conn = get_conn()
+    conn.execute("UPDATE orders SET delivery_fee=?, delivery_fee_final=? WHERE id=?",
+                 (fee, fee, order_id))
     conn.commit()
     conn.close()
 

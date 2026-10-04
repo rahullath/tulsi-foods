@@ -304,6 +304,7 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
     lines, subtotal = build_lines(items)
 
     delivery_fee = 0.0
+    est_low = est_high = None
     tracking_token = _new_tracking_token()
     if order_type == "delivery":
         if km is not None:
@@ -318,6 +319,7 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                 from .delivery.estimate import estimate
                 q = estimate(float(lat), float(lng), subtotal, address)
                 delivery_fee = q["fee"] if q.get("serviceable") and q.get("fee") is not None else None
+                est_low, est_high = q.get("fee_low"), q.get("fee_high")
             except Exception:
                 delivery_fee = None
             if delivery_fee is None:
@@ -330,9 +332,14 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
 
     packing_fee = packing_fee_for(subtotal)
     gst_amount = gst_for(subtotal + packing_fee)
-    # When the customer pays the rider directly, the quoted delivery fee is
-    # recorded for reconciliation but excluded from the amount they owe us.
-    total = subtotal + packing_fee + gst_amount + (0 if pay_courier_direct else delivery_fee)
+    # Delivery is settled AFTER the rider is booked (Oct 2026): the order
+    # carries only the estimate range; `total` is the food amount, and the
+    # real Porter fare is added via record_delivery_fee() once known.
+    if order_type == "delivery" and delivery_fee:
+        if est_low is None:
+            est_low, est_high = round(delivery_fee * 0.85), round(delivery_fee * 1.2)
+        delivery_fee = 0.0
+    total = subtotal + packing_fee + gst_amount
     flagged, flag_reason = check_address(address, pincode, lat, lng)
     cid = db.upsert_customer(phone, name, address, pincode)
     oid = db.create_order(cid, order_type, subtotal, delivery_fee, total,
@@ -345,6 +352,8 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                           tracking_token=tracking_token,
                           scheduled_window=scheduled_window,
                           pay_courier_direct=pay_courier_direct)
+    if est_low is not None:
+        db.set_delivery_estimate(oid, est_low, est_high)
     if order_type == "delivery" and address:
         base_address, landmark = _split_landmark(address)
         try:
@@ -391,6 +400,7 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
     return {"order_id": oid, "status": "new", "subtotal": round(subtotal, 2),
             "packing_fee": packing_fee, "gst_amount": gst_amount,
             "delivery_fee": delivery_fee, "total": round(total, 2),
+            "delivery_fee_low": est_low, "delivery_fee_high": est_high,
             "tracking_token": tracking_token,
             "scheduled_window": scheduled_window, "pay_courier_direct": pay_courier_direct,
             "schedule_label": _window_label(scheduled_window, scheduled_at),
@@ -475,8 +485,22 @@ def _dispatchable_order(order_id: int) -> dict:
     return o
 
 
+def record_delivery_fee(order_id: int, fee: float) -> dict:
+    """Store the real Porter fare for a booked delivery order."""
+    o = db.get_order(order_id)
+    if not o:
+        raise OrderError("Order not found", 404)
+    if o["order_type"] != "delivery":
+        raise OrderError("Not a delivery order", 400)
+    fee = round(float(fee), 2)
+    if not 10 <= fee <= 1000:
+        raise OrderError(f"₹{fee:g} doesn't look like a delivery fare", 400)
+    db.set_delivery_fee_final(order_id, fee)
+    return db.get_order(order_id)
+
+
 def record_manual_dispatch(order_id: int, tracking_url: str, rider_name: str = "",
-                           rider_phone: str = "") -> dict:
+                           rider_phone: str = "", fare: float | None = None) -> dict:
     """Kitchen booked the rider in the Porter app: store the tracking link and
     rider, mark out_for_delivery. Returns the dispatch dict notify_dispatch wants."""
     _dispatchable_order(order_id)
@@ -487,5 +511,8 @@ def record_manual_dispatch(order_id: int, tracking_url: str, rider_name: str = "
     db.update_order_dispatch(order_id=order_id, sr_order_id=None,
                              awb=rider_phone.strip(), courier=courier,
                              tracking_url=tracking_url)
+    if fare:
+        record_delivery_fee(order_id, fare)
     return {"provider": "porter", "manual": True, "courier_name": courier,
-            "tracking_url": tracking_url, "rider_phone": rider_phone.strip()}
+            "tracking_url": tracking_url, "rider_phone": rider_phone.strip(),
+            "delivery_fee": float(fare) if fare else None}

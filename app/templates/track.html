@@ -50,6 +50,8 @@
   .pr.wa { background: #25D366; border-color: #25D366; color: #fff; }
   .pr.phone { border-color: #E6E8E0; }
   .empty { color: #889; font-size: 13px; }
+  .fee-box { margin-top: 14px; background: #FFF7EA; border: 1px solid #F1DDB8; border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.55; color: #5A4520; }
+  .fee-box .pr { display: block; margin-top: 10px; background: #0E7A45; color: #fff; border-color: #0E7A45; }
 </style>
 <div class="wrap">
   <div class="top">
@@ -74,6 +76,13 @@
   const CANCELED = "cancelled";
   const ORDER_ID = {{ order_id }};
   const TRACKING_TOKEN = {{ tracking_token | tojson }};
+  const UPI_VPA = {{ (upi_vpa or "") | tojson }};
+  const UPI_PAYEE = {{ (upi_payee_name or "") | tojson }};
+  function upiLink(amount, ref, note) {
+    if (!UPI_VPA) return "";
+    const p = new URLSearchParams({ pa: UPI_VPA, pn: UPI_PAYEE, am: String(amount), cu: "INR", tr: ref, tn: note });
+    return "upi://pay?" + p.toString();
+  }
 
   function toDate(s) {
     if (!s) return null;
@@ -101,9 +110,8 @@
   }
 
   function payLabel(o) {
-    const rider = o.pay_courier_direct ? " · rider gets the delivery fee" : "";
-    if (o.payment_method === "upi") return (o.paid ? "Paid by UPI ✓" : "UPI — awaiting confirmation") + rider;
-    return "Cash on delivery" + rider;
+    if (o.payment_method === "upi") return o.paid ? "Paid by UPI ✓" : "UPI — awaiting confirmation";
+    return "Cash on delivery";
   }
 
   async function refresh() {
@@ -165,9 +173,32 @@
     html += `<div><span>Subtotal</span><span>₹${subtotal.toFixed(0)}</span></div>`;
     if (packing) html += `<div><span>Packing</span><span>₹${packing.toFixed(0)}</span></div>`;
     if (gst) html += `<div><span>GST (5%)</span><span>₹${gst.toFixed(0)}</span></div>`;
-    if (fee) html += `<div><span>${o.pay_courier_direct ? 'Delivery — pay the rider directly' : (o.order_type === 'pickup' ? 'Packing/delivery' : 'Delivery')}</span><span>₹${fee.toFixed(0)}</span></div>`;
-    html += `<div style="font-weight:600;color:#1a1a1a"><span>Total</span><span>₹${total.toFixed(0)}</span></div>`;
+    const finalFee = +o.delivery_fee_final || 0;
+    const isDel = o.order_type === 'delivery';
+    if (isDel && finalFee) {
+      html += `<div style="font-weight:600;color:#1a1a1a"><span>Food total</span><span>₹${total.toFixed(0)}</span></div>`;
+      html += `<div><span>Delivery (Porter fare)</span><span>₹${finalFee.toFixed(0)}</span></div>`;
+      html += `<div style="font-weight:600;color:#1a1a1a"><span>Grand total</span><span>₹${(total + finalFee).toFixed(0)}</span></div>`;
+    } else if (isDel && o.delivery_fee_low) {
+      html += `<div style="font-weight:600;color:#1a1a1a"><span>Food total</span><span>₹${total.toFixed(0)}</span></div>`;
+      html += `<div><span>Delivery (estimate)</span><span>~₹${(+o.delivery_fee_low).toFixed(0)}–${(+o.delivery_fee_high).toFixed(0)}</span></div>`;
+    } else {
+      if (fee) html += `<div><span>${o.order_type === 'pickup' ? 'Packing/delivery' : 'Delivery'}</span><span>₹${fee.toFixed(0)}</span></div>`;
+      html += `<div style="font-weight:600;color:#1a1a1a"><span>Total</span><span>₹${total.toFixed(0)}</span></div>`;
+    }
     html += '</div>';
+    if (isDel && st !== CANCELED) {
+      if (finalFee && !o.delivery_paid) {
+        const link = upiLink(finalFee, `${ORDER_ID}-D`, `Tulsi Foods delivery #${ORDER_ID}`);
+        html += `<div class="fee-box"><b>Delivery charge: ₹${finalFee.toFixed(0)}</b><br>
+          This is the actual Porter fare for your rider, nothing added.${link ? "" : " Please pay it to the kitchen by UPI or cash."}
+          ${link ? `<a class="pr" href="${link}">Pay ₹${finalFee.toFixed(0)} by UPI →</a>` : ""}</div>`;
+      } else if (!finalFee && o.delivery_fee_low) {
+        html += `<div class="fee-box">The delivery charge is the actual fare of the rider we book for you,
+          usually ₹${(+o.delivery_fee_low).toFixed(0)}–${(+o.delivery_fee_high).toFixed(0)} for your area.
+          You'll get the exact amount here and by message as soon as the rider is booked.</div>`;
+      }
+    }
 
     if (o.items && o.items.length) {
       html += '<div class="items">' + o.items.map(i => `<div class="row"><span>${i.name} × ${i.qty}</span><span>₹${(+i.price * +i.qty).toFixed(0)}</span></div>`).join('') + '</div>';
