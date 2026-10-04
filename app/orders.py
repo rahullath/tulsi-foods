@@ -288,7 +288,7 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                  # means WE collect the (estimated) fee and pay the rider
                  # ourselves instead, for customers who'd rather not deal
                  # with it at the door.
-                 pay_courier_direct: bool = True) -> dict:
+                 pay_courier_direct: bool = False) -> dict:
     if order_type not in ("delivery", "pickup"):
         raise OrderError("Invalid order_type", 400)
     phone = _normalize_phone(phone)
@@ -431,70 +431,61 @@ def delivery_fee_from_pincode(pincode: str, subtotal: float) -> float:
 
 
 def dispatch_rider(order_id: int) -> dict:
-    """Book a rider for a food-ready delivery order.
+    """Book a rider for a delivery order — Porter only (Oct 2026).
 
-    Borzo when its token is set, else Shiprocket Quick. Raises OrderError on
-    invalid orders and the provider's own exception on a failed booking; on
-    success updates the DB to out_for_delivery with courier details and
-    returns {"provider": ...} merged with the provider result.
+    With PORTER_API_KEY set this books through Porter's API and marks the
+    order out_for_delivery. Until then it returns {"manual": True, ...} with
+    the booking card: the kitchen books in the Porter app and records the
+    rider via record_manual_dispatch(). Borzo/Shiprocket are no longer used
+    (unreliable in our radius); their modules stay in app/delivery/ unused.
 
-    Called both by the admin dispatch endpoint and automatically when
-    Petpooja's order-callback reports the order as food-ready — see
-    app/webhooks.py `_maybe_auto_dispatch` (that's how rider booking
-    happens now: the POS "Food Ready" tap books the courier).
+    Called by the admin Book button and when Petpooja's callback reports the
+    order food-ready (app/webhooks.py `_maybe_auto_dispatch`).
     """
+    o = _dispatchable_order(order_id)
+    from .delivery import porter
+
+    if not porter.api_configured():
+        return {"provider": "porter", "manual": True,
+                "booking": porter.booking_details(o),
+                "booking_text": porter.booking_text(o)}
+
+    result = porter.book(o)
+    db.update_order_dispatch(
+        order_id=order_id, sr_order_id=None,
+        awb=str(result.get("porter_order_id", "")),
+        courier=result.get("courier_name") or "Porter",
+        tracking_url=result.get("tracking_url", ""),
+    )
+    return {"provider": "porter", "manual": False, **result}
+
+
+def _dispatchable_order(order_id: int) -> dict:
     o = db.get_order(order_id)
     if not o:
         raise OrderError("Order not found", 404)
     if o["order_type"] != "delivery":
         raise OrderError("Cannot dispatch pickup orders", 400)
-    if o["status"] != "ready":
-        raise OrderError(f"Order must be ready before booking a rider (currently {o['status']})", 400)
-    if not o.get("delivery_address") or not o.get("delivery_pincode"):
-        raise OrderError("Order missing delivery address or pincode", 400)
-    if o.get("sr_order_id"):
+    if o["status"] not in ("preparing", "ready"):
+        raise OrderError(f"Order must be preparing or ready to book a rider (currently {o['status']})", 400)
+    if not o.get("delivery_address"):
+        raise OrderError("Order missing delivery address", 400)
+    if o.get("sr_tracking_url") or o.get("sr_courier"):
         raise OrderError("Rider already booked for this order", 400)
+    return o
 
-    from .delivery.config import BORZO_AUTH_TOKEN
-    provider = "borzo" if BORZO_AUTH_TOKEN else "shiprocket"
 
-    try:
-        if provider == "borzo":
-            from .delivery.borzo import create_order as borzo_create
-            result = borzo_create(
-                order_id=order_id,
-                customer_name=o.get("customer_name") or "Customer",
-                customer_phone=o.get("customer_phone") or "",
-                delivery_address=o["delivery_address"],
-                items=o["items"],
-                total=o["total"],
-                payment_method=o["payment_method"],
-                cod_amount=o["total"] if o["payment_method"] == "cod" else 0,
-                delivery_lat=o.get("delivery_lat"),
-                delivery_lng=o.get("delivery_lng"),
-            )
-        else:
-            from .delivery.shiprocket import dispatch_order
-            result = dispatch_order(
-                order_id=order_id,
-                customer_name=o.get("customer_name") or "Customer",
-                customer_phone=o.get("customer_phone") or "",
-                delivery_address=o["delivery_address"],
-                delivery_pincode=o["delivery_pincode"],
-                items=o["items"],
-                total=o["total"],
-                payment_method=o["payment_method"],
-                delivery_lat=o.get("delivery_lat"),
-                delivery_lng=o.get("delivery_lng"),
-            )
-    except Exception:
-        raise
-
-    db.update_order_dispatch(
-        order_id=order_id,
-        sr_order_id=result["sr_order_id"],
-        awb=result.get("sr_awb") or result.get("awb_code", ""),
-        courier=result.get("sr_courier") or result.get("courier_name", ""),
-        tracking_url=result.get("sr_tracking_url") or result.get("tracking_url", ""),
-    )
-    return {"provider": provider, **result}
+def record_manual_dispatch(order_id: int, tracking_url: str, rider_name: str = "",
+                           rider_phone: str = "") -> dict:
+    """Kitchen booked the rider in the Porter app: store the tracking link and
+    rider, mark out_for_delivery. Returns the dispatch dict notify_dispatch wants."""
+    _dispatchable_order(order_id)
+    tracking_url = (tracking_url or "").strip()
+    if tracking_url and not tracking_url.startswith(("https://", "http://")):
+        raise OrderError("Tracking link must start with https://", 400)
+    courier = "Porter" + (f" · {rider_name.strip()}" if rider_name.strip() else "")
+    db.update_order_dispatch(order_id=order_id, sr_order_id=None,
+                             awb=rider_phone.strip(), courier=courier,
+                             tracking_url=tracking_url)
+    return {"provider": "porter", "manual": True, "courier_name": courier,
+            "tracking_url": tracking_url, "rider_phone": rider_phone.strip()}

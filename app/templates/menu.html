@@ -167,6 +167,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .checkout-panel { background: var(--bg); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; padding: 24px 18px 40px; }
 .checkout-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; margin-bottom: 16px; }
 .checkout-field { margin-bottom: 14px; }
+.checkout-step { font: 600 12px/1 'IBM Plex Mono', monospace; letter-spacing: .04em; text-transform: uppercase; color: var(--g, #0E7A45); margin: 18px 0 10px; }
+.checkout-hint { font-size: 12px; color: #6F7468; margin-top: 4px; line-height: 1.45; }
 .checkout-field label { display: block; font-size: 13px; color: var(--sub); margin-bottom: 4px; }
 .checkout-field input, .checkout-field select, .checkout-field textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; background: #fff; }
 .schedule-date-select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; margin-bottom: 8px; }
@@ -281,7 +283,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   // panel (or a reload mid-typing) wipes everything the customer entered.
   const DETAILS_KEY = "tulsi_checkout_details";
   const DETAIL_FIELDS = ["name", "phone", "order_type", "address", "landmark",
-    "pincode", "payment_method", "pay_courier_direct", "instructions"];
+    "pincode", "payment_method", "instructions"];
   const cart = {};
   const PRICES = {};
   const NAMES = {};
@@ -427,8 +429,11 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           <div class="checkout-nudge-chips"></div>
         </div>
         <form id="checkout-form">
-          <div class="checkout-field"><label>Name</label><input name="name" required placeholder="Your name"></div>
-          <div class="checkout-field"><label>Phone</label><input name="phone" required placeholder="10-digit number" pattern="[0-9]{10,}"></div>
+          <div class="checkout-step">1 · Your details</div>
+          <div class="checkout-field"><label>Phone</label><input name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" required placeholder="10-digit mobile number" pattern="[0-9]{10,}">
+            <div class="checkout-hint">We'll fill in your saved address if you've ordered before.</div></div>
+          <div class="checkout-field"><label>Name</label><input name="name" autocomplete="name" required placeholder="Your name"></div>
+          <div class="checkout-step">2 · Delivery</div>
           <div class="checkout-field">
             <label>Order type</label>
             <input type="hidden" name="order_type" value="delivery">
@@ -455,44 +460,33 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           </div>
           <div class="checkout-field" id="addr-field"><label>Address</label>
             {% if google_maps_api_key %}
-            <input type="text" name="address" id="address-input" placeholder="Start typing your address" autocomplete="off" required>
+            <input type="text" name="address" id="address-input" placeholder="Flat / building, street — pick from the list" autocomplete="off" required>
+            <div class="checkout-hint">Pick a suggestion, or tap "Use my location" and drag the pin onto your door.</div>
             {% else %}
             <textarea name="address" rows="2" placeholder="Flat/house number, building, street" required></textarea>
             {% endif %}
             <div id="map-pin" class="map-pin"></div>
             <div id="map-address-preview" class="map-address-preview"></div>
-            <button type="button" id="gps-btn" style="margin-top:6px;font-size:12px;padding:5px 10px;border:1px solid #C9C4B8;border-radius:8px;background:#fff;cursor:pointer;color:#4A4F45;">📍 Centre on my location</button>
+            <button type="button" id="gps-btn" style="margin-top:6px;font-size:12px;padding:5px 10px;border:1px solid #C9C4B8;border-radius:8px;background:#fff;cursor:pointer;color:#4A4F45;">📍 Use my location</button>
             <span id="gps-status" style="font-size:11px;color:#888;margin-left:6px;"></span>
             <input type="hidden" name="lat" id="input-lat">
             <input type="hidden" name="lng" id="input-lng">
           </div>
           <div class="checkout-field" id="landmark-field"><label>Nearest landmark</label><input name="landmark" placeholder="e.g. opposite the park gate" required>
-            <div style="font-size:11px;color:#6F7468;margin-top:4px;">This is the one thing riders actually ask for.</div>
+            <div class="checkout-hint">Riders always ask for this.</div>
           </div>
-          <div class="checkout-field" id="pin-field"><label>Pincode</label><input name="pincode" pattern="[0-9]{6}" maxlength="6" placeholder="6-digit pincode"></div>
+          <div class="checkout-field" id="pin-field"><label>Pincode</label><input name="pincode" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{6}" maxlength="6" placeholder="Filled in from your address"></div>
+          <div class="checkout-step">3 · Payment</div>
           <div class="checkout-field">
-            <label>Payment</label>
-            <input type="hidden" name="payment_method" id="payment-method" value="cod">
+            <input type="hidden" name="payment_method" id="payment-method" value="{{ 'upi' if upi_vpa else 'cod' }}">
             <div class="time-pills" id="payment-tiles">
-              <button type="button" class="time-pill active" data-value="cod">Cash on delivery</button>
-              {% if upi_vpa %}<button type="button" class="time-pill" data-value="upi">Pay by UPI</button>{% endif %}
+              {% if upi_vpa %}<button type="button" class="time-pill active" data-value="upi">Pay by UPI</button>{% endif %}
+              <button type="button" class="time-pill{% if not upi_vpa %} active{% endif %}" data-value="cod">Cash on delivery</button>
             </div>
+            <div class="checkout-hint" id="pay-hint"></div>
           </div>
-          <div class="checkout-field" id="fee-mode-field" hidden>
-            <label>Delivery fee</label>
-            <select name="pay_courier_direct" id="fee-mode">
-              <option value="1" selected>Pay the rider directly</option>
-              <option value="0">Add it to my total — you collect and pay the rider</option>
-            </select>
-            <div style="font-size:11px;color:#6F7468;margin-top:4px;">The exact fee is set by the courier at pickup, not by us — so by default you pay the rider directly rather than us guessing at an amount upfront. Prefer not to deal with it? Choose the other option and we'll add the estimated fee to your total and pay the rider on your behalf.</div>
-          </div>
-          {% if upi_vpa %}
-          <div class="checkout-field" id="upi-pay-field" hidden>
-            <div class="checkout-row"><span>UPI</span><span>Pay after placing — we'll show you the exact amount.</span></div>
-          </div>
-          {% endif %}
           <div class="checkout-field"><label>Note</label><input name="instructions" placeholder="e.g. no coriander"></div>
-          <button type="submit" class="checkout-place">Place order</button>
+          <button type="submit" class="checkout-place" id="place-btn">Place order</button>
           <div class="checkout-msg" id="checkout-msg"></div>
         </form>
       </div>
@@ -616,9 +610,6 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       const gst = gstFor(currentSubtotal + packing);
       const isDelivery = overlay.querySelector('[name=order_type]').value === "delivery";
       const q = isDelivery ? quoteDelivery(currentSubtotal) : null;
-      const feeModeField = overlay.querySelector("#fee-mode-field");
-      const feeModeSel = overlay.querySelector("#fee-mode");
-      const payDirect = isDelivery && !feeModeField.hidden && feeModeSel && feeModeSel.value === "1";
 
       let deliveryRow, deliveryNote;
       if (isDelivery) {
@@ -628,27 +619,21 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           deliveryNote = `<span style="color:#B3261E">We don't deliver ${eff.km ? Math.round(eff.km) + " km away" : "that far"}. Pickup is in Alwarpet.</span>`;
         } else if (eff) {
           const liveFee = Number(eff.fee) || 0;
-          deliveryRow = payDirect
-            ? `<div class="checkout-row"><span>Delivery — you pay the rider</span><span>~₹${Math.round(liveFee)}</span></div>`
-            : `<div class="checkout-row"><span>Delivery (est.)</span><span>${liveFee ? "~₹" + Math.round(liveFee) : "FREE (est.)"}</span></div>`;
-          deliveryNote = `${liveQuote ? "Live courier rate. " : "Estimated from your area. "}Kitchen confirms the exact fee on WhatsApp.${
-            payDirect ? " Pay the rider directly and it stays off your total." : ""}${
+          deliveryRow = `<div class="checkout-row"><span>Delivery${eff.km ? ` (${eff.km.toFixed(1)} km)` : ""}</span><span>${liveFee ? "₹" + Math.round(liveFee) : "FREE"}</span></div>`;
+          deliveryNote = `Delivery is included in the total — nothing extra to pay the rider.${
             currentSubtotal && currentSubtotal < eff.min_order
             ? ` <span style="color:#B3261E">Minimum order here is ₹${eff.min_order}.</span>` : ""}`;
         } else {
-          deliveryRow = `<div class="checkout-row"><span>Delivery</span><span>Live rate</span></div>`;
-          deliveryNote = "Enter your delivery address for a live courier rate. Until then delivery is excluded from the total — the kitchen confirms the exact fee on WhatsApp.";
+          deliveryRow = `<div class="checkout-row"><span>Delivery</span><span>Add address</span></div>`;
+          deliveryNote = "Add your address to see the delivery charge. It's included in the total, nothing extra to pay the rider.";
         }
-        feeModeField.hidden = !(eff && !eff.outside);
       } else {
         deliveryNote = PICKUP_NOTE;
-        feeModeField.hidden = true;
-        if (feeModeSel) feeModeSel.value = "0";
       }
 
       const effQuote = (liveQuote && liveQuote.serviceable) ? liveQuote : q;
       const rawFee = effQuote && !effQuote.outside ? (Number(effQuote.fee) || 0) : 0;
-      const deliveryFee = payDirect ? 0 : rawFee;
+      const deliveryFee = rawFee;
       overlay.querySelector(".checkout-summary").innerHTML =
         currentIds.map(id => `
           <div class="checkout-row checkout-item-row">
@@ -669,6 +654,9 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         + (deliveryRow ? deliveryRow : "")
         + `<div class="checkout-row total"><span>Total</span><span>₹${(currentSubtotal + packing + gst + deliveryFee).toFixed(2)}</span></div>
            <div class="checkout-row-note">${deliveryNote || "No hidden charges — this is the final total."}</div>`;
+      const grand = Math.round((currentSubtotal + packing + gst + deliveryFee) * 100) / 100;
+      const placeBtn = overlay.querySelector("#place-btn");
+      if (placeBtn && !placeBtn.disabled) placeBtn.textContent = currentSubtotal ? `Place order · ₹${grand.toFixed(2).replace(/\.00$/, "")}` : "Place order";
 
       // Let the customer adjust quantities without leaving checkout — closing
       // the panel to go back to the menu grid just to change a "2" to a "1"
@@ -742,10 +730,14 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     }
 
     const paySelect = overlay.querySelector("#payment-method");
-    const upiField = overlay.querySelector("#upi-pay-field");
     wireTapTiles("payment-tiles", paySelect);
-    if (paySelect && upiField) {
-      const syncPaymentUI = () => { upiField.hidden = paySelect.value !== "upi"; };
+    if (paySelect) {
+      const payHint = overlay.querySelector("#pay-hint");
+      const syncPaymentUI = () => {
+        payHint.textContent = paySelect.value === "upi"
+          ? "After you tap Place order, your UPI app (GPay, PhonePe, Paytm) opens with the exact amount filled in."
+          : "Pay the full total in cash (or UPI) to the rider when your food arrives.";
+      };
       paySelect.addEventListener("change", syncPaymentUI);
       syncPaymentUI();
     }
@@ -755,8 +747,21 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       if (!preview || !gGeocoder) return;
       preview.textContent = "Looking up address…";
       gGeocoder.geocode({ location: { lat: Number(lat), lng: Number(lng) } }, (results, status) => {
-        preview.textContent = (status === "OK" && results[0]) ? "📍 " + results[0].formatted_address : "";
+        const r = status === "OK" && results[0];
+        preview.textContent = r ? "📍 " + r.formatted_address : "";
+        if (!r) return;
+        // Fill whatever the customer hasn't typed yet: pincode always when
+        // empty, the address line only when the field is blank.
+        fillPincode(r.address_components);
+        const addr = form.querySelector('[name=address]');
+        if (addr && !addr.value.trim()) { addr.value = r.formatted_address.replace(/, India$/, ""); saveDetails(); }
       });
+    }
+
+    function fillPincode(components) {
+      const pin = (components || []).find(c => c.types.includes("postal_code"));
+      const input = form.querySelector('[name=pincode]');
+      if (pin && input && !input.value) { input.value = pin.short_name; saveDetails(); }
     }
 
     function applyPin(lat, lng, geocode = true) {
@@ -796,19 +801,30 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 
       const addressInput = overlay.querySelector("#address-input");
       if (addressInput) {
+        // No `types` filter: people type apartment/building names, which the
+        // old "address"-only filter never suggested. Biased (not limited) to
+        // ~10 km around the kitchen so Chennai results come first.
         const autocomplete = new gmaps.places.Autocomplete(addressInput, {
-          fields: ["geometry", "formatted_address", "address_components"],
+          fields: ["geometry", "formatted_address", "address_components", "name"],
           componentRestrictions: { country: "in" },
-          types: ["address"],
+          bounds: new gmaps.LatLngBounds(
+            { lat: PICKUP_LAT - 0.09, lng: PICKUP_LNG - 0.09 },
+            { lat: PICKUP_LAT + 0.09, lng: PICKUP_LNG + 0.09 }),
+          strictBounds: false,
         });
         autocomplete.addListener("place_changed", () => {
           const place = autocomplete.getPlace();
           if (!place.geometry || !place.geometry.location) return;
           const loc = place.geometry.location;
           movePin(loc.lat(), loc.lng(), false);
-          const pinComponent = (place.address_components || []).find(c => c.types.includes("postal_code"));
+          // Keep the building name: formatted_address drops it for
+          // apartments/establishments, and it's what the rider looks for.
+          const full = (place.formatted_address || "").replace(/, India$/, "");
+          addressInput.value = place.name && !full.startsWith(place.name) ? `${place.name}, ${full}` : full;
           const pincodeInput = form.querySelector('[name=pincode]');
-          if (pinComponent && pincodeInput) pincodeInput.value = pinComponent.short_name;
+          if (pincodeInput) pincodeInput.value = "";
+          fillPincode(place.address_components);
+          saveDetails();
         });
       }
     }
@@ -856,12 +872,15 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
               const a = addresses[card.dataset.idx];
               form.querySelector('[name=address]').value = a.address;
               form.querySelector('[name=landmark]').value = a.landmark || "";
-              if (a.lat && a.lng) movePin(a.lat, a.lng, false);
+              if (a.lat && a.lng) movePin(a.lat, a.lng, true);
               savedAddrList.querySelectorAll(".saved-addr-card").forEach(c => c.classList.remove("selected"));
               card.classList.add("selected");
             });
           });
           savedAddrField.hidden = false;
+          // Returning customer with an empty address: use their usual one.
+          if (data.name && !form.querySelector('[name=name]').value) form.querySelector('[name=name]').value = data.name;
+          if (!form.querySelector('[name=address]').value.trim()) savedAddrList.querySelector(".saved-addr-card")?.click();
         } catch (_) { savedAddrField.hidden = true; }
       }, 400);
     });
@@ -941,6 +960,15 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
     });
 
     restoreDetails();
+    // Returning customer: prefill name/phone from their last order, then run
+    // the phone lookup so their saved address fills itself in.
+    try {
+      const me = JSON.parse(localStorage.getItem("tulsi_customer") || "null");
+      const phoneEl = form.querySelector('[name=phone]'), nameEl = form.querySelector('[name=name]');
+      if (me && !phoneEl.value) phoneEl.value = me.phone || "";
+      if (me && !nameEl.value) nameEl.value = me.name || "";
+      if (phoneEl.value) phoneEl.dispatchEvent(new Event("input"));
+    } catch (_) { /* storage unavailable */ }
 
     // GPS location capture — centres the map and moves the pin there
     const gpsBtn = overlay.querySelector("#gps-btn");
@@ -1009,7 +1037,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         instructions: fd.get("instructions") || null,
         scheduled_at: fd.get("scheduled_at") || null,
         scheduled_window: fd.get("scheduled_window") || null,
-        pay_courier_direct: fd.get("pay_courier_direct") === "1",
+        pay_courier_direct: false,
         items: ids.map(id => {
           const noteEl = document.querySelector(`.card-note[data-id="${id}"]`);
           const note = noteEl ? noteEl.value.trim() : "";
@@ -1029,7 +1057,12 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           .filter(i => i.qty > 0);
         Object.keys(cart).forEach(k => delete cart[k]);
         updateCart();
-        try { localStorage.removeItem(DETAILS_KEY); } catch (_) { /* storage unavailable */ }
+        try {
+          localStorage.removeItem(DETAILS_KEY);
+          // Remember who they are for next time (address comes back via the
+          // phone lookup, so only name + phone are kept on the device).
+          localStorage.setItem("tulsi_customer", JSON.stringify({ name: payload.name, phone: payload.phone }));
+        } catch (_) { /* storage unavailable */ }
         // Device-local order history for /track's "My Orders" recovery page —
         // just enough to look the order up live by token; that page fetches
         // full/current details from the server rather than trusting this.
@@ -1056,15 +1089,13 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           `Subtotal ₹${data.subtotal}`,
           ...(data.packing_fee ? [`Packing ₹${data.packing_fee}`] : []),
           ...(data.gst_amount ? [`GST ₹${data.gst_amount}`] : []),
-          ...(data.delivery_fee ? (payload.pay_courier_direct
-            ? [`Delivery ~₹${data.delivery_fee} — I'll pay the rider directly`]
-            : [`Delivery ~₹${data.delivery_fee} (estimate)`]) : []),
+          ...(data.delivery_fee ? [`Delivery ₹${data.delivery_fee}`] : []),
           `Total: ₹${data.total}`,
           "",
           isDelivery ? `Deliver to: ${payload.address}` : "Pickup at 34 Murrays Gate Road, Alwarpet",
           `Name: ${payload.name} · ${payload.phone}`,
           `When: ${when}`,
-          `Payment: ${payload.payment_method === "upi" ? "UPI" : "Cash on delivery"}${payload.pay_courier_direct ? " (+ rider fee)" : ""}`,
+          `Payment: ${payload.payment_method === "upi" ? "UPI" : "Cash on delivery"}`,
           ...(payload.instructions ? [`Note: ${payload.instructions}`] : []),
           "",
           `Your tracking reference: ${data.tracking_token}`,
@@ -1155,7 +1186,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         msg.style.color = "#B3261E";
         msg.textContent = err.message;
         btn.disabled = false;
-        btn.textContent = "Place order";
+        refreshCheckoutSummary();
       }
     });
   }

@@ -1227,7 +1227,7 @@ class OrderIn(BaseModel):
     instructions: str | None = None
     scheduled_at: str | None = None
     scheduled_window: str | None = None  # lunch | dinner (else None = asap/custom)
-    pay_courier_direct: bool = True       # customer pays the delivery rider directly by default — see orders.create_order
+    pay_courier_direct: bool = False      # delivery fee is part of the total (Oct 2026); kept for old clients
     items: list[OrderItemIn]
 
 
@@ -1326,7 +1326,7 @@ def admin_scheduled_orders(x_admin_token: str | None = Header(None)):
 
 @app.post("/api/admin/orders/{order_id}/dispatch")
 def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)):
-    """Mom taps 'Food Ready' — triggers rider dispatch via Borzo (primary) or Shiprocket (fallback)."""
+    """Book a rider: Porter API when configured, else returns the manual booking card."""
     _check_admin(x_admin_token)
     from .orders import dispatch_rider
     try:
@@ -1335,8 +1335,32 @@ def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)
         raise HTTPException(e.status, e.message)
     except Exception as e:
         raise HTTPException(500, f"Dispatch failed: {e}")
+    if result.get("manual"):
+        # Nothing booked yet: the admin UI shows the booking card and posts
+        # the Porter link back to /manual-dispatch below.
+        return {"ok": True, **result}
     o = db.get_order(order_id)
     _send_dispatch_whatsapp(o, result)
+    return {"ok": True, **result}
+
+
+class ManualDispatchIn(BaseModel):
+    tracking_url: str = ""
+    rider_name: str = ""
+    rider_phone: str = ""
+
+
+@app.post("/api/admin/orders/{order_id}/manual-dispatch")
+def admin_manual_dispatch(order_id: int, body: ManualDispatchIn,
+                          x_admin_token: str | None = Header(None)):
+    """Kitchen booked the rider in the Porter app — record it and tell the customer."""
+    _check_admin(x_admin_token)
+    try:
+        result = orders.record_manual_dispatch(order_id, body.tracking_url,
+                                               body.rider_name, body.rider_phone)
+    except orders.OrderError as e:
+        raise HTTPException(e.status, e.message)
+    _send_dispatch_whatsapp(db.get_order(order_id), result)
     return {"ok": True, **result}
 
 
@@ -1352,6 +1376,12 @@ def track_order(order_id: int):
     o = db.get_order(order_id)
     if not o:
         raise HTTPException(404, "Order not found")
+    if (o.get("sr_courier") or "").startswith("Porter"):
+        # Manual Porter booking: the link Mom pasted is the tracking (sr_awb
+        # holds the rider's phone there, not an AWB to look up).
+        return {"tracking": {"status_text": o["sr_courier"],
+                             "tracking_url": o.get("sr_tracking_url") or ""},
+                "status": o["status"]}
     if not o.get("sr_awb"):
         return {"tracking": None, "status": o["status"]}
 

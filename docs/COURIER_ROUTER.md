@@ -1,5 +1,24 @@
 # Courier Router — scoped open-source piece (not the whole platform)
 
+> **Decision, Oct 2026: Porter only.** Borzo dropped (riders unreliable in our
+> radius), Shiprocket unused. Uber Direct checked: in India it is an ONDC-only
+> logistics provider, live in Bengaluru since Dec 2025, no merchant API and no
+> Chennai service, so not an option yet. Browser automation of porter.in
+> (Playwright/Puppeteer) rejected: OTP login, breaks on UI changes, likely
+> against Porter's terms, and Porter has a real API we can get instead.
+>
+> **Live flow** (`app/delivery/porter.py`): POS "Food Ready" → Telegram gets a
+> paste-ready Porter booking card → Mom books in the Porter app → admin
+> panel "Book" sheet → paste tracking link (+ rider name/phone) → customer gets
+> it on WhatsApp/SMS and /track. Checkout charges the zone-table fee
+> (`estimate.USE_BORZO_QUOTES = False`).
+>
+> **Next:** get Porter API access (porter.in/api-integrations → enterprise
+> team; the self-serve sign-up was geo-restricted). Then implement
+> `porter.quote()`/`porter.book()` and set `PORTER_API_KEY`;
+> `orders.dispatch_rider()` already switches to the API path on its own.
+
+
 Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 ---
@@ -98,3 +117,24 @@ No rewrite of what exists — new courier modules sit alongside Borzo's.
   (cheapest vs fastest ETA) later if a second real user shows up.
 - Evaluate Waayu / NStore / Nearshopz as ONDC-side SNPs — separate track
   from this router, tracked in the ONDC research above (not yet a doc).
+
+## POS-driven Porter loop (Oct 2026) — no admin panel needed
+
+1. **POS Accept** (Petpooja callback status 1-3, first time) → Mom gets the
+   Porter booking card on WhatsApp (+ Telegram if configured).
+2. **POS Food Ready** → reminder, only if no rider is recorded yet.
+3. Mom books in the Porter app, taps Share on the trip and sends the link
+   to the business WhatsApp number (add `#<order>` if 2+ orders are waiting).
+4. The bot attaches it to the order → out_for_delivery → customer gets the
+   tracking link → Mom gets "✅ Order #N is out for delivery".
+
+Code: `app/kitchen_alerts.py`, `app/webhooks.py` (`_maybe_auto_dispatch`,
+inbound admin messages). Admin panel "Book" still works as a backup.
+
+### Railway variables to set
+- `WHATSAPP_ACTIVE=1`
+- `ADMIN_PHONE` = Mom's personal WhatsApp in wa_id form, e.g. `919XXXXXXXXX`.
+  It must NOT be the business number itself (a number can't message itself).
+- `KITCHEN_WA_TEMPLATE` = name of an approved UTILITY template whose body is
+  just `Kitchen alert: {{1}}` (language `en`). Without it, alerts only reach
+  Mom within 24 h of her last message to the business number.

@@ -273,12 +273,25 @@ def upsert_customer(phone: str, name: str, address: str | None = None,
 
 
 def get_customer(phone: str) -> dict | None:
-    """Get customer record by phone number."""
+    """Get customer record by phone number.
+
+    Exact match first, then on the last 10 digits, so "07557212240",
+    "+91 75572 12240" and "7557212240" all find the same customer (stored
+    phones are a historical mix, see get_orders_by_phone)."""
+    import re as _re
     conn = get_conn()
     row = conn.execute(
         "SELECT id, phone, name, address, pincode FROM customers WHERE phone=?",
         (phone,),
     ).fetchone()
+    digits = _re.sub(r"\D", "", phone or "")
+    if not row and len(digits) >= 10:
+        row = conn.execute(
+            "SELECT id, phone, name, address, pincode FROM customers "
+            "WHERE substr(replace(replace(phone,'+',''),' ',''), -10) = ? "
+            "ORDER BY id DESC LIMIT 1",
+            (digits[-10:],),
+        ).fetchone()
     conn.close()
     return dict(row) if row else None
 
