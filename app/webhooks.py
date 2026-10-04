@@ -355,21 +355,22 @@ async def petpooja_order_callback(request: Request, t: str | None = Query(None))
 
 
 def _maybe_auto_dispatch(order_id: int) -> None:
-    """Book a rider when the POS reports food ready on a delivery order.
+    """Rider booking when the POS reports food ready on a delivery order.
 
-    This is how rider booking happens now: mom taps Food Ready on the
-    Petpooja terminal → callback → we dispatch on Borzo (or Shiprocket).
-    Skipped without error when the order isn't a delivery, the address is
-    incomplete or flagged (a human should confirm first), or a rider was
-    already booked. Best-effort — never blocks the callback's 200."""
+    Porter API configured -> book it and notify the customer. Otherwise (the
+    normal case today) send Mom the Porter booking card on Telegram so she
+    can book in the Porter app straight away; the admin panel takes the
+    tracking link back. Skipped when the order isn't a delivery, a rider is
+    already recorded, or the address is missing/flagged (a human confirms
+    first). Best-effort — never blocks the callback's 200."""
     from . import db
     o = db.get_order(order_id)
     if not o or o["order_type"] != "delivery":
         return
-    if o.get("sr_order_id"):
+    if o.get("sr_tracking_url") or o.get("sr_courier"):
         return
-    if not (o.get("delivery_address") and o.get("delivery_pincode")):
-        log.info("Petpooja callback: order %s food-ready but missing address/pincode — holding dispatch", order_id)
+    if not o.get("delivery_address"):
+        log.info("Petpooja callback: order %s food-ready but missing address — holding dispatch", order_id)
         return
     if o.get("address_flagged"):
         log.info("Petpooja callback: order %s food-ready but address flagged — holding dispatch for review", order_id)
@@ -377,10 +378,20 @@ def _maybe_auto_dispatch(order_id: int) -> None:
     try:
         from .orders import dispatch_rider
         result = dispatch_rider(order_id)
-        log.info("Order %s auto-dispatched on Petpooja food-ready (%s)", order_id, result.get("provider"))
     except Exception:
-        log.exception("Auto-dispatch failed for order %s (Petpooja food-ready); use the admin Dispatch button", order_id)
+        log.exception("Rider booking failed for order %s (Petpooja food-ready); use the admin Book button", order_id)
         return
+    if result.get("manual"):
+        from . import telegram
+        from html import escape
+        sent = telegram.send_message(
+            "🛵 <b>Book Porter now</b> — food is ready\n\n<pre>"
+            + escape(result["booking_text"]) + "</pre>\n\nThen paste the Porter "
+            "tracking link in the admin panel (Book → Save).")
+        log.info("Order %s food-ready: Porter booking card %s", order_id,
+                 "sent to Telegram" if sent else "NOT sent (Telegram off) — admin panel only")
+        return
+    log.info("Order %s booked on Porter API on food-ready", order_id)
     from .notify import notify_dispatch
     try:
         notify_dispatch(db.get_order(order_id), result)

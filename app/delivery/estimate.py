@@ -16,6 +16,11 @@ import time
 from ..config import DELIVERY_ZONES, FREE_DELIVERY_ENABLED
 
 _TTL_S = 300
+
+# Borzo was dropped as the delivery partner (Oct 2026, unreliable riders);
+# its quotes no longer reflect what delivery costs us. Flip back on only if
+# Borzo returns as the courier.
+USE_BORZO_QUOTES = False
 _cache: dict[tuple, dict] = {}
 
 
@@ -56,6 +61,12 @@ def estimate(lat: float, lng: float, subtotal: float = 0.0,
         return {k: v for k, v in hit.items() if k != "at"}
 
     result = _zone_quote(lat, lng, subtotal, km_hint)
+    if not USE_BORZO_QUOTES:
+        # Porter has no quote API for us yet, so checkout charges the zone
+        # table fee (close to Porter's 2-wheeler fares in our 7 km radius).
+        result["at"] = now
+        _cache[key] = result
+        return {k: v for k, v in result.items() if k != "at"}
     try:
         from .borzo import calculate_order as borzo_calculate
         q = borzo_calculate(

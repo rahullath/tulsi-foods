@@ -1,5 +1,24 @@
 # Courier Router — scoped open-source piece (not the whole platform)
 
+> **Decision, Oct 2026: Porter only.** Borzo dropped (riders unreliable in our
+> radius), Shiprocket unused. Uber Direct checked: in India it is an ONDC-only
+> logistics provider, live in Bengaluru since Dec 2025, no merchant API and no
+> Chennai service, so not an option yet. Browser automation of porter.in
+> (Playwright/Puppeteer) rejected: OTP login, breaks on UI changes, likely
+> against Porter's terms, and Porter has a real API we can get instead.
+>
+> **Live flow** (`app/delivery/porter.py`): POS "Food Ready" → Telegram gets a
+> paste-ready Porter booking card → Mom books in the Porter app → admin
+> panel "Book" sheet → paste tracking link (+ rider name/phone) → customer gets
+> it on WhatsApp/SMS and /track. Checkout charges the zone-table fee
+> (`estimate.USE_BORZO_QUOTES = False`).
+>
+> **Next:** get Porter API access (porter.in/api-integrations → enterprise
+> team; the self-serve sign-up was geo-restricted). Then implement
+> `porter.quote()`/`porter.book()` and set `PORTER_API_KEY`;
+> `orders.dispatch_rider()` already switches to the API path on its own.
+
+
 Status legend: `[ ]` todo · `[~]` in progress · `[x]` done
 
 ---

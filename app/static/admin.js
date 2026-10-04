@@ -147,8 +147,11 @@
     }
 
     let dispatchHTML = "";
-    if (o.status === "ready" && o.order_type === "delivery") {
-      dispatchHTML = `<div class="order-dispatch"><span class="dispatch-label">Book a rider</span><span class="dispatch-action" data-id="${o.id}">Book</span></div>`;
+    if (o.order_type === "delivery" && o.sr_courier) {
+      const track = o.sr_tracking_url ? ` · <a class="dispatch-action" href="${o.sr_tracking_url}" target="_blank" rel="noopener">Track</a>` : "";
+      dispatchHTML = `<div class="order-dispatch"><span class="dispatch-label">Rider: ${escapeHTML(o.sr_courier)}${o.sr_awb ? " · " + escapeHTML(o.sr_awb) : ""}</span><span>${track}</span></div>`;
+    } else if (o.order_type === "delivery" && ["preparing", "ready"].includes(o.status)) {
+      dispatchHTML = `<div class="order-dispatch"><span class="dispatch-label">Book a Porter rider</span><span class="dispatch-action" data-id="${o.id}">Book</span></div>`;
     }
 
     let flagHTML = "";
@@ -230,23 +233,86 @@
     list.querySelectorAll(".action-primary").forEach(btn => {
       btn.addEventListener("click", () => advanceOrder(btn.dataset.id, btn.dataset.next, btn));
     });
-    list.querySelectorAll(".dispatch-action").forEach(btn => {
+    list.querySelectorAll("span.dispatch-action").forEach(btn => {
       btn.addEventListener("click", () => dispatchOrder(btn.dataset.id, btn));
     });
   }
 
+  function escapeHTML(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+  }
+
   async function dispatchOrder(orderId, btn) {
-    btn.textContent = "Booking…";
+    btn.textContent = "Loading…";
     btn.style.pointerEvents = "none";
     try {
       const d = await api(`/api/admin/orders/${orderId}/dispatch`, { method: "POST" });
-      toast(`Order #${orderId} → rider booked (${d.courier_name || "courier"})`);
-      loadOrders();
+      if (d.manual) {
+        openPorterSheet(orderId, d);
+      } else {
+        toast(`Order #${orderId} → rider booked (${d.courier_name || "Porter"})`);
+        loadOrders();
+      }
     } catch (e) {
       toast(`Booking failed: ${e.message}`);
-      btn.textContent = "Book";
-      btn.style.pointerEvents = "";
     }
+    btn.textContent = "Book";
+    btn.style.pointerEvents = "";
+  }
+
+  // Manual Porter booking: copy the card into the Porter app, book, then
+  // paste the tracking link back so the customer gets it.
+  function openPorterSheet(orderId, d) {
+    document.getElementById("porter-sheet")?.remove();
+    const b = d.booking || {};
+    const sheet = document.createElement("div");
+    sheet.id = "porter-sheet";
+    sheet.className = "porter-sheet";
+    sheet.innerHTML = `
+      <div class="porter-card" role="dialog" aria-label="Book Porter rider">
+        <div class="porter-title">Book Porter · Order #${orderId}</div>
+        <pre class="porter-text">${escapeHTML(d.booking_text)}</pre>
+        <div class="porter-row">
+          <button type="button" class="porter-btn" id="porter-copy">Copy details</button>
+          ${b.drop_map ? `<a class="porter-btn ghost" href="${b.drop_map}" target="_blank" rel="noopener">Drop pin</a>` : ""}
+          <a class="porter-btn ghost" href="${b.porter_url || "https://porter.in/"}" target="_blank" rel="noopener">Open Porter</a>
+        </div>
+        <label class="porter-label">Porter tracking link<input id="porter-url" type="url" placeholder="https://…" autocomplete="off"></label>
+        <label class="porter-label">Rider name<input id="porter-rider" type="text" autocomplete="off"></label>
+        <label class="porter-label">Rider phone<input id="porter-phone" type="tel" autocomplete="off"></label>
+        <div class="porter-row">
+          <button type="button" class="porter-btn" id="porter-save">Save &amp; notify customer</button>
+          <button type="button" class="porter-btn ghost" id="porter-close">Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(sheet);
+    sheet.addEventListener("click", e => { if (e.target === sheet) sheet.remove(); });
+    sheet.querySelector("#porter-close").onclick = () => sheet.remove();
+    sheet.querySelector("#porter-copy").onclick = async () => {
+      try { await navigator.clipboard.writeText(d.booking_text); toast("Copied — paste into Porter"); }
+      catch { toast("Copy blocked — long-press the text to copy"); }
+    };
+    sheet.querySelector("#porter-save").onclick = async (ev) => {
+      const saveBtn = ev.currentTarget;
+      saveBtn.disabled = true;
+      try {
+        await api(`/api/admin/orders/${orderId}/manual-dispatch`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tracking_url: sheet.querySelector("#porter-url").value.trim(),
+            rider_name: sheet.querySelector("#porter-rider").value.trim(),
+            rider_phone: sheet.querySelector("#porter-phone").value.trim(),
+          }),
+        });
+        toast(`Order #${orderId} → out for delivery`);
+        sheet.remove();
+        loadOrders();
+      } catch (e) {
+        toast(`Save failed: ${e.message}`);
+        saveBtn.disabled = false;
+      }
+    };
   }
 
   async function loadOrders() {
