@@ -20,6 +20,16 @@ from ..config import (
 log = logging.getLogger("whatsapp")
 
 
+def wa_number(to: str) -> str:
+    """Cloud API wants the full international number without '+'. Customer
+    phones are stored as bare 10-digit Indian numbers, which Meta reads as a
+    different country (or rejects), so add 91 to anything 10 digits long."""
+    digits = "".join(ch for ch in str(to or "") if ch.isdigit())
+    if len(digits) == 11 and digits.startswith("0"):
+        digits = digits[1:]
+    return "91" + digits if len(digits) == 10 else digits
+
+
 def configured() -> bool:
     return bool(WHATSAPP_TOKEN and WHATSAPP_PHONE_ID)
 
@@ -43,7 +53,7 @@ def send_text(to: str, body: str) -> dict:
     payload = {
         "messaging_product": "whatsapp",
         "recipient_type": "individual",
-        "to": to,
+        "to": wa_number(to),
         "type": "text",
         "text": {"body": body},
     }
@@ -60,7 +70,7 @@ def send_buttons(to: str, body: str, buttons: list[str]) -> dict:
     payload = {
         "messaging_product": "whatsapp",
         "recipient_type": "individual",
-        "to": to,
+        "to": wa_number(to),
         "type": "interactive",
         "interactive": {
             "type": "button",
@@ -81,7 +91,7 @@ def send_list(to: str, body: str, button: str, sections: list[dict]) -> dict:
     payload = {
         "messaging_product": "whatsapp",
         "recipient_type": "individual",
-        "to": to,
+        "to": wa_number(to),
         "type": "interactive",
         "interactive": {
             "type": "list",
@@ -123,7 +133,7 @@ def send_template(to: str, name: str, language: str = "en",
     payload = {
         "messaging_product": "whatsapp",
         "recipient_type": "individual",
-        "to": to,
+        "to": wa_number(to),
         "type": "template",
         "template": template,
     }
