@@ -1227,7 +1227,7 @@ class OrderIn(BaseModel):
     instructions: str | None = None
     scheduled_at: str | None = None
     scheduled_window: str | None = None  # lunch | dinner (else None = asap/custom)
-    pay_courier_direct: bool = True       # customer pays the delivery rider directly by default — see orders.create_order
+    pay_courier_direct: bool = False      # delivery fee is part of the total (Oct 2026); kept for old clients
     items: list[OrderItemIn]
 
 

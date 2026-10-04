@@ -288,7 +288,7 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                  # means WE collect the (estimated) fee and pay the rider
                  # ourselves instead, for customers who'd rather not deal
                  # with it at the door.
-                 pay_courier_direct: bool = True) -> dict:
+                 pay_courier_direct: bool = False) -> dict:
     if order_type not in ("delivery", "pickup"):
         raise OrderError("Invalid order_type", 400)
     phone = _normalize_phone(phone)

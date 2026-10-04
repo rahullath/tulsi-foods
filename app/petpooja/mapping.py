@@ -28,7 +28,8 @@ intra-state GST but is a derived approximation, not sourced from a real
 per-item tax table. Confirm this reconciles with Petpooja's own tax setup
 for the restaurant before relying on it for filing.
 """
-from datetime import datetime
+import re
+from datetime import datetime, timedelta, timezone
 
 from .config import (
     PETPOOJA_REST_ID,
@@ -57,6 +58,34 @@ _ORDER_TYPE_CODE = {"delivery": "H", "pickup": "P"}
 
 # payment_type inferred similarly from the "COD" example value.
 _PAYMENT_TYPE_CODE = {"cod": "COD", "upi": "ONLINE"}
+
+
+_IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def _ist(created_at: str | None) -> str:
+    """Our created_at is SQLite datetime('now') = UTC; the POS wants local
+    (IST) "YYYY-MM-DD HH:MM:SS". Until Oct 2026 the raw UTC string went out,
+    so every order reached the terminal looking 5.5 h old."""
+    try:
+        dt = datetime.fromisoformat((created_at or "").replace("T", " ").split(".")[0])
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        dt = datetime.now(timezone.utc)
+    return dt.astimezone(_IST).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _clean(text, limit: int = 250) -> str:
+    """Single-line, trimmed text: newlines/tabs and stray control chars in a
+    customer's address or note are a classic way to break a POS receipt."""
+    s = re.sub(r"[\x00-\x1f\x7f]+", " ", str(text or ""))
+    return re.sub(r"\s{2,}", " ", s).strip()[:limit]
+
+
+def _phone10(phone) -> str:
+    digits = re.sub(r"\D", "", str(phone or ""))
+    return digits[-10:] if len(digits) >= 10 else digits
 
 
 def _split_cgst_sgst(amount: float, rate_pct: float, tax_ids: dict[str, str]) -> list[dict]:
@@ -105,6 +134,11 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
     from .catalog import map_order_items, tax_ids as catalog_tax_ids
     mapped_items = map_order_items(order["items"])
     tax_ids = catalog_tax_ids()
+    unmapped = [it["name"] for it in mapped_items if not str(it["petpooja_item_id"]).isdigit()]
+    if unmapped:
+        # Never send an id the POS catalogue doesn't have (it can't render
+        # the line). Checkout blocks these items upstream; this is the guard.
+        raise ValueError(f"items not on the Petpooja POS catalogue: {', '.join(unmapped)}")
     item_lines = []
     for it in mapped_items:
         unit_price = float(it["price"])
@@ -117,9 +151,13 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         # order-level `total` key). final_price = price - item_discount.
         item_discount = float(it.get("item_discount") or 0)
         final_price = unit_price - item_discount
+        is_half = str(it.get("item_id", "")).endswith("__half")
         item_lines.append({
             "id": it["petpooja_item_id"],  # real catalogue id (see app/petpooja/catalog.py)
-            "name": it["name"],
+            # The POS's own item name (exact catalogue spelling); a half
+            # portion has no POS variation, so it rides as the base item at
+            # the half price with the portion spelled out in `description`.
+            "name": _clean(it.get("petpooja_name") or it["name"], 100),
             # Mirror the catalogue's own tax treatment per item (Petpooja
             # pushes `tax_inclusive: true` on these POS items): telling the
             # POS "inclusive" stops it materializing GST again on top of the
@@ -131,11 +169,11 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
             "gst_liability": "restaurant",
             "item_tax": _split_cgst_sgst(item_gst, gst_rate * 100, tax_ids),
             "tax_percentage": f"{gst_rate * 100:.2f}",
-            "item_discount": str(it.get("item_discount", "0")),
+            "item_discount": f"{item_discount:.2f}",
             "price": f"{unit_price:.2f}",
             "final_price": f"{final_price:.2f}",
             "quantity": str(it["qty"]),
-            "description": "",
+            "description": "Half portion" if is_half else "",
             "variation_name": it.get("variation_name", ""),
             "variation_id": str(it.get("variation_id", "")),
             # Sent under BOTH keys: the flat "addon_items" key alone (new
@@ -150,7 +188,7 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
             "AddonItem": {"details": it.get("addon_items", [])},
         })
 
-    created_on = order.get("created_at") or datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    created_on = _ist(order.get("created_at"))
     # advanced_order is always "N" (we don't support scheduled-ahead orders)
     # — the doc is explicit that preorder_date/time must then mirror
     # created_on, not be left blank.
@@ -213,11 +251,11 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
         "payment_type": _PAYMENT_TYPE_CODE.get(payment_method, "COD"),
         "table_no": "",
         "no_of_persons": "0",
-        "discount_total": str(order.get("discount_total", "0")),
+        "discount_total": f"{order_discount:.2f}",
         "discount_type": order.get("discount_type", "F"),
         "tax_total": f"{gst_amount:.2f}",
         "total": f"{restaurant_total:.2f}",
-        "description": order.get("instructions") or "",
+        "description": _clean(order.get("instructions")),
         "created_on": created_on,
         # Petpooja's own field table is explicit: "0 = Third-party Rider,
         # 1 = Restaurant Rider" (temp/api_guide.txt) — their worked example
@@ -240,9 +278,9 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
 
     customer_details = {
         "email": "",
-        "name": order.get("customer_name") or "Customer",
-        "address": order.get("delivery_address") or "",
-        "phone": order.get("customer_phone") or "",
+        "name": _clean(order.get("customer_name") or "Customer", 60),
+        "address": _clean(order.get("delivery_address"), 400),
+        "phone": _phone10(order.get("customer_phone")),
         "latitude": str(order.get("delivery_lat") or ""),
         "longitude": str(order.get("delivery_lng") or ""),
     }
@@ -257,7 +295,7 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
             "id": "0",
             "title": "Discount",
             "type": order.get("discount_type", "F"),
-            "price": str(order.get("discount_total", order_discount)),
+            "price": f"{order_discount:.2f}",
         })
 
     return {

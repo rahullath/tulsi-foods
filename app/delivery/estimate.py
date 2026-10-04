@@ -17,10 +17,11 @@ from ..config import DELIVERY_ZONES, FREE_DELIVERY_ENABLED
 
 _TTL_S = 300
 
-# Borzo was dropped as the delivery partner (Oct 2026, unreliable riders);
-# its quotes no longer reflect what delivery costs us. Flip back on only if
-# Borzo returns as the courier.
-USE_BORZO_QUOTES = False
+# Borzo no longer delivers for us (Oct 2026, Porter does), but its
+# calculate-order price for the same pin tracks Porter's 2-wheeler fares
+# closely, so it stays the live price reference. The zone table is the
+# fallback when the call fails.
+USE_BORZO_QUOTES = True
 _cache: dict[tuple, dict] = {}
 
 

@@ -198,6 +198,42 @@ def tax_ids() -> dict[str, str]:
     return ids
 
 
+_off_pos_cache: dict = {"mtime": None, "ids": frozenset()}
+
+
+def off_pos_ids() -> frozenset:
+    """Menu ids (base, no __half) the POS catalogue doesn't have, cached on
+    the cache file's mtime. Empty when Petpooja isn't configured or there's
+    no pushed catalogue, so local dev / a fresh deploy hides nothing."""
+    from .client import is_configured
+    if not is_configured():
+        return frozenset()
+    try:
+        mtime = CACHE_FILE.stat().st_mtime
+    except OSError:
+        return frozenset()
+    if _off_pos_cache["mtime"] != mtime:
+        from .. import menu as menu_mod
+        c = _catalog()
+        ids = set()
+        if c is not None and c._by_name:
+            for m in menu_mod.load_menu():
+                if not m["id"].endswith(HALF_SUFFIX) and c._match(m["id"])[0] is None:
+                    ids.add(m["id"])
+        _off_pos_cache.update(mtime=mtime, ids=frozenset(ids))
+    return _off_pos_cache["ids"]
+
+
+def is_on_pos(menu_item_id: str) -> bool:
+    """True when the dish resolves to a real POS catalogue item. No cache
+    file (local dev / Petpooja off) counts as True so nothing gets hidden."""
+    c = _catalog()
+    if c is None or not c._by_name:
+        return True
+    rec, _ = c._match(menu_item_id)
+    return rec is not None
+
+
 def petpooja_item_id(menu_item_id: str) -> str:
     """1-item convenience wrapper around Catalog.resolve()."""
     c = _catalog()
@@ -221,6 +257,7 @@ def map_order_items(order_items: list[dict]) -> list[dict]:
         rec, _ = c._match(o["item_id"]) if c else (None, None)
         o["petpooja_item_id"] = str(rec.get("itemid") or o["item_id"]) if rec else str(o["item_id"])
         o["petpooja_tax_inclusive"] = bool(rec and rec.get("tax_inclusive"))
+        o["petpooja_name"] = (rec.get("itemname") or "") if rec else ""
         out.append(o)
     return out
 

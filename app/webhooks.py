@@ -113,6 +113,16 @@ async def inbound(request: Request, x_hub_signature_256: str | None = Header(Non
             continue
         # Check if this is an admin command from mom's phone
         if ADMIN_PHONE and msg["wa_id"] == ADMIN_PHONE:
+            from .kitchen_alerts import looks_like_tracking_link, handle_admin_tracking_link
+            if looks_like_tracking_link(msg["text"]):
+                try:
+                    reply_text = handle_admin_tracking_link(msg["text"])
+                except Exception:
+                    log.exception("tracking link from admin failed: %s", msg["text"][:200])
+                    reply_text = "Couldn't save that link — use the admin panel's Book button for this one."
+                client.send_text(msg["wa_id"], reply_text)
+                log.info("admin tracking link: %s", reply_text)
+                continue
             from .whatsapp.admin_commands import is_admin_command, handle_admin_command
             if is_admin_command(msg["text"]):
                 reply_text = handle_admin_command(msg["text"])
@@ -344,25 +354,29 @@ async def petpooja_order_callback(request: Request, t: str | None = Query(None))
         return Response(status_code=200, media_type="application/json")
 
     order_id = o["id"]
+    previous = o["status"]
     db.update_order_status(order_id, mapped)
     log.info("Order %s: %s -> %s (Petpooja callback: %s)", order_id, o["status"], mapped, status_code)
     _send_status_whatsapp_if_needed(db.get_order(order_id), mapped)
     # Rider booking: the POS "Food Ready" tap books the courier automatically
     # for delivery orders (guarded — see _maybe_auto_dispatch).
-    if mapped == "ready":
-        _maybe_auto_dispatch(order_id)
+    if mapped == "preparing" and previous == "new":
+        # POS Accept: get the rider booking started while the food cooks.
+        _maybe_auto_dispatch(order_id, "✅ Order #{id} accepted — book a Porter 2-wheeler now (pickup in ~20 min).")
+    elif mapped == "ready":
+        _maybe_auto_dispatch(order_id, "🍱 Food is READY for order #{id} — no rider recorded yet. Book Porter now.")
     return Response(status_code=200, media_type="application/json")
 
 
-def _maybe_auto_dispatch(order_id: int) -> None:
-    """Rider booking when the POS reports food ready on a delivery order.
+def _maybe_auto_dispatch(order_id: int, reason: str = "Book Porter for order #{id}.") -> None:
+    """Rider booking, driven by the POS (Accept, then Food Ready).
 
     Porter API configured -> book it and notify the customer. Otherwise (the
-    normal case today) send Mom the Porter booking card on Telegram so she
-    can book in the Porter app straight away; the admin panel takes the
-    tracking link back. Skipped when the order isn't a delivery, a rider is
-    already recorded, or the address is missing/flagged (a human confirms
-    first). Best-effort — never blocks the callback's 200."""
+    normal case today) send Mom the Porter booking card (WhatsApp, plus
+    Telegram if set up, see app/kitchen_alerts.py); she books in the Porter
+    app and forwards the tracking link back to the business WhatsApp.
+    Skipped when the order isn't a delivery or a rider is already recorded.
+    Best-effort — never blocks the callback's 200."""
     from . import db
     o = db.get_order(order_id)
     if not o or o["order_type"] != "delivery":
@@ -373,7 +387,11 @@ def _maybe_auto_dispatch(order_id: int) -> None:
         log.info("Petpooja callback: order %s food-ready but missing address — holding dispatch", order_id)
         return
     if o.get("address_flagged"):
-        log.info("Petpooja callback: order %s food-ready but address flagged — holding dispatch for review", order_id)
+        # Still tell Mom (a silent skip meant nobody booked a rider), but
+        # never auto-book: she checks the address with the customer first.
+        from .kitchen_alerts import porter_card
+        porter_card(o, reason.format(id=order_id) + f"\n⚠️ Check the address with the customer first: "
+                    f"{o.get('address_flag_reason') or 'flagged'}")
         return
     try:
         from .orders import dispatch_rider
@@ -382,14 +400,9 @@ def _maybe_auto_dispatch(order_id: int) -> None:
         log.exception("Rider booking failed for order %s (Petpooja food-ready); use the admin Book button", order_id)
         return
     if result.get("manual"):
-        from . import telegram
-        from html import escape
-        sent = telegram.send_message(
-            "🛵 <b>Book Porter now</b> — food is ready\n\n<pre>"
-            + escape(result["booking_text"]) + "</pre>\n\nThen paste the Porter "
-            "tracking link in the admin panel (Book → Save).")
-        log.info("Order %s food-ready: Porter booking card %s", order_id,
-                 "sent to Telegram" if sent else "NOT sent (Telegram off) — admin panel only")
+        from .kitchen_alerts import porter_card
+        sent = porter_card(db.get_order(order_id), reason.format(id=order_id))
+        log.info("Order %s: Porter booking card -> %s", order_id, ", ".join(sent) or "NO CHANNEL (admin panel only)")
         return
     log.info("Order %s booked on Porter API on food-ready", order_id)
     from .notify import notify_dispatch

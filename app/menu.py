@@ -65,10 +65,23 @@ def is_available(item_id: str, day: str | None = None) -> bool:
     base_item = get_item(base_id)
     if _specialities_reason(base_item, day):
         return False
+    if base_id in _off_pos():
+        return False
     available = db.get_available_ids(day)
     if not available:
         return True  # no availability saved yet → everything available
     return base_id in available
+
+
+def _off_pos() -> frozenset:
+    """Dishes the Petpooja POS can't receive — not orderable online, since
+    an order line the terminal doesn't know is exactly what we must never
+    send (see app/petpooja/mapping.py). Add them on the POS to re-enable."""
+    try:
+        from .petpooja.catalog import off_pos_ids
+        return off_pos_ids()
+    except Exception:
+        return frozenset()
 
 
 def today(day: str | None = None) -> str:
@@ -79,12 +92,13 @@ def menu_for(day: str | None = None) -> list[dict]:
     """Full menu with today's availability flag, half-portion variants included."""
     day = today(day)
     available = db.get_available_ids(day)
+    off_pos = _off_pos()
     out = []
     for m in load_menu():
         row = dict(m)
         in_stock = m["id"] in available if available else True
         reason = _specialities_reason(m, day)
-        row["available"] = in_stock and not reason
+        row["available"] = in_stock and not reason and _base_id(m["id"]) not in off_pos
         row["unavailable_reason"] = reason
         row["photo_id"] = m["id"]
         out.append(row)
