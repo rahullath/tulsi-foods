@@ -361,6 +361,15 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
         except Exception:
             pass  # address book is a convenience, never block order creation
 
+    # Customer confirmation on WhatsApp (template), never blocks the order.
+    try:
+        from .notify import notify_order_placed
+        placed = db.get_order(oid)
+        if placed is not None:
+            notify_order_placed(placed)
+    except Exception:
+        pass
+
     # Kitchen alert (mom) — Telegram DMs her, never blocks the order flow.
     try:
         from .telegram import notify_new_order

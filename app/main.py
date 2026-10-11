@@ -1345,6 +1345,25 @@ def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)
     return {"ok": True, **result}
 
 
+@app.get("/api/admin/whatsapp/templates")
+def admin_whatsapp_templates(x_admin_token: str | None = Header(None)):
+    """Compare the templates the code sends with what Meta has approved."""
+    _check_admin(x_admin_token)
+    from .config import WHATSAPP_WABA_ID
+    from .whatsapp import templates
+    if not WHATSAPP_WABA_ID:
+        return {"ok": False, "detail": "Set WHATSAPP_WABA_ID on Railway to check against Meta.",
+                "expected": templates.EXPECTED}
+    from .whatsapp.client import list_templates
+    try:
+        meta = list_templates(WHATSAPP_WABA_ID)
+    except Exception as e:
+        raise HTTPException(502, f"Could not read templates from Meta: {e}")
+    rows = templates.check(meta)
+    return {"ok": all(r["ok"] for r in rows), "templates": rows,
+            "on_meta_but_unused": sorted({t["name"] for t in meta} - set(templates.EXPECTED))}
+
+
 class ManualDispatchIn(BaseModel):
     tracking_url: str = ""
     rider_name: str = ""

@@ -88,6 +88,48 @@ def notify_status(order: dict, status: str) -> None:
         log.exception("notify_status failed for order %s", order.get("id"))
 
 
+def _items_summary(order: dict, limit: int = 60) -> str:
+    """'1 North Indian Thali, 2 Masala Chai' cut to fit a template variable."""
+    parts = [f"{int(i.get('qty') or 1)} {i.get('name')}" for i in order.get("items") or []]
+    out = ""
+    for n, p in enumerate(parts):
+        nxt = p if not out else f"{out}, {p}"
+        if len(nxt) > limit:
+            return f"{out} and {len(parts) - n} more" if out else p[:limit]
+        out = nxt
+    return out or "your food"
+
+
+def _eta_text(order: dict) -> str:
+    if order.get("scheduled_at") or order.get("scheduled_window"):
+        from .orders import _window_label
+        return _window_label(order.get("scheduled_window"), order.get("scheduled_at"))
+    if order.get("order_type") == "pickup":
+        return "ready for pickup in about 20 minutes"
+    return "about 45 to 60 minutes"
+
+
+def notify_order_placed(order: dict) -> None:
+    """Order confirmation the moment it is placed, on Meta's pre-approved
+    library template order_management_1 (instant approval, fixed wording):
+    "Hi {{1}}, Thank you for your {{2}}! Your order number is {{3}}. We'll
+    start getting {{4}} ready to ship. Estimated delivery: {{5}} ..."
+    WhatsApp only: the checkout screen already confirms on the web."""
+    from .whatsapp.templates import EXPECTED
+    phone = order.get("customer_phone")
+    if not (WHATSAPP_ACTIVE and phone):
+        return
+    name = next(n for n, v in EXPECTED.items() if v["params"] == 5)
+    params = _params(order.get("customer_name") or "there", "order", f"#{order['id']}",
+                     _items_summary(order), _eta_text(order))
+    text = (f"Thank you for your order #{order['id']}! We've got {_items_summary(order)}. "
+            f"Estimated: {_eta_text(order)}. Track it here: {_track_url(order)}")
+    try:
+        _send_wa(phone, name, params, text, order.get("id"))
+    except Exception:
+        log.exception("notify_order_placed failed for order %s", order.get("id"))
+
+
 def _track_url(order: dict) -> str:
     return f"https://tulsifoods.app/track/{order.get('tracking_token') or order['id']}"
 

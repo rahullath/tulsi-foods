@@ -121,26 +121,87 @@ def send_outbound(to: str, msg: dict) -> dict:
     return send_text(to, msg["text"])
 
 
-def send_template(to: str, name: str, language: str = "en",
-                  params: list[dict] | None = None) -> dict:
-    """Send a pre-approved template message.
+class WhatsAppError(Exception):
+    """A Graph API refusal, with Meta's error code (e.g. 132001 = template
+    not found in that language, 132000 = wrong number of parameters)."""
 
-    Each param is {"type": "text", "text": "value"}.
-    """
-    template: dict = {"name": name, "language": {"code": language}}
-    if params:
-        template["components"] = [{"type": "body", "parameters": params}]
-    payload = {
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": wa_number(to),
-        "type": "template",
-        "template": template,
-    }
-    if not configured():
-        _dry_log(payload)
-        return {"dry_run": True, "to": to, "template": name}
+    def __init__(self, status: int, code, message: str):
+        self.status, self.code = status, code
+        super().__init__(f"WhatsApp {status} (code {code}): {message}")
+
+
+# Library templates added in WhatsApp Manager default to "English (US)" =
+# en_US, which Meta treats as a different template from "en". Try the asked
+# language first, then the other English variants, and remember what worked.
+_ENGLISH = ("en_US", "en", "en_GB")
+_lang_that_worked: dict[str, str] = {}
+
+
+def _post(payload: dict) -> dict:
     with httpx.Client(timeout=20) as c:
         r = c.post(_url(), headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}, json=payload)
-        r.raise_for_status()
+    if r.is_success:
         return r.json()
+    try:
+        err = r.json().get("error", {})
+    except ValueError:
+        err = {}
+    raise WhatsAppError(r.status_code, err.get("code"), err.get("message") or r.text[:200])
+
+
+def send_template(to: str, name: str, language: str = "en",
+                  params: list[dict] | None = None,
+                  button_url_suffix: str | None = None) -> dict:
+    """Send a pre-approved template message.
+
+    Each param is {"type": "text", "text": "value"}. `button_url_suffix`
+    fills a dynamic URL button ({{1}} at the end of the button's URL).
+    """
+    components = []
+    if params:
+        components.append({"type": "body", "parameters": params})
+    if button_url_suffix:
+        components.append({"type": "button", "sub_type": "url", "index": "0",
+                           "parameters": [{"type": "text", "text": button_url_suffix}]})
+    langs = [_lang_that_worked.get(name, language)]
+    langs += [l for l in (language, *_ENGLISH) if l not in langs]
+    last_err = None
+    for lang in langs:
+        template: dict = {"name": name, "language": {"code": lang}}
+        if components:
+            template["components"] = components
+        payload = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": wa_number(to),
+            "type": "template",
+            "template": template,
+        }
+        if not configured():
+            _dry_log(payload)
+            return {"dry_run": True, "to": to, "template": name}
+        try:
+            result = _post(payload)
+            _lang_that_worked[name] = lang
+            return result
+        except WhatsAppError as e:
+            last_err = e
+            if e.code != 132001:  # only "not found in this language" is worth retrying
+                break
+    log.warning("template %s failed: %s", name, last_err)
+    raise last_err
+
+
+def list_templates(waba_id: str) -> list[dict]:
+    """Every message template on the WhatsApp Business Account, as Meta has
+    them (name, status, language, category, components)."""
+    url = f"{WHATSAPP_GRAPH_URL}/{WHATSAPP_GRAPH_VERSION}/{waba_id}/message_templates"
+    out, params = [], {"fields": "name,status,language,category,components", "limit": 200}
+    with httpx.Client(timeout=20) as c:
+        while url:
+            r = c.get(url, headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}, params=params)
+            r.raise_for_status()
+            data = r.json()
+            out += data.get("data", [])
+            url, params = data.get("paging", {}).get("next"), None
+    return out

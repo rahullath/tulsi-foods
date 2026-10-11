@@ -9,6 +9,36 @@ registration is dropped silently.
 
 Cost: utility templates ₹0.115 each + 18% GST (India, 2026).
 
+## Library (pre-approved) vs custom templates
+
+WhatsApp Manager's **template library** (Utility: Default / Calling;
+Authentication: OTP) has pre-written templates that are approved instantly
+because only the variables and buttons can be changed. The order-status ones
+the code uses (`order_management_1`, `order_update_1`, `order_confirmed`,
+`order_pick_up_1`, `delivery_confirmation_1`, `order_delivered`,
+`order_cancelled_1`) are library templates. Library templates are created in
+**English (US)** (`en_US`); the code now tries `en_US`, `en` and `en_GB`
+automatically and remembers which one works.
+
+Custom templates (`delivery_fare`, `rider_on_the_way`, `kitchen_alert`) need
+Meta's review, usually minutes to a day for Utility.
+
+### `order_management_1` (library, order confirmation)
+Sent the moment a customer places an order:
+"Hi {{1}}, Thank you for your {{2}}! Your order number is {{3}}. We'll start
+getting {{4}} ready to ship. Estimated delivery: {{5}} …"
+The code fills: customer name · `order` · `#42` · items (e.g. `1 North Indian
+Thali, 2 Masala Chai`) · estimated time (e.g. `about 45 to 60 minutes`).
+Button: set the "View order details" website URL to `https://tulsifoods.app/track`.
+
+## Check them against the code
+
+Set `WHATSAPP_WABA_ID` on Railway (WhatsApp Business Account ID, shown in
+WhatsApp Manager and Business settings). Then open
+`/api/admin/whatsapp/templates` with the admin token: it lists every template
+the code sends, whether Meta has it approved, in which language, and whether
+the number of variables matches. Any row with `"ok": false` needs fixing.
+
 ## Create these in WhatsApp Manager
 
 Category **Utility**, language **English (en)**, name exactly as below. Meta
