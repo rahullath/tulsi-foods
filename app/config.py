@@ -81,6 +81,10 @@ ORDER_STATUSES = [
 # WhatsApp Cloud API (optional — bot runs in dry-run/log mode without these)
 WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN", "")
 WHATSAPP_PHONE_ID = os.environ.get("WHATSAPP_PHONE_ID", "")
+# WhatsApp Business Account id (WhatsApp Manager > Account tools > Phone
+# numbers, or the "WhatsApp Business Account ID" in Business settings).
+# Only needed to list/check templates: GET /api/admin/whatsapp/templates.
+WHATSAPP_WABA_ID = os.environ.get("WHATSAPP_WABA_ID", "")
 WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN", "tulsi_verify")
 WHATSAPP_APP_SECRET = os.environ.get("WHATSAPP_APP_SECRET", "")
 WHATSAPP_GRAPH_VERSION = "v26.0"
