@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 
 FILE = Path(__file__).resolve().parent / "swiggy_ratings.json"  # in the image, not on the data volume
-SHOW_MIN = 4.0
+SHOW_MIN = 4.3  # only clearly good ratings are worth showing
 MIN_COUNT = 5
 
 
