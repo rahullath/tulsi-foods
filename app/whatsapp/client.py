@@ -205,3 +205,44 @@ def list_templates(waba_id: str) -> list[dict]:
             out += data.get("data", [])
             url, params = data.get("paging", {}).get("next"), None
     return out
+
+
+_waba_cache: list[str] = []
+
+
+def waba_id() -> str:
+    """The WhatsApp Business Account id: WHATSAPP_WABA_ID if set, else read
+    from the access token itself (debug_token lists the WABA the token may
+    manage under the whatsapp_business_management scope)."""
+    from ..config import WHATSAPP_WABA_ID
+    if WHATSAPP_WABA_ID:
+        return WHATSAPP_WABA_ID
+    if _waba_cache:
+        return _waba_cache[0]
+    if not WHATSAPP_TOKEN:
+        return ""
+    url = f"{WHATSAPP_GRAPH_URL}/{WHATSAPP_GRAPH_VERSION}/debug_token"
+    with httpx.Client(timeout=20) as c:
+        r = c.get(url, params={"input_token": WHATSAPP_TOKEN, "access_token": WHATSAPP_TOKEN})
+    r.raise_for_status()
+    for scope in r.json().get("data", {}).get("granular_scopes", []):
+        if scope.get("scope") == "whatsapp_business_management" and scope.get("target_ids"):
+            _waba_cache.append(str(scope["target_ids"][0]))
+            return _waba_cache[0]
+    return ""
+
+
+def create_template(waba: str, payload: dict) -> dict:
+    """Submit a message template for Meta's review (UTILITY ones are usually
+    approved within minutes)."""
+    url = f"{WHATSAPP_GRAPH_URL}/{WHATSAPP_GRAPH_VERSION}/{waba}/message_templates"
+    with httpx.Client(timeout=20) as c:
+        r = c.post(url, headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}, json=payload)
+    if r.is_success:
+        return r.json()
+    try:
+        err = r.json().get("error", {})
+    except ValueError:
+        err = {}
+    raise WhatsAppError(r.status_code, err.get("code"),
+                        err.get("error_user_msg") or err.get("message") or r.text[:200])

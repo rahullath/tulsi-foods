@@ -38,6 +38,10 @@ def _min_order_text(zones) -> str:
     )
 
 
+def _fee_text(zones) -> str:
+    return ", ".join(f"₹{z['fee']} up to {z['max_km']:.0f} km" for z in zones)
+
+
 def delivery_faqs(zones, free_above) -> list[dict]:
     """Delivery-page FAQs, keyed to the focus queries people actually search."""
     zones = sorted(zones, key=lambda z: z["max_km"])
@@ -45,11 +49,9 @@ def delivery_faqs(zones, free_above) -> list[dict]:
         {
             "q": "How much does Tulsi Foods delivery cost?",
             "a": (
-                f"Tulsi Foods delivers by Borzo courier at live rates — typically "
-                f"about ₹45 to ₹100 within {zones[-1]['max_km']:.0f} km of the "
-                "Alwarpet kitchen. The checkout shows your exact estimated rate "
-                "for your address, and the kitchen confirms it on WhatsApp "
-                f"before you pay.{_free_clause(free_above)}"
+                f"A fixed fee by distance: {_fee_text(zones)} from the Alwarpet "
+                "kitchen. It is shown at checkout and included in your total, "
+                f"and nothing is added later.{_free_clause(free_above)}"
             ),
         },
         {
@@ -81,10 +83,8 @@ def delivery_faqs(zones, free_above) -> list[dict]:
         {
             "q": "How can I pay at Tulsi Foods?",
             "a": (
-                "UPI when you order, or cash to the rider. Checkout lets you "
-                "include the estimated delivery charge in your total or pay the "
-                "rider directly — either way the kitchen confirms the exact fee "
-                "on WhatsApp."
+                "UPI when you order, or cash on delivery. The total at checkout "
+                "already includes delivery, so that is all you pay."
             ),
         },
         {
@@ -122,9 +122,8 @@ def landing_faqs(zones, free_above, price_range, has_upi) -> list[dict]:
             "a": (
                 "Yes — anywhere within 7 km of the kitchen in Alwarpet: Mylapore, "
                 "Alwarpet, Royapettah, Teynampet, R.A. Puram, Adyar, T. Nagar and "
-                "Egmore. Delivery is by Borzo courier at live rates — typically "
-                "about ₹45 to ₹100 — and the checkout shows your exact estimated "
-                f"rate before you order.{_free_clause(free_above)}"
+                f"Egmore. Delivery is a fixed fee by distance ({_fee_text(zones)}), "
+                f"included in the total you see at checkout.{_free_clause(free_above)}"
             ),
         },
         {

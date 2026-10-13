@@ -48,12 +48,19 @@ def _extract_messages(body: dict) -> list[dict]:
                 m = msg.get("text", {}).get("body")
                 lat = None
                 lng = None
+                items = None
                 if msg.get("type") == "interactive":
                     intr = msg.get("interactive", {})
                     if intr.get("type") == "button_reply":
                         m = intr.get("button_reply", {}).get("id")
                     elif intr.get("type") == "list_reply":
                         m = intr.get("list_reply", {}).get("id")
+                elif msg.get("type") == "order":
+                    # Cart sent from the WhatsApp catalogue: product ids are
+                    # our menu ids (the feed at /whatsapp-catalog.csv).
+                    items = [{"id": p.get("product_retailer_id"), "qty": int(p.get("quantity") or 1)}
+                             for p in msg.get("order", {}).get("product_items", [])]
+                    m = "[Catalogue order]"
                 elif msg.get("type") == "location":
                     loc = msg.get("location", {})
                     lat = str(loc.get("latitude", ""))
@@ -70,6 +77,7 @@ def _extract_messages(body: dict) -> list[dict]:
                     "profile_name": profile_name,
                     "lat": lat,
                     "lng": lng,
+                    "catalog_items": items,
                 })
     return out
 
@@ -131,7 +139,8 @@ async def inbound(request: Request, x_hub_signature_256: str | None = Header(Non
                 continue
         try:
             replies = conversation.handle(msg["wa_id"], msg["text"], msg["profile_name"],
-                                            lat=msg.get("lat"), lng=msg.get("lng"))
+                                            lat=msg.get("lat"), lng=msg.get("lng"),
+                                            catalog_items=msg.get("catalog_items"))
             for reply in replies:
                 client.send_outbound(msg["wa_id"], reply)
         except Exception:

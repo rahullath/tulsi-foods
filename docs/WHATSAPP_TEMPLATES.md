@@ -1,79 +1,125 @@
-# WhatsApp templates (customer + kitchen messages)
+# WhatsApp templates and catalogue
 
-Meta delivers a business-initiated message only as an **approved template**
-unless the person messaged the business number in the last 24 hours. So every
-message we start (order updates, rider link, delivery fare, kitchen alerts) is
-a template. Free text is only the fallback, and SMS is used only when WhatsApp
-is switched off (`WHATSAPP_ACTIVE` unset), because SMS without TRAI DLT
-registration is dropped silently.
-
+Meta delivers a message we start (order updates, rider link, kitchen alerts)
+only as an **approved template**, unless the person wrote to the business
+number in the last 24 hours. Free text is the fallback; SMS is used only when
+WhatsApp is switched off, since SMS without TRAI DLT registration is dropped.
 Cost: utility templates ₹0.115 each + 18% GST (India, 2026).
 
-## Library (pre-approved) vs custom templates
+## They create themselves
 
-WhatsApp Manager's **template library** (Utility: Default / Calling;
-Authentication: OTP) has pre-written templates that are approved instantly
-because only the variables and buttons can be changed. The order-status ones
-the code uses (`order_management_1`, `order_update_1`, `order_confirmed`,
+The wording below lives in `app/whatsapp/templates.py`. On every deploy the
+app finds the WhatsApp Business Account from its access token (or
+`WHATSAPP_WABA_ID`) and submits any template Meta doesn't have yet, as
+category **Utility**, language **English (`en`)**. Utility templates are
+usually approved within minutes.
+
+- Check: `GET /api/admin/whatsapp/templates` (admin token) lists each template,
+  its Meta status, and the result of the last automatic sync.
+- Re-run: `POST /api/admin/whatsapp/templates/sync`.
+- If the sync reports a permissions error, the token lacks
+  `whatsapp_business_management`: create the templates by hand in WhatsApp
+  Manager with exactly the names and bodies below.
+
+Until a template is approved, the code falls back to the matching Meta library
+template (`order_management_1`, `order_update_1`, `order_confirmed`,
 `order_pick_up_1`, `delivery_confirmation_1`, `order_delivered`,
-`order_cancelled_1`) are library templates. Library templates are created in
-**English (US)** (`en_US`); the code now tries `en_US`, `en` and `en_GB`
-automatically and remembers which one works.
+`order_cancelled_1`) if you added it, then to plain text.
 
-Custom templates (`delivery_fare`, `rider_on_the_way`, `kitchen_alert`) need
-Meta's review, usually minutes to a day for Utility.
+## The templates
 
-### `order_management_1` (library, order confirmation)
-Sent the moment a customer places an order:
-"Hi {{1}}, Thank you for your {{2}}! Your order number is {{3}}. We'll start
-getting {{4}} ready to ship. Estimated delivery: {{5}} …"
-The code fills: customer name · `order` · `#42` · items (e.g. `1 North Indian
-Thali, 2 Masala Chai`) · estimated time (e.g. `about 45 to 60 minutes`).
-Button: set the "View order details" website URL to `https://tulsifoods.app/track`.
+### `tulsi_order_placed`
 
-## Check them against the code
+Customer, the moment the order is placed.
 
-Set `WHATSAPP_WABA_ID` on Railway (WhatsApp Business Account ID, shown in
-WhatsApp Manager and Business settings). Then open
-`/api/admin/whatsapp/templates` with the admin token: it lists every template
-the code sends, whether Meta has it approved, in which language, and whether
-the number of variables matches. Any row with `"ok": false` needs fixing.
+> Hi {{1}}, thank you for ordering from Tulsi Foods. Your order #{{2}} is with the kitchen: {{3}}. Total ₹{{4}}, estimated time {{5}}. We will message you when it is accepted and when it leaves.
 
-## Create these in WhatsApp Manager
+Sample values: `{{1}}` Asha · `{{2}}` 142 · `{{3}}` 1 North Indian Thali, 2 Masala Chai · `{{4}}` 367 · `{{5}}` about 45 to 60 minutes
 
-Category **Utility**, language **English (en)**, name exactly as below. Meta
-rejects a body that starts or ends with a variable, or has a variable with no
-text between it and the next one, so keep the wording around them.
+Button: **Visit website**, text `Track order`, dynamic URL `https://tulsifoods.app/track/{{1}}` (sample `https://tulsifoods.app/track/k3x9p2qa`). The code fills the order's tracking token.
 
-### `delivery_fare` (new, required)
-Sent when Mom forwards the Porter link + fare. Code: `app/notify.py`.
+### `tulsi_order_accepted`
 
-> Hi {{1}}, your rider for Tulsi Foods order #{{2}} is booked. The delivery charge is ₹{{3}}, the actual Porter fare with nothing added. Track your rider and pay the delivery charge by UPI here: {{4}} Thank you for ordering direct.
+Customer, kitchen accepted the order on the POS.
 
-Sample values for review: `Priya`, `42`, `86`, `https://tulsifoods.app/track/Y2BV2HUT`
+> Hi {{1}}, the Tulsi Foods kitchen has accepted your order #{{2}} and is cooking it now. We will message you again when it leaves the kitchen.
 
-### `rider_on_the_way` (new, required)
-Sent when a rider is booked but the fare isn't known yet.
+Sample values: `{{1}}` Asha · `{{2}}` 142
 
-> Hi {{1}}, your Tulsi Foods order #{{2}} is on its way. Track your rider here: {{3}} Thank you for ordering direct.
+Button: **Visit website**, text `Track order`, dynamic URL `https://tulsifoods.app/track/{{1}}` (sample `https://tulsifoods.app/track/k3x9p2qa`). The code fills the order's tracking token.
 
-### `kitchen_alert` (new, for Mom; set `KITCHEN_WA_TEMPLATE=kitchen_alert`)
-> Kitchen alert: {{1}} — Tulsi Foods
+### `tulsi_order_ready_delivery`
 
-The variable is the whole Porter booking card on one line (newlines are
-flattened to " | " automatically).
+Customer, food ready (delivery order).
 
-## Already referenced by the code (check they are approved)
+> Hi {{1}}, your Tulsi Foods order #{{2}} is packed and ready. We are booking your rider now and will send the rider's live tracking link next.
 
-| Template | When | Variables |
-| --- | --- | --- |
-| `order_update_1` | POS accepts the order | name, order no. |
-| `order_confirmed` | Food ready (delivery) | name, order no. |
-| `order_pick_up_1` | Food ready (pickup) | name, order no., pickup address |
-| `delivery_confirmation_1` | POS marks it dispatched | name, order no. |
-| `order_delivered` | Delivered | name, order no. |
-| `order_cancelled_1` | Cancelled | name, order no., refund ₹ |
+Sample values: `{{1}}` Asha · `{{2}}` 142
 
-If a template is missing or not approved, the code logs
-`template <name> failed … (not approved yet?)` in Railway and falls back to
-plain text, which only arrives if the customer messaged us in the last 24 h.
+Button: **Visit website**, text `Track order`, dynamic URL `https://tulsifoods.app/track/{{1}}` (sample `https://tulsifoods.app/track/k3x9p2qa`). The code fills the order's tracking token.
+
+### `tulsi_order_ready_pickup`
+
+Customer, food ready (pickup order).
+
+> Hi {{1}}, your Tulsi Foods order #{{2}} is ready for pickup at {{3}}. Please show this message at the counter.
+
+Sample values: `{{1}}` Asha · `{{2}}` 142 · `{{3}}` 34 Murrays Gate Road, Alwarpet
+
+Button: **Visit website**, text `Track order`, dynamic URL `https://tulsifoods.app/track/{{1}}` (sample `https://tulsifoods.app/track/k3x9p2qa`). The code fills the order's tracking token.
+
+### `tulsi_rider_on_the_way`
+
+Customer, rider booked and on the way.
+
+> Hi {{1}}, your Tulsi Foods order #{{2}} is on its way with a Porter rider. Follow the rider live here: {{3}} and tap below for your order details.
+
+Sample values: `{{1}}` Asha · `{{2}}` 142 · `{{3}}` https://porter.in/track/AB12CD
+
+Button: **Visit website**, text `Track order`, dynamic URL `https://tulsifoods.app/track/{{1}}` (sample `https://tulsifoods.app/track/k3x9p2qa`). The code fills the order's tracking token.
+
+### `tulsi_order_delivered`
+
+Customer, order delivered.
+
+> Hi {{1}}, your Tulsi Foods order #{{2}} has been delivered. If anything was not right, reply to this message and we will fix it.
+
+Sample values: `{{1}}` Asha · `{{2}}` 142
+
+### `tulsi_order_cancelled`
+
+Customer, order cancelled.
+
+> Hi {{1}}, your Tulsi Foods order #{{2}} has been cancelled. {{3}} Reply to this message if you have any questions.
+
+Sample values: `{{1}}` Asha · `{{2}}` 142 · `{{3}}` Your UPI payment of ₹367 will be refunded within 2 days.
+
+### `tulsi_kitchen_alert`
+
+Kitchen (mom), porter booking card and reminders.
+
+> Kitchen alert from the Tulsi Foods app: {{1}} Reply in this chat with the Porter tracking link and fare once booked.
+
+Sample values: `{{1}}` Order #142 accepted. PORTER: pickup Tulsi Foods, drop Asha, 12 Luz Church Road, prepaid.
+
+## WhatsApp catalogue
+
+The catalogue is a data feed the app generates from the menu:
+**https://tulsifoods.app/whatsapp-catalog.csv**. It has every dish, half
+portions as a "Half" size of the same item, real photos where we have them and
+a branded name card otherwise (`scripts/make_catalog_cards.py`), category
+tags, and "out of stock" for dishes the POS can't take.
+
+One-time setup in Meta Commerce Manager:
+
+1. Commerce Manager → **Create catalogue** → *Online products* → name it
+   "Tulsi Foods menu", owned by the Tulsi Foods business.
+2. Catalogue → **Data sources** → *Add items* → **Data feed** → *Use a URL*
+   → paste the feed URL → schedule **Daily**, currency **INR**.
+3. WhatsApp Manager → your phone number → **Catalogue** → connect "Tulsi Foods
+   menu", and turn on **Show catalogue icon in chat** and **Add to cart**.
+
+Customers then browse the menu inside WhatsApp and send a cart. The bot
+receives it, drops anything finished for today, and goes straight to checkout
+(delivery or pickup, address, time, payment). Prices and dishes update by
+themselves every day from the feed.

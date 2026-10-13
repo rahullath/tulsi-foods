@@ -86,9 +86,9 @@ def estimate(lat: float, lng: float, subtotal: float = 0.0,
 
     result = _zone_quote(lat, lng, subtotal, km_hint)
     if not USE_BORZO_QUOTES:
-        # Porter has no quote API for us yet, so checkout charges the zone
-        # table fee (close to Porter's 2-wheeler fares in our 7 km radius).
-        result = _with_range(result)
+        # Fixed fee per distance band (config.DELIVERY_ZONES), charged at
+        # checkout; the kitchen absorbs the difference from Porter's fare.
+        result["note"] = "fixed"
         result["at"] = now
         _cache[key] = result
         return {k: v for k, v in result.items() if k != "at"}

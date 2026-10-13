@@ -61,7 +61,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 <div class="page">
   <div class="page-tag">Delivery</div>
   <h1>Where we deliver, and what it costs</h1>
-  <p class="page-sub">We deliver from the kitchen on Murrays Gate Road, Alwarpet. Riders are ours or from Borzo, so the food goes straight to you and does not sit at a hub.</p>
+  <p class="page-sub">We deliver from the kitchen on Murrays Gate Road, Alwarpet. A Porter rider is booked for each order, so the food comes straight to you and never sits at a hub.</p>
 
   <div class="snippet">
     <h2>{{ faqs[0].q }}</h2>
@@ -73,7 +73,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
       <tr>
         <th scope="col">Area</th>
         <th scope="col">Distance</th>
-        <th scope="col">Est. live fee</th>
+        <th scope="col">Delivery fee</th>
         <th scope="col">Typical delivery</th>
       </tr>
     </thead>
@@ -81,24 +81,24 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
       <tr>
         <td data-label="Area">Mylapore, Alwarpet, Royapettah</td>
         <td data-label="Distance">Up to 3 km</td>
-        <td data-label="Est. live fee"><span class="zone-fee">₹45+</span></td>
+        <td data-label="Delivery fee"><span class="zone-fee">₹{{ zones[0].fee }}</span></td>
         <td data-label="Typical delivery"><span class="zone-time">15–25 min ride</span></td>
       </tr>
       <tr>
         <td data-label="Area">Teynampet, Nandanam, R.A. Puram</td>
         <td data-label="Distance">3 to 5 km</td>
-        <td data-label="Est. live fee"><span class="zone-fee">₹45+</span></td>
+        <td data-label="Delivery fee"><span class="zone-fee">₹{{ zones[1].fee }}</span></td>
         <td data-label="Typical delivery"><span class="zone-time">20–30 min ride</span></td>
       </tr>
       <tr>
         <td data-label="Area">Adyar, T. Nagar, Egmore</td>
         <td data-label="Distance">5 to 7 km</td>
-        <td data-label="Est. live fee"><span class="zone-fee">₹58+</span></td>
+        <td data-label="Delivery fee"><span class="zone-fee">₹{{ zones[2].fee }}</span></td>
         <td data-label="Typical delivery"><span class="zone-time">30–40 min ride</span></td>
       </tr>
     </tbody>
   </table>
-  <div class="zone-note">Fees are the live Borzo courier price for your exact drop-off — the checkout quotes it from your pin. No free-delivery promo right now; the kitchen confirms the exact fee while confirming your order on WhatsApp.</div>
+  <div class="zone-note">One fixed fee for your distance, shown at checkout and included in your total. Nothing is added later, whatever the rider costs us.</div>
 
   <div class="snippet faq-list">
     <h2 style="margin-top:36px">Delivery questions, answered</h2>
