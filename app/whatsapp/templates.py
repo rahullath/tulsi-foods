@@ -16,6 +16,7 @@ enough words around them, and no newlines/tabs inside variable values.
 """
 import logging
 import os
+import re
 
 log = logging.getLogger("whatsapp.templates")
 
@@ -30,7 +31,10 @@ READY_PICKUP = "tulsi_order_ready_pickup"
 RIDER_ON_THE_WAY = "tulsi_rider_on_the_way"
 DELIVERED = "tulsi_order_delivered"
 CANCELLED = "tulsi_order_cancelled"
-KITCHEN_ALERT = os.environ.get("KITCHEN_WA_TEMPLATE") or "tulsi_kitchen_alert"
+# KITCHEN_WA_TEMPLATE may override the name, but only with a valid template
+# name (Railway once held the template's body text here, which Meta rejects).
+_kitchen_env = (os.environ.get("KITCHEN_WA_TEMPLATE") or "").strip()
+KITCHEN_ALERT = _kitchen_env if re.fullmatch(r"[a-z0-9_]{1,512}", _kitchen_env) else "tulsi_kitchen_alert"
 
 DEFINITIONS = {
     ORDER_PLACED: {

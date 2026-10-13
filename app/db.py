@@ -502,7 +502,8 @@ def get_orders_by_phone(phone: str, limit: int = 5) -> list[dict]:
     """Recent orders for a phone number (for the /track lookup). Cancelled
     orders excluded so customers only see live ones.
 
-    `phone` must already be a bare 10-digit string (app.orders._normalize_phone).
+    `phone` comes from app.orders._normalize_phone (10 digits, or a full
+    international number, of which the last 10 are matched).
     Matches on the last 10 digits of the stored value with '+'/spaces
     stripped, not on exact equality — `customers.phone` has historically
     accumulated a mix of "+91XXXXXXXXXX" / "91XXXXXXXXXX" / bare
@@ -517,7 +518,7 @@ def get_orders_by_phone(phone: str, limit: int = 5) -> list[dict]:
         "WHERE substr(replace(replace(c.phone,'+',''),' ',''), -10) = ? "
         "AND o.status != 'cancelled' "
         "ORDER BY o.id DESC LIMIT ?",
-        (phone, limit),
+        (phone[-10:], limit),
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -601,7 +602,7 @@ def customer_orders(phone: str, limit: int = 5) -> list[dict]:
         "FROM orders o LEFT JOIN customers c ON c.id=o.customer_id "
         "WHERE c.phone=? AND o.status != 'cancelled' "
         "ORDER BY o.id DESC LIMIT ?",
-        (phone, limit),
+        (phone[-10:], limit),
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]

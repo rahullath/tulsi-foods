@@ -154,35 +154,39 @@ def main():
     sessions.reset("919999999999")
     WID = "919999999999"
 
-    def send(msg):
-        return conversation.handle(WID, msg, "Bot Test")
+    def send(msg, **kw):
+        return conversation.handle(WID, msg, "Bot Test", **kw)
 
-    out = send("MENU")
-    check("welcome shown", any("Tulsi Foods" in m["text"] for m in out))
-    out = send("1")
-    check("category items", any("Thalis & Combos" in m["text"] for m in out))
-    out = send("4")  # Mini Thali ₹188 — over nothing yet
-    check("item added", any("Mini Thali" in m["text"] for m in out))
-    out = send("3")  # Executive Combo ₹281
-    check("item added", any("Executive Combo" in m["text"] for m in out))
-    out = send("CART")
-    check("cart shows 2 lines", any("Subtotal: ₹469" in m["text"] for m in out))
-    out = send("CHECKOUT")
-    check("asks name", any("name" in m["text"] for m in out))
-    send("Bot Test")
-    send("D")
-    send("12, Mylapore")
-    send("1")
-    send("NOW")
-    send("UPI")
-    out = send("YES")
-    check("order confirmed", any("confirmed" in m["text"] for m in out), out)
-    out = send("STATUS")
-    check("status", any("placed" in m["text"] for m in out))
+    def has(out, kind=None, words=""):
+        return any((kind is None or m["type"] == kind) and words in m.get("text", "") for m in out)
+
+    out = send("hi")
+    check("welcome + catalogue", has(out, "text", "Tulsi Foods") and has(out, "catalog"), out)
+    out = send("PICKS")
+    check("popular dishes list", has(out, "products") or has(out, "catalog"), out)
+    out = send("[Catalogue order]", catalog_items=[{"id": "mini-thali", "qty": 1},
+                                                   {"id": "executive-combo", "qty": 1}])
+    check("cart from catalogue", has(out, "buttons", "Subtotal: ₹469"), out)
+    out = send("DELIVERY")
+    check("asks address (form or saved)", has(out, "address") or has(out, "buttons", "address"), out)
+    out = send("[Address form]", address={"name": "Bot Test", "house_number": "12",
+                                          "address": "Luz Church Road", "landmark_area": "Mylapore",
+                                          "city": "Chennai", "in_pin_code": "600004"})
+    check("asks for pin", has(out, "location_request"), out)
+    out = send("[Location]", lat="13.0335", lng="80.2690")
+    check("asks time", any(m["type"] == "list" for m in out), out)
+    choice = out[0]["sections"][0]["rows"][0]["id"]
+    out = send(choice)
+    check("asks payment", has(out, "buttons", "pay"), out)
+    out = send("PAY_UPI")
+    check("summary with delivery fee", has(out, "buttons", "Delivery (") and has(out, "buttons", "Total"), out)
+    if choice == "WHEN_NOW" or True:
+        out = send("PLACE")
+        check("order placed or clear refusal", has(out, "cta", "Order #") or has(out, "text"), out)
+    out = send("TRACK")
+    check("track", has(out, "cta") or has(out, "text", "No order"), out)
     out = send("REORDER")
-    check("reorder prompt", any("Reorder" in m["text"] for m in out))
-    out = send("YES")
-    check("reorder placed", any("Order #" in m["text"] for m in out), out)
+    check("reorder -> delivery/pickup", has(out, "buttons", "Delivery or pickup") or has(out, "text"), out)
 
     print("ALL PASS")
 

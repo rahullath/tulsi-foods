@@ -92,6 +92,9 @@ WHATSAPP_WABA_ID = os.environ.get("WHATSAPP_WABA_ID", "")
 # Meta business portfolio (tulsi.foods_chennai) that owns the WhatsApp
 # accounts and the Menu catalogue; used to find the WABA of WHATSAPP_PHONE_ID.
 META_BUSINESS_ID = os.environ.get("META_BUSINESS_ID", "714196232763226")
+# The "Menu" catalogue (fed hourly from /whatsapp-catalog.csv), linked to the
+# WABA of the ordering number; product_list messages name it explicitly.
+WHATSAPP_CATALOG_ID = os.environ.get("WHATSAPP_CATALOG_ID", "1768879374330631")
 WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN", "tulsi_verify")
 WHATSAPP_APP_SECRET = os.environ.get("WHATSAPP_APP_SECRET", "")
 WHATSAPP_GRAPH_VERSION = "v26.0"

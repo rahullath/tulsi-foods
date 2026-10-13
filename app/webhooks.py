@@ -49,12 +49,24 @@ def _extract_messages(body: dict) -> list[dict]:
                 lat = None
                 lng = None
                 items = None
+                address = None
                 if msg.get("type") == "interactive":
                     intr = msg.get("interactive", {})
                     if intr.get("type") == "button_reply":
                         m = intr.get("button_reply", {}).get("id")
                     elif intr.get("type") == "list_reply":
                         m = intr.get("list_reply", {}).get("id")
+                    elif intr.get("type") == "nfm_reply":
+                        # Address form (address_message) or a Flow: the
+                        # filled-in values come as a JSON string.
+                        try:
+                            resp = json.loads(intr.get("nfm_reply", {}).get("response_json") or "{}")
+                        except ValueError:
+                            resp = {}
+                        address = resp.get("values") or resp
+                        m = "[Address form]"
+                elif msg.get("type") == "request_welcome":
+                    m = "REQUEST_WELCOME"  # first time the customer opens the chat
                 elif msg.get("type") == "order":
                     # Cart sent from the WhatsApp catalogue: product ids are
                     # our menu ids (the feed at /whatsapp-catalog.csv).
@@ -78,6 +90,7 @@ def _extract_messages(body: dict) -> list[dict]:
                     "lat": lat,
                     "lng": lng,
                     "catalog_items": items,
+                    "address": address,
                 })
     return out
 
@@ -169,7 +182,8 @@ async def inbound(request: Request, x_hub_signature_256: str | None = Header(Non
         try:
             replies = conversation.handle(msg["wa_id"], msg["text"], msg["profile_name"],
                                             lat=msg.get("lat"), lng=msg.get("lng"),
-                                            catalog_items=msg.get("catalog_items"))
+                                            catalog_items=msg.get("catalog_items"),
+                                            address=msg.get("address"))
             for reply in replies:
                 client.send_outbound(msg["wa_id"], reply)
         except Exception:

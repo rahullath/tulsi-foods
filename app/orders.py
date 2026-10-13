@@ -37,14 +37,22 @@ _LANDMARK_RE = re.compile(r"\s*\(Landmark:\s*(.*?)\)\s*$", re.IGNORECASE)
 
 
 def _normalize_phone(phone: str) -> str:
-    """Canonical bare-10-digit form. Checkout submits whatever the customer
+    """Canonical form: bare 10 digits for Indian numbers, full international
+    digits for others. Checkout submits whatever the customer
     typed with no country-code normalization, so `customers.phone` has
     accumulated a mix of "+91XXXXXXXXXX", "91XXXXXXXXXX" and bare
     "XXXXXXXXXX" — which silently broke the /track phone lookup for anyone
     not stored in exactly the format the query assumed. Normalize once here,
     at the door, so storage is consistent going forward."""
     digits = re.sub(r"\D", "", phone or "")
-    return digits[-10:] if len(digits) >= 10 else digits
+    if len(digits) == 11 and digits.startswith("0"):
+        return digits[1:]
+    if len(digits) == 12 and digits.startswith("91"):
+        return digits[2:]
+    # Anything else longer than 10 digits is a foreign number with its
+    # country code (e.g. 447557212240): keep it whole, or WhatsApp would
+    # get "91" + its last 10 digits — somebody else's Indian number.
+    return digits
 
 
 def _parse_iso(scheduled_at: str) -> datetime:
