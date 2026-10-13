@@ -39,6 +39,11 @@ DELIVERED = "tulsi_order_delivered"
 DELIVERED_RATE = "tulsi_order_delivered_rate"
 CANCELLED = "tulsi_order_cancelled"
 PAYMENT_RECEIVED = "tulsi_payment_received"
+# Kitchen alerts tied to one order / one customer message, so Meta keeps them
+# UTILITY (it re-filed the open-ended tulsi_kitchen_alert as MARKETING:
+# ~7x the price and subject to marketing caps). The generic one is a fallback.
+KITCHEN_RIDER = "tulsi_kitchen_book_rider"
+KITCHEN_MESSAGE = "tulsi_kitchen_customer_message"
 # KITCHEN_WA_TEMPLATE may override the name, but only with a valid template
 # name (Railway once held the template's body text here, which Meta rejects).
 _kitchen_env = (os.environ.get("KITCHEN_WA_TEMPLATE") or "").strip()
@@ -121,8 +126,27 @@ DEFINITIONS = {
         "example": ["Asha", "367", "142"],
         "button": "Track your order",
     },
+    KITCHEN_RIDER: {
+        "used_for": "kitchen (Mom): order accepted, book the Porter rider",
+        "header": "Book a rider",
+        "body": ("Order #{{1}} has been accepted on the POS and needs a Porter rider.\n\n"
+                 "{{2}}\n\n"
+                 "Once booked, reply to this message with the Porter link and the fare."),
+        "example": ["142", "Drop: Asha, 12 Luz Church Road, Mylapore. Phone 98123 45678. Prepaid, collect nothing."],
+        "button": None,
+        "footer": KITCHEN_FOOTER,
+    },
+    KITCHEN_MESSAGE: {
+        "used_for": "kitchen (Mom): a customer's question or file, to answer by replying",
+        "header": "Customer message",
+        "body": ("Message from customer {{1}}:\n\n{{2}}\n\n"
+                 "Reply to this message to answer them on WhatsApp."),
+        "example": ["Asha (+91 98123 45678), order #142", "Can you make it less spicy please?"],
+        "button": None,
+        "footer": KITCHEN_FOOTER,
+    },
     KITCHEN_ALERT: {
-        "used_for": "kitchen (Mom): Porter booking card, customer questions, reminders",
+        "used_for": "kitchen (Mom): anything else (fallback; Meta files it as marketing)",
         "header": "Tulsi kitchen alert",
         "body": "🔔 New for the kitchen: {{1}}\n\nReply to this message to answer or update it.",
         "example": ["Order #142 accepted. Book a Porter 2-wheeler: drop Asha, 12 Luz Church Road, prepaid."],
