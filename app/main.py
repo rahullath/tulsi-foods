@@ -51,6 +51,19 @@ templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["aliases_for"] = seo_aliases.aliases_for
 from . import third_party_ratings  # noqa: E402
 templates.env.globals["swiggy_rating"] = third_party_ratings.swiggy
+
+
+def wa_order_link(text: str = "Hi") -> str:
+    """wa.me link to the ordering bot with a pre-filled first message."""
+    from urllib.parse import quote as _q
+    from .config import WHATSAPP_ORDER_NUMBER
+    return f"https://wa.me/{WHATSAPP_ORDER_NUMBER}?text={_q(text)}"
+
+
+templates.env.globals["wa_order_link"] = wa_order_link
+from .config import WHATSAPP_ORDER_DISPLAY, WHATSAPP_ORDER_NUMBER  # noqa: E402
+templates.env.globals["wa_order_number"] = WHATSAPP_ORDER_NUMBER
+templates.env.globals["wa_order_display"] = WHATSAPP_ORDER_DISPLAY
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 DISH_PHOTO_DIR = Path("app/static/img/dishes")
@@ -339,7 +352,7 @@ def menu_item_page(request: Request, item_id: str):
     desc = (item.get("description")
             or catalog.FILL_DESCRIPTIONS.get(base_id)
             or f"{item['name']}, a {item['group'].lower()} from Tulsi Foods.")
-    wa_link = "https://wa.me/919940062840?text=" + quote(
+    wa_link = f"https://wa.me/{WHATSAPP_ORDER_NUMBER}?text=" + quote(
         f"Hi Tulsi Foods, I'd like to order {item['name']} (₹{item['price']})."
     )
 
@@ -1079,8 +1092,12 @@ def order_action_mark_paid(order_id: int, sig: str):
     o = db.get_order(order_id)
     if not o:
         raise HTTPException(404, "Order not found")
+    already = o.get("paid")
     db.mark_order_paid(order_id)
-    return _action_page(f"✅ Order #{order_id} marked as paid.")
+    if not already:
+        from .notify import notify_payment_received
+        notify_payment_received(db.get_order(order_id))
+    return _action_page(f"✅ Order #{order_id} marked as paid. The customer has been told.")
 
 
 @app.get("/order-actions/{order_id}/cancel", response_class=HTMLResponse)

@@ -98,6 +98,13 @@ CREATE TABLE IF NOT EXISTS dish_reviews (
     created_at  TEXT DEFAULT (datetime('now')),
     UNIQUE(order_id, item_id)
 );
+CREATE TABLE IF NOT EXISTS wa_relay (
+    wamid       TEXT PRIMARY KEY,
+    kind        TEXT NOT NULL,
+    customer    TEXT,
+    order_id    INTEGER,
+    created_at  TEXT DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS platform_stats (
     platform     TEXT PRIMARY KEY,
     rating       REAL,
@@ -860,3 +867,25 @@ def set_dish_review_hidden(review_id: int, hidden: bool) -> None:
     conn.execute("UPDATE dish_reviews SET hidden=? WHERE id=?", (1 if hidden else 0, review_id))
     conn.commit()
     conn.close()
+
+
+# ---- WhatsApp relay: which customer/order a message to Mom was about ----
+
+def add_relay(wamid: str, kind: str, customer: str | None = None,
+              order_id: int | None = None) -> None:
+    if not wamid:
+        return
+    conn = get_conn()
+    conn.execute("INSERT OR REPLACE INTO wa_relay(wamid, kind, customer, order_id) VALUES(?,?,?,?)",
+                 (wamid, kind, customer, order_id))
+    conn.commit()
+    conn.close()
+
+
+def get_relay(wamid: str | None) -> dict | None:
+    if not wamid:
+        return None
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM wa_relay WHERE wamid=?", (wamid,)).fetchone()
+    conn.close()
+    return dict(row) if row else None

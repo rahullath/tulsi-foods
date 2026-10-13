@@ -84,7 +84,7 @@
       </div>
       <a href="#checkout" id="cart-checkout" class="cart-btn">Checkout →</a>
     </div>
-    <div class="cart-wa">or <a href="https://wa.me/919940062840?text=Hi%2C%20I%20want%20to%20place%20an%20order." target="_blank">continue on WhatsApp</a></div>
+    <div class="cart-wa">or <a href="{{ wa_order_link("Hi") }}" target="_blank">continue on WhatsApp</a></div>
   </div>
 
   </div>
@@ -1101,15 +1101,15 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           "",
           "Please confirm my delivery time and share your payment QR.",
         ];
-        const confirmHref = "https://wa.me/919940062840?text=" + encodeURIComponent(confirmLines.join("\n"));
+        const confirmHref = "https://wa.me/{{ wa_order_number }}?text=" + encodeURIComponent(confirmLines.join("\n"));
         overlay.querySelector(".checkout-panel").innerHTML = `
           <button class="checkout-close" id="checkout-close-2">✕</button>
           <div class="checkout-success">
             <div class="checkout-success-icon">${isUpi ? "₹" : "✓"}</div>
             <div class="checkout-title">${isUpi ? "Order placed — pay to confirm" : "Order placed — the kitchen has it"}</div>
             <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}${data.delivery_fee ? ` including ₹${data.delivery_fee} delivery` : ""}.<br>
-              It's gone straight to the kitchen's POS — no confirmation text needed.
-              Tracking updates as it's accepted, cooked and dispatched.</p>
+              It's gone straight to the kitchen — no confirmation text needed.<br>
+              📲 Updates will come on WhatsApp from <b>Tulsi Foods ({{ wa_order_display }})</b>. Save the number so you don't miss them.</p>
 
             ${isUpi ? `
               <a class="checkout-place" id="upi-pay-now" style="text-decoration:none;display:inline-block;margin-bottom:10px"
@@ -1140,7 +1140,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             if (secondsLeft <= 0) {
               clearInterval(timer);
               editWindow.innerHTML = `<div class="edit-window-text">Kavita has started cooking. Need to fix the address?</div>
-                <a class="edit-window-btn" href="https://wa.me/919940062840?text=${encodeURIComponent("Hi, I need to fix the delivery address for order #" + data.order_id)}" target="_blank">Message us on WhatsApp</a>`;
+                <a class="edit-window-btn" href="https://wa.me/{{ wa_order_number }}?text=${encodeURIComponent("Hi, I need to fix the delivery address for order #" + data.order_id)}" target="_blank">Message us on WhatsApp</a>`;
               return;
             }
             countdownEl.textContent = Math.floor(secondsLeft / 60) + ":" + String(secondsLeft % 60).padStart(2, "0");

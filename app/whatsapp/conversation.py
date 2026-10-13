@@ -109,6 +109,32 @@ def picks_message() -> dict | None:
             "sections": sections}
 
 
+def _closed_now() -> bool:
+    try:
+        return bool(orders._schedule_closed_reason()) or not db.get_store_status().get("is_open", True)
+    except Exception:
+        return False
+
+
+KITCHEN_PHONE = "99406 21800"
+CHECKOUT_STATES = {"type", "address", "location", "when", "payment", "confirm"}
+
+
+def _ask_kitchen(sess: dict) -> list[dict]:
+    sess["state"] = "ask_kitchen"
+    return [text("Sure! Type your question or request and I'll pass it straight to the kitchen. "
+                 f"They usually reply within a few minutes.\n\nUrgent? Call {KITCHEN_PHONE}.")]
+
+
+def _relay(sess: dict, raw: str) -> list[dict]:
+    """Free text that isn't part of ordering goes to Mom; she swipe-replies."""
+    sess["state"] = "root"
+    return [{"type": "relay", "text": raw},
+            buttons("Got it 👍 I've passed your message to the kitchen. They'll reply right here.\n\n"
+                    f"Urgent? Call {KITCHEN_PHONE}.",
+                    [("MENU", "See the menu"), ("TRACK", "Track order")])]
+
+
 def _welcome(sess: dict) -> list[dict]:
     sess["state"] = "root"
     out = []
@@ -121,7 +147,12 @@ def _welcome(sess: dict) -> list[dict]:
     special = db.get_special()
     if special:
         out.append(text(f"Today's special: {special['item_name']} — {money(special['price'])} ✨"))
-    out.append(catalog_message())
+    if _closed_now():
+        out.append(catalog_message(
+            "We're closed right now, but you can order ahead for the next lunch or dinner. "
+            "Tap *View catalogue*, add dishes and send the cart."))
+    else:
+        out.append(catalog_message())
     extra = []
     if db.customer_orders(sess["wa_id"], limit=1):
         extra += [("REORDER", "Reorder last"), ("TRACK", "Track order")]
@@ -311,6 +342,10 @@ def _summary(sess: dict) -> list[dict]:
         lines.append("📍 Pickup: 34 Murrays Gate Road, Alwarpet")
     lines.append(f"🕒 {ctx.get('when')}")
     lines.append(f"💳 {'UPI' if ctx.get('payment') == 'UPI' else 'Cash'}")
+    if ctx.get("note"):
+        lines.append(f"📝 {ctx['note']}")
+    else:
+        lines.append("_Any request (less spicy, no onion)? Just type it._")
     sess["state"] = "confirm"
     return [buttons("\n".join(lines)[:1000],
                     [("PLACE", "Place order"), ("EDIT", "Change"), ("CANCEL", "Cancel")])]
@@ -329,6 +364,7 @@ def _place_order(sess: dict) -> list[dict]:
             payment_method="upi" if ctx.get("payment") == "UPI" else "cod",
             scheduled_at=ctx.get("scheduled_at"),
             scheduled_window=ctx.get("scheduled_window"),
+            instructions=ctx.get("note"),
             items=items,
             lat=ctx.get("lat"),
             lng=ctx.get("lng"),
@@ -356,7 +392,7 @@ def _reset_checkout(sess: dict) -> None:
     sess["state"] = "root"
     for k in ("name", "address", "pincode", "saved_address", "asked_saved", "when",
               "scheduled_at", "scheduled_window", "payment", "order_type", "fee",
-              "km", "lat", "lng"):
+              "km", "lat", "lng", "note"):
         sess["ctx"].pop(k, None)
 
 
@@ -424,13 +460,19 @@ def _on_location(sess: dict, lat: str, lng: str) -> list[dict]:
             catalog_message()]
 
 
-GREETINGS = {"HI", "HELLO", "HEY", "HII", "NAMASTE", "VANAKKAM", "START", "ORDER", "MENU",
-             "SHOW ME THE MENU", "BACK", "REQUEST_WELCOME"}
+GREETINGS = {"HI", "HELLO", "HEY", "HII", "HIII", "HELO", "NAMASTE", "NAMASKAR", "VANAKKAM",
+             "START", "ORDER", "MENU", "SHOW ME THE MENU", "BACK", "REQUEST_WELCOME",
+             "GOOD MORNING", "GOOD AFTERNOON", "GOOD EVENING", "HI, I WANT TO PLACE AN ORDER."}
+THANKS = {"THANKS", "THANK YOU", "THANKYOU", "TY", "OK", "OKAY", "OK THANKS", "OK THANK YOU",
+          "GREAT", "NICE", "COOL", "👍", "🙏", "SUPER", "DONE", "RECEIVED", "GOT IT"}
 
 
 def _route(sess: dict, incoming: str) -> list[dict]:
     raw = incoming.strip()
-    t = raw.upper()
+    t = raw.upper().rstrip("!.")
+    if t.startswith("/"):  # WhatsApp / commands: /menu /track /reorder /kitchen
+        t = {"/MENU": "MENU", "/TRACK": "TRACK", "/REORDER": "REORDER",
+             "/KITCHEN": "KITCHEN"}.get(t.split()[0], t[1:])
     state = sess["state"]
 
     # Commands that work from anywhere
@@ -450,8 +492,23 @@ def _route(sess: dict, incoming: str) -> list[dict]:
     if t == "EDIT":
         sess["state"] = "root"
         return [catalog_message("Change your cart in the menu and send it again.")]
+    if t in ("KITCHEN", "TALK TO THE KITCHEN", "CALL", "CONTACT"):
+        return _ask_kitchen(sess)
     if t in GREETINGS:
+        if state in CHECKOUT_STATES and sess["cart"]:
+            body, _ = cart_summary(sess)
+            return [buttons(f"Welcome back! You were in the middle of an order:\n{body}",
+                            [("CONTINUE", "Continue order"), ("RESTART", "Start over")])]
         return _welcome(sess)
+    if t == "RESTART":
+        _reset_checkout(sess)
+        return _welcome(sess)
+    if t == "CONTINUE":
+        return _resume(sess)
+    if state == "ask_kitchen":
+        return _relay(sess, raw)
+    if t in THANKS and state not in CHECKOUT_STATES:
+        return [text("You're welcome! 🙏 Send *menu* any time to order again.")]
 
     if state == "type":
         if t in ("DELIVERY", "D"):
@@ -494,6 +551,31 @@ def _route(sess: dict, incoming: str) -> list[dict]:
     if state == "confirm":
         if t in ("PLACE", "YES", "CONFIRM"):
             return _place_order(sess)
+        if len(raw) >= 3:  # "less spicy please" -> a note for the kitchen
+            note = (sess["ctx"].get("note", "") + " " + raw).strip()[:300]
+            sess["ctx"]["note"] = note
+            return [text(f"📝 Noted for the kitchen: “{note}”")] + _summary(sess)
         return _summary(sess)
 
+    # Not part of ordering: a question or request for the kitchen.
+    if len(raw) >= 2 and not raw.startswith("["):
+        return _relay(sess, raw)
     return _welcome(sess)
+
+
+def _resume(sess: dict) -> list[dict]:
+    """Pick checkout up where the customer left it."""
+    state = sess["state"]
+    if not sess["cart"]:
+        return _welcome(sess)
+    if state == "address":
+        return _ask_address(sess)
+    if state == "location":
+        return _ask_location(sess)
+    if state == "when":
+        return _ask_when(sess)
+    if state == "payment":
+        return [buttons("How would you like to pay?", [("PAY_UPI", "UPI"), ("PAY_COD", "Cash")])]
+    if state == "confirm":
+        return _summary(sess)
+    return _ask_order_type(sess)

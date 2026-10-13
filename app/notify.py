@@ -134,12 +134,13 @@ def _items_summary(order: dict, limit: int = 60) -> str:
 
 
 def _eta_text(order: dict) -> str:
+    """The ⏱ line of the order confirmation."""
     if order.get("scheduled_at") or order.get("scheduled_window"):
         from .orders import _window_label
-        return _window_label(order.get("scheduled_window"), order.get("scheduled_at"))
+        return "Scheduled: " + _window_label(order.get("scheduled_window"), order.get("scheduled_at"))
     if order.get("order_type") == "pickup":
-        return "about 20 minutes for pickup"
-    return "about 45 to 60 minutes"
+        return "Ready for pickup in about 20 minutes"
+    return "Arriving in about 45–60 minutes"
 
 
 def notify_order_placed(order: dict) -> None:
@@ -157,7 +158,7 @@ def notify_order_placed(order: dict) -> None:
         ("order_management_1", _params(name, "order", f"#{order['id']}", items, eta), None),
     ]
     text = (f"Thank you for your order #{order['id']}! We've got {items}. Total ₹{total}. "
-            f"Estimated: {eta}. Track it here: {_track_url(order)}")
+            f"{eta}. Track it here: {_track_url(order)}")
     try:
         _send_wa(phone, attempts, text, order.get("id"))
     except Exception:
@@ -196,3 +197,18 @@ def notify_dispatch(order: dict, dispatch: dict) -> None:
     if dispatch.get("tracking_url") and not order.get("sr_tracking_url"):
         order = {**order, "sr_tracking_url": dispatch["tracking_url"]}
     notify_status(order, "out_for_delivery")
+
+
+def notify_payment_received(order: dict) -> None:
+    """The kitchen confirmed the UPI payment."""
+    phone = order.get("customer_phone")
+    if not (WHATSAPP_ACTIVE and phone):
+        return
+    name = order.get("customer_name") or "there"
+    amount = f"{float(order.get('total') or 0):.2f}".removesuffix(".00")
+    text = f"Payment of ₹{amount} received for order #{order['id']} ✅ Thank you!"
+    try:
+        _send_wa(phone, [(T.PAYMENT_RECEIVED, _params(name, amount, order["id"]), _token(order))],
+                 text, order.get("id"))
+    except Exception:
+        log.exception("notify_payment_received failed for order %s", order.get("id"))

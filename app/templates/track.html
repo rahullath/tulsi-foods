@@ -75,7 +75,7 @@
     <div id="content"></div>
     <div id="rate"></div>
   </div>
-  <p class="fresh">This page updates live — no app needed.<br>Questions? Call <a href="tel:+919940062840">99400 62840</a></p>
+  <p class="fresh">This page updates live — no app needed.<br>Questions? Call <a href="tel:+919940621800">99406 21800</a></p>
 </div>
 <script>
   const STATUSES = [
@@ -222,7 +222,7 @@
     } else if ((st === "out_for_delivery" || st === "delivered") && !o.sr_tracking_url && !o.tracking_url) {
       html += '<div class="empty">Rider tracking will appear here once available.</div>';
     }
-    html += `<a class="pr wa" href="https://wa.me/919940062840?text=${encodeURIComponent('Hi Tulsi Foods, I have a question about order #' + ORDER_ID)}" target="_blank" rel="noopener">Message us on WhatsApp</a>`;
+    html += `<a class="pr wa" href="https://wa.me/{{ wa_order_number }}?text=${encodeURIComponent('Hi Tulsi Foods, I have a question about order #' + ORDER_ID)}" target="_blank" rel="noopener">Message us on WhatsApp</a>`;
     if (o.order_type === "pickup") {
       html += '<div class="empty" style="margin-top:2px">Pickup: 34 Murrays Gate Road, Alwarpet</div>';
     }

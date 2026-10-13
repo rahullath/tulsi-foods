@@ -284,3 +284,62 @@ def create_template(waba: str, payload: dict) -> dict:
         err = {}
     raise WhatsAppError(r.status_code, err.get("code"),
                         err.get("error_user_msg") or err.get("message") or r.text[:200])
+
+
+def edit_template(template_id: str, comps: list[dict]) -> dict:
+    """Change an existing template's wording (Meta re-reviews it; an approved
+    template can be edited once a day, ten times a month)."""
+    url = f"{WHATSAPP_GRAPH_URL}/{WHATSAPP_GRAPH_VERSION}/{template_id}"
+    with httpx.Client(timeout=20) as c:
+        r = c.post(url, headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"},
+                   json={"components": comps})
+    if r.is_success:
+        return r.json()
+    err = (r.json() if r.headers.get("content-type", "").startswith("application/json") else {}).get("error", {})
+    raise WhatsAppError(r.status_code, err.get("code"),
+                        err.get("error_user_msg") or err.get("message") or r.text[:200])
+
+
+def set_conversational_automation(prompts: list[str], commands: list[dict]) -> dict:
+    """Welcome-message event, ice breakers and / commands for the number."""
+    url = f"{WHATSAPP_GRAPH_URL}/{WHATSAPP_GRAPH_VERSION}/{WHATSAPP_PHONE_ID}/conversational_automation"
+    with httpx.Client(timeout=20) as c:
+        r = c.post(url, headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"},
+                   json={"enable_welcome_message": True, "prompts": prompts, "commands": commands})
+    if r.is_success:
+        return r.json()
+    raise WhatsAppError(r.status_code, None, r.text[:200])
+
+
+def message_id(result: dict) -> str | None:
+    """The wamid of a sent message (used to match Mom's swipe-replies)."""
+    try:
+        return (result or {}).get("messages", [{}])[0].get("id")
+    except (AttributeError, IndexError):
+        return None
+
+
+def reupload_media(media_id: str) -> str:
+    """Download a customer's media (by its inbound id) and upload it again so
+    it can be sent on; returns the new media id."""
+    base = f"{WHATSAPP_GRAPH_URL}/{WHATSAPP_GRAPH_VERSION}"
+    auth = {"Authorization": f"Bearer {WHATSAPP_TOKEN}"}
+    with httpx.Client(timeout=30) as c:
+        meta = c.get(f"{base}/{media_id}", headers=auth)
+        meta.raise_for_status()
+        info = meta.json()
+        blob = c.get(info["url"], headers=auth)
+        blob.raise_for_status()
+        mime = info.get("mime_type") or "application/octet-stream"
+        up = c.post(f"{base}/{WHATSAPP_PHONE_ID}/media", headers=auth,
+                    data={"messaging_product": "whatsapp", "type": mime},
+                    files={"file": ("upload", blob.content, mime)})
+        up.raise_for_status()
+        return up.json()["id"]
+
+
+def send_media(to: str, media_type: str, media_id: str, caption: str | None = None) -> dict:
+    body = {"id": media_id}
+    if caption and media_type in ("image", "video", "document"):
+        body["caption"] = caption[:1024]
+    return _send(to, media_type, body, caption or media_type)

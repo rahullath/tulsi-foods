@@ -67,7 +67,11 @@ MONDAY_OPENS_AT = "14:00"
 STORE_NAME = "Tulsi Foods"
 STORE_ADDRESS = "34 Murrays Gate Road, Alwarpet, Chennai 600018"
 STORE_PICKUP_LINE = "34 Murrays Gate Road, Alwarpet"
-STORE_WHATSAPP = "+91 99400 62840"
+STORE_WHATSAPP = "+91 99400 62840"  # the shop's own WhatsApp (Mom, Business app)
+# The ordering bot's number (Cloud API): website "Order on WhatsApp" and
+# order-question links open a chat with it; it relays questions to Mom.
+WHATSAPP_ORDER_NUMBER = os.environ.get("WHATSAPP_ORDER_NUMBER", "15553972507")
+WHATSAPP_ORDER_DISPLAY = os.environ.get("WHATSAPP_ORDER_DISPLAY", "+1 555-397-2507")
 OPENING_HOURS = {
     "mon_sat": ("09:00", "21:00"),
     "sunday": ("11:00", "21:00"),
