@@ -1,8 +1,8 @@
 # Delivery: what to do for every order (kitchen procedure)
 
 For Mom and kitchen staff. Everything starts on the **Petpooja POS**; nobody
-needs to open the admin page. WhatsApp messages come to Mom's phone from the
-Tulsi Foods business number.
+needs to open the admin page. WhatsApp messages come to the shop WhatsApp (99400 62840) from the
+Tulsi Foods ordering number (+1 555-397-2507). See docs/MOM_WHATSAPP_GUIDE.md.
 
 ## Every delivery order, step by step
 
@@ -21,10 +21,10 @@ Tulsi Foods business number.
    4. Add the customer's name and phone from the message.
    5. Goods type: food. Pay the fare in the app (wallet/UPI).
    6. Book. Note the fare Porter shows.
-4. **Send the Porter link and the fare back** to the same WhatsApp chat:
-   open the trip in Porter → **Share** → choose the Tulsi Foods WhatsApp
-   chat, then type the fare, e.g. `₹86`.
-   - Two orders waiting at once? Add the order number: `#42 ₹86`.
+4. **Send the Porter link and the fare back by swiping right on the booking
+   message** (press and hold → Reply) and pasting the link with the fare,
+   e.g. `https://porter.in/… ₹86`. The bot knows which order it is.
+   - Sent it as a new message instead? Add the order number: `#42 ₹86`.
    - Forgot the fare? The bot will ask; reply `#42 ₹86`.
    - The bot replies "✅ Order #42 is out for delivery". The customer gets
      the rider's live tracking link.

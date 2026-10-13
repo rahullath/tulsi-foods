@@ -50,6 +50,7 @@ def _extract_messages(body: dict) -> list[dict]:
                 lng = None
                 items = None
                 address = None
+                media = None
                 if msg.get("type") == "interactive":
                     intr = msg.get("interactive", {})
                     if intr.get("type") == "button_reply":
@@ -78,8 +79,14 @@ def _extract_messages(body: dict) -> list[dict]:
                     lat = str(loc.get("latitude", ""))
                     lng = str(loc.get("longitude", ""))
                     m = f"[Location: {lat}, {lng}]"
+                elif msg.get("type") in ("image", "audio", "video", "document", "sticker"):
+                    media = {"type": msg["type"], "id": msg.get(msg["type"], {}).get("id"),
+                             "caption": msg.get(msg["type"], {}).get("caption")}
+                    m = f"[{msg['type']}]"
+                elif msg.get("type") == "button":  # quick-reply button on a template
+                    m = msg.get("button", {}).get("payload") or msg.get("button", {}).get("text")
                 if m is None:
-                    continue
+                    continue  # reactions, unsupported types: nothing to answer
                 profile_name = ""
                 for contact in value.get("contacts", []):
                     profile_name = contact.get("profile", {}).get("name", "")
@@ -91,8 +98,76 @@ def _extract_messages(body: dict) -> list[dict]:
                     "lng": lng,
                     "catalog_items": items,
                     "address": address,
+                    "media": media,
+                    "id": msg.get("id"),
+                    "context": (msg.get("context") or {}).get("id"),
                 })
     return out
+
+
+_SEEN: dict[str, None] = {}
+
+
+def _seen(message_id: str | None) -> bool:
+    """True if this inbound message id was already handled (Meta redelivers
+    webhooks it thinks failed)."""
+    if not message_id:
+        return False
+    if message_id in _SEEN:
+        return True
+    _SEEN[message_id] = None
+    if len(_SEEN) > 2000:
+        for k in list(_SEEN)[:1000]:
+            _SEEN.pop(k, None)
+    return False
+
+
+def _log_failed_statuses(body: dict) -> None:
+    for entry in body.get("entry", []):
+        for change in entry.get("changes", []):
+            for st in change.get("value", {}).get("statuses", []):
+                if st.get("status") == "failed":
+                    log.warning("WhatsApp message to %s failed: %s", st.get("recipient_id"),
+                                [(e.get("code"), e.get("title"), (e.get("error_data") or {}).get("details"))
+                                 for e in st.get("errors", [])])
+
+
+def _handle_admin(msg: dict) -> None:
+    """Messages from the kitchen number (Mom): swipe-replies to alerts, Porter
+    links and fares, menu commands. Never treated as a customer order."""
+    from .kitchen_alerts import (handle_admin_reply, handle_admin_tracking_link,
+                                 looks_like_tracking_link)
+    from .whatsapp.admin_commands import handle_admin_command, is_admin_command
+    text = msg["text"] or ""
+    try:
+        reply = handle_admin_reply(text, msg.get("context")) if msg.get("context") else None
+        if reply is None and looks_like_tracking_link(text):
+            reply = handle_admin_tracking_link(text)
+        if reply is None and is_admin_command(text):
+            reply = handle_admin_command(text)
+        if reply is None:
+            reply = handle_admin_command("help")
+    except Exception:
+        log.exception("admin message failed: %s", text[:200])
+        reply = "Something went wrong saving that. Please try again, or tell Rahul."
+    try:
+        client.send_text(msg["wa_id"], reply)
+    except Exception:
+        log.exception("reply to admin failed")
+    log.info("admin %r -> %r", text[:80], reply[:120])
+
+
+def _customer_media(msg: dict) -> list[dict]:
+    """Photos (often UPI screenshots), voice notes and files go to the kitchen."""
+    from .kitchen_alerts import forward_media
+    media = msg["media"]
+    if media["type"] == "sticker" or not media.get("id"):
+        return []
+    forward_media(msg["wa_id"], msg["profile_name"], media["type"], media["id"], media.get("caption"))
+    if media["type"] == "audio":
+        return [{"type": "text", "text": "Thanks! I've passed your voice note to the kitchen. "
+                 "If it's urgent, please call 99406 21800."}]
+    return [{"type": "text", "text": "Thanks! I've sent this to the kitchen, they'll get back to you here."}]
 
 
 def _verify_signature(raw_body: bytes, signature: str | None) -> bool:
@@ -157,34 +232,29 @@ async def inbound(request: Request, x_hub_signature_256: str | None = Header(Non
     for cust in _echo_customers(body):
         sessions.set_human(cust, True)
         log.info("human took over chat for %s", cust)
+    _log_failed_statuses(body)
     for msg in _extract_messages(body):
+        if _seen(msg.get("id")):
+            continue  # Meta retries deliveries; never answer the same message twice
+        if ADMIN_PHONE and msg["wa_id"] == ADMIN_PHONE:
+            _handle_admin(msg)
+            continue
         if sessions.is_human(msg["wa_id"]):
             log.info("bot paused for %s (human-owned)", msg["wa_id"])
             continue
-        # Check if this is an admin command from mom's phone
-        if ADMIN_PHONE and msg["wa_id"] == ADMIN_PHONE:
-            from .kitchen_alerts import looks_like_tracking_link, handle_admin_tracking_link
-            if looks_like_tracking_link(msg["text"]):
-                try:
-                    reply_text = handle_admin_tracking_link(msg["text"])
-                except Exception:
-                    log.exception("tracking link from admin failed: %s", msg["text"][:200])
-                    reply_text = "Couldn't save that link — use the admin panel's Book button for this one."
-                client.send_text(msg["wa_id"], reply_text)
-                log.info("admin tracking link: %s", reply_text)
-                continue
-            from .whatsapp.admin_commands import is_admin_command, handle_admin_command
-            if is_admin_command(msg["text"]):
-                reply_text = handle_admin_command(msg["text"])
-                client.send_text(msg["wa_id"], reply_text)
-                log.info("admin command from %s: %s → %s", msg["wa_id"], msg["text"], reply_text)
-                continue
         try:
-            replies = conversation.handle(msg["wa_id"], msg["text"], msg["profile_name"],
-                                            lat=msg.get("lat"), lng=msg.get("lng"),
-                                            catalog_items=msg.get("catalog_items"),
-                                            address=msg.get("address"))
+            if msg.get("media"):
+                replies = _customer_media(msg)
+            else:
+                replies = conversation.handle(msg["wa_id"], msg["text"], msg["profile_name"],
+                                              lat=msg.get("lat"), lng=msg.get("lng"),
+                                              catalog_items=msg.get("catalog_items"),
+                                              address=msg.get("address"))
             for reply in replies:
+                if reply.get("type") == "relay":
+                    from .kitchen_alerts import relay_question
+                    relay_question(msg["wa_id"], msg["profile_name"], reply["text"])
+                    continue
                 client.send_outbound(msg["wa_id"], reply)
         except Exception:
             log.exception("failed to process message from %s", msg["wa_id"])

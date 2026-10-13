@@ -93,7 +93,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
     </div>
 
     <a class="bio-cta" href="/menu">Order online</a>
-    <a class="bio-cta-ghost" href="https://api.whatsapp.com/send?phone=919940062840&text=Hi%2C%20I%20want%20to%20place%20an%20order." target="_blank" rel="noopener">Message us on WhatsApp</a>
+    <a class="bio-cta-ghost" href="{{ wa_order_link("Hi") }}" target="_blank" rel="noopener">Message us on WhatsApp</a>
   </header>
 
   <section class="bio-card">
@@ -133,7 +133,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
     <div class="bio-card-tag">Place your order</div>
     <h2>Mention "DIRECT10" when you message us</h2>
     <p>Ordering direct instead of through an aggregator means fresher food, faster replies, and no platform markup on your bill.</p>
-    <a class="bio-cta" href="https://api.whatsapp.com/send?phone=919940062840&text=Hi%2C%20I%27d%20like%20to%20place%20an%20order.%20(DIRECT10)" target="_blank" rel="noopener">Order on WhatsApp</a>
+    <a class="bio-cta" href="{{ wa_order_link("Hi") }}" target="_blank" rel="noopener">Order on WhatsApp</a>
   </section>
 
   <section class="bio-card">
