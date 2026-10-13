@@ -89,6 +89,9 @@ WHATSAPP_PHONE_ID = os.environ.get("WHATSAPP_PHONE_ID", "")
 # numbers, or the "WhatsApp Business Account ID" in Business settings).
 # Only needed to list/check templates: GET /api/admin/whatsapp/templates.
 WHATSAPP_WABA_ID = os.environ.get("WHATSAPP_WABA_ID", "")
+# Meta business portfolio (tulsi.foods_chennai) that owns the WhatsApp
+# accounts and the Menu catalogue; used to find the WABA of WHATSAPP_PHONE_ID.
+META_BUSINESS_ID = os.environ.get("META_BUSINESS_ID", "714196232763226")
 WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN", "tulsi_verify")
 WHATSAPP_APP_SECRET = os.environ.get("WHATSAPP_APP_SECRET", "")
 WHATSAPP_GRAPH_VERSION = "v26.0"
