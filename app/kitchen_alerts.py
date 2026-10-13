@@ -29,7 +29,8 @@ def _template_safe(text: str) -> str:
     return re.sub(r"\s{2,}", " ", text.replace("\n", " | ")).strip()[:900]
 
 
-def send(text: str, html_text: str | None = None, relay: dict | None = None) -> list[str]:
+def send(text: str, html_text: str | None = None, relay: dict | None = None,
+         template: tuple[str, list[str]] | None = None) -> list[str]:
     """Send `text` to the kitchen on every configured channel; returns the
     channels that accepted it. Never raises. `relay` ({"kind", "customer",
     "order_id"}) records what the WhatsApp alert was about, so when Mom
@@ -39,13 +40,20 @@ def send(text: str, html_text: str | None = None, relay: dict | None = None) -> 
         from .whatsapp import client
         from .whatsapp.templates import KITCHEN_ALERT
         result = None
-        try:
-            result = client.send_template(ADMIN_PHONE, KITCHEN_ALERT, KITCHEN_WA_TEMPLATE_LANG,
-                                          [{"type": "text", "text": _template_safe(text)}])
-        except Exception as e:
-            # Not approved yet: free text still reaches Mom if she messaged
-            # the business number in the last 24 h.
-            log.warning("kitchen template %s failed (%s); trying text", KITCHEN_ALERT, e)
+        # Specific utility template first, then the generic alert, then free
+        # text (reaches Mom only if she wrote to the bot in the last 24 h).
+        attempts = []
+        if template:
+            attempts.append((template[0], [_template_safe(v) for v in template[1]]))
+        attempts.append((KITCHEN_ALERT, [_template_safe(text)]))
+        for name, values in attempts:
+            try:
+                result = client.send_template(ADMIN_PHONE, name, KITCHEN_WA_TEMPLATE_LANG,
+                                              [{"type": "text", "text": v} for v in values])
+                break
+            except Exception as e:
+                log.warning("kitchen template %s failed (%s)", name, e)
+        if result is None:
             try:
                 result = client.send_text(ADMIN_PHONE, text)
             except Exception:
@@ -95,8 +103,11 @@ def relay_question(wa_id: str, name: str | None, text: str) -> bool:
     o = _active_order(wa_id)
     about = f" about order #{o['id']} ({o.get('status', '').replace('_', ' ')})" if o else ""
     msg = f"💬 {_who(wa_id, name)} asks{about}: \"{text.strip()[:600]}\""
+    from .whatsapp.templates import KITCHEN_MESSAGE
+    who = _who(wa_id, name) + (f", order #{o['id']}" if o else "")
     return bool(send(msg, relay={"kind": "question", "customer": wa_id,
-                                 "order_id": o["id"] if o else None}))
+                                 "order_id": o["id"] if o else None},
+                     template=(KITCHEN_MESSAGE, [who, text.strip()[:600]])))
 
 
 def forward_media(wa_id: str, name: str | None, media_type: str, media_id: str,
@@ -122,8 +133,11 @@ def forward_media(wa_id: str, name: str | None, media_type: str, media_id: str,
             return True
         except Exception as e:
             log.warning("media forward failed (%s); sending a text alert", e)
+    from .whatsapp.templates import KITCHEN_MESSAGE
+    who = _who(wa_id, name) + (f", order #{o['id']}" if o else "")
+    note = f"[Sent {what}{' with: ' + caption if caption else ''}]" + hint
     return bool(send(label + " Open WhatsApp on the shop phone to see it." if not hint else label,
-                     relay=relay))
+                     relay=relay, template=(KITCHEN_MESSAGE, [who, note])))
 
 
 def handle_admin_reply(text: str, context_wamid: str | None) -> str | None:
@@ -153,6 +167,7 @@ def handle_admin_reply(text: str, context_wamid: str | None) -> str | None:
 
 def porter_card(order: dict, reason: str) -> list[str]:
     """Send the Porter booking card for a delivery order."""
+    from .whatsapp.templates import KITCHEN_RIDER
     from html import escape
     from .delivery import porter
     card = porter.booking_text(order)
@@ -160,7 +175,8 @@ def porter_card(order: dict, reason: str) -> list[str]:
             "e.g. \"<link> ₹86\".")
     return send(f"{reason}\n\n{card}{tail}",
                 f"{escape(reason)}\n\n<pre>{escape(card)}</pre>{escape(tail)}",
-                relay={"kind": "order", "order_id": order["id"]})
+                relay={"kind": "order", "order_id": order["id"]},
+                template=(KITCHEN_RIDER, [str(order["id"]), f"{reason} {card}"]))
 
 
 _URL = re.compile(r"https?://\S+")

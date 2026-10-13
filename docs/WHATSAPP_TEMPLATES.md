@@ -42,7 +42,7 @@ Sample: `{{1}}` Asha · `{{2}}` 142 · `{{3}}` 1 North Indian Thali, 2 Masala Ch
 
 ### `tulsi_order_accepted`
 
-Customer, kitchen accepted the order on the pos.
+Customer, kitchen accepted the order on the POS.
 
 **We're cooking your order**
 
@@ -156,7 +156,7 @@ Sample: `{{1}}` Asha · `{{2}}` 142 · `{{3}}` Your UPI payment of ₹367 will b
 
 ### `tulsi_payment_received`
 
-Customer, kitchen confirmed the upi payment.
+Customer, kitchen confirmed the UPI payment.
 
 **Payment received**
 
@@ -170,9 +170,41 @@ Button: **Track your order** → `https://tulsifoods.app/track/{{1}}` (order's t
 
 Sample: `{{1}}` Asha · `{{2}}` 367 · `{{3}}` 142
 
+### `tulsi_kitchen_book_rider`
+
+Kitchen (Mom): order accepted, book the Porter rider.
+
+**Book a rider**
+
+> Order #{{1}} has been accepted on the POS and needs a Porter rider.
+> 
+> {{2}}
+> 
+> Once booked, reply to this message with the Porter link and the fare.
+
+_Swipe right on this message to reply_
+
+Sample: `{{1}}` 142 · `{{2}}` Drop: Asha, 12 Luz Church Road, Mylapore. Phone 98123 45678. Prepaid, collect nothing.
+
+### `tulsi_kitchen_customer_message`
+
+Kitchen (Mom): a customer's question or file, to answer by replying.
+
+**Customer message**
+
+> Message from customer {{1}}:
+> 
+> {{2}}
+> 
+> Reply to this message to answer them on WhatsApp.
+
+_Swipe right on this message to reply_
+
+Sample: `{{1}}` Asha (+91 98123 45678), order #142 · `{{2}}` Can you make it less spicy please?
+
 ### `tulsi_kitchen_alert`
 
-Kitchen (mom): porter booking card, customer questions, reminders.
+Kitchen (Mom): anything else (fallback; Meta files it as marketing).
 
 **Tulsi kitchen alert**
 
@@ -183,6 +215,11 @@ Kitchen (mom): porter booking card, customer questions, reminders.
 _Swipe right on this message to reply_
 
 Sample: `{{1}}` Order #142 accepted. Book a Porter 2-wheeler: drop Asha, 12 Luz Church Road, prepaid.
+
+Note: Meta re-filed `tulsi_kitchen_alert` (one open variable) as MARKETING.
+Kitchen alerts therefore use `tulsi_kitchen_book_rider` and
+`tulsi_kitchen_customer_message`, which name the order or customer and stay
+UTILITY; the generic alert is only a fallback.
 
 ## WhatsApp catalogue
 
