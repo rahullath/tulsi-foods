@@ -22,7 +22,7 @@ PICKUP_ADDRESS = "34, Murrays Gate Road, Alwarpet, Chennai, 600018, Tamil Nadu, 
 PICKUP_PINCODE = "600018"
 PICKUP_LAT = 13.038909  # resolved from the Google Maps listing itself
 PICKUP_LNG = 80.256394
-PICKUP_PHONE = "9940062840"  # restaurant contact for rider
+PICKUP_PHONE = "9940621800"  # restaurant contact for rider
 
 # Default food parcel weight (kg) — used for serviceability & rate lookups
 DEFAULT_WEIGHT_KG = 1.5
