@@ -51,6 +51,17 @@
   .pr.phone { border-color: #E6E8E0; }
   .empty { color: #889; font-size: 13px; }
   .fee-box { margin-top: 14px; background: #FFF7EA; border: 1px solid #F1DDB8; border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.55; color: #5A4520; }
+  .rate { margin-top: 16px; background: #fff; border: 1px solid #DDE2D4; border-radius: 14px; padding: 14px 16px; }
+  .rate h3 { font-size: 16px; margin: 0 0 4px; }
+  .rate .sub { font-size: 13px; color: #667; margin-bottom: 10px; }
+  .rate-dish { border-top: 1px solid #EEF0E8; padding: 10px 0; }
+  .rate-dish .nm { font-size: 14px; font-weight: 600; }
+  .stars { display: flex; gap: 4px; margin: 6px 0; }
+  .stars button { font-size: 28px; line-height: 1; background: none; border: 0; color: #D5D2C8; cursor: pointer; padding: 2px; }
+  .stars button.on { color: #E08A1E; }
+  .rate textarea { width: 100%; box-sizing: border-box; border: 1px solid #DDE2D4; border-radius: 8px; padding: 8px; font: inherit; font-size: 13px; min-height: 40px; }
+  .rate .send { display: block; width: 100%; margin-top: 10px; background: #0E7A45; color: #fff; border: 0; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .rate .send:disabled { background: #B9B2A2; }
   .fee-box .pr { display: block; margin-top: 10px; background: #0E7A45; color: #fff; border-color: #0E7A45; }
 </style>
 <div class="wrap">
@@ -62,6 +73,7 @@
     <h1>Order #{{ order_id }}</h1>
     <p class="sub" id="status-note">Loading your order…</p>
     <div id="content"></div>
+    <div id="rate"></div>
   </div>
   <p class="fresh">This page updates live — no app needed.<br>Questions? Call <a href="tel:+919940062840">99400 62840</a></p>
 </div>
@@ -217,6 +229,47 @@
     html += '</div>';
 
     document.getElementById('content').innerHTML = html;
+    renderRating(o);
+  }
+
+  // Dish ratings once delivered: shown on each dish's page (verified orders
+  // only). Rendered once into #rate so the 10 s refresh never wipes it.
+  let rateShown = false;
+  function renderRating(o) {
+    if (rateShown || o.status !== "delivered" || !o.items || !o.items.length) return;
+    const done = new Set(o.reviewed_items || []);
+    const base = id => id.replace(/__half$/, "");
+    const dishes = [];
+    o.items.forEach(i => { const b = base(i.item_id); if (!done.has(b) && !dishes.some(d => d.id === b)) dishes.push({ id: b, name: i.name.replace(/ \(Half\)$/, "") }); });
+    if (!dishes.length) return;
+    rateShown = true;
+    const box = document.getElementById("rate");
+    box.innerHTML = `<div class="rate" id="rate-box"><h3>How was your food?</h3>
+      <div class="sub">Tap the stars for each dish. Your rating and comment appear on the dish's page with your first name.</div>
+      ${dishes.map(d => `<div class="rate-dish" data-id="${d.id}"><div class="nm">${d.name}</div>
+        <div class="stars">${[1,2,3,4,5].map(n => `<button type="button" data-n="${n}" aria-label="${n} star${n > 1 ? "s" : ""}">★</button>`).join("")}</div>
+        <textarea maxlength="500" placeholder="What did you like? (optional)"></textarea></div>`).join("")}
+      <button class="send" id="rate-send" disabled>Send ratings</button></div>`;
+    const picked = {};
+    box.querySelectorAll(".rate-dish").forEach(row => {
+      row.querySelectorAll(".stars button").forEach(btn => btn.addEventListener("click", () => {
+        const n = +btn.dataset.n; picked[row.dataset.id] = n;
+        row.querySelectorAll(".stars button").forEach(b => b.classList.toggle("on", +b.dataset.n <= n));
+        document.getElementById("rate-send").disabled = false;
+      }));
+    });
+    document.getElementById("rate-send").addEventListener("click", async (e) => {
+      e.target.disabled = true; e.target.textContent = "Sending…";
+      const ratings = [...box.querySelectorAll(".rate-dish")].filter(r => picked[r.dataset.id])
+        .map(r => ({ item_id: r.dataset.id, rating: picked[r.dataset.id], comment: r.querySelector("textarea").value }));
+      try {
+        const r = await fetch(`/api/orders/${TRACKING_TOKEN}/review`, { method: "POST",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ratings }) });
+        if (!r.ok) throw new Error();
+        document.getElementById("rate-box").innerHTML = "<h3>Thank you! 🙏</h3><div class='sub'>Your ratings help other people choose — and tell the kitchen what to keep doing.</div>";
+      } catch (_) { e.target.disabled = false; e.target.textContent = "Couldn't send — try again"; }
+    });
+    if (location.hash === "#rate") box.scrollIntoView({ behavior: "smooth" });
   }
   refresh();
   setInterval(refresh, 10000);

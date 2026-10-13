@@ -30,6 +30,7 @@ READY_DELIVERY = "tulsi_order_ready_delivery"
 READY_PICKUP = "tulsi_order_ready_pickup"
 RIDER_ON_THE_WAY = "tulsi_rider_on_the_way"
 DELIVERED = "tulsi_order_delivered"
+DELIVERED_RATE = "tulsi_order_delivered_rate"
 CANCELLED = "tulsi_order_cancelled"
 # KITCHEN_WA_TEMPLATE may override the name, but only with a valid template
 # name (Railway once held the template's body text here, which Meta rejects).
@@ -80,6 +81,14 @@ DEFINITIONS = {
         "example": ["Asha", "142"],
         "track_button": False,
     },
+    DELIVERED_RATE: {
+        "used_for": "customer, order delivered, with a button to rate the dishes",
+        "body": ("Hi {{1}}, your Tulsi Foods order #{{2}} has been delivered. "
+                 "How was the food? Tap below to rate each dish, it takes ten seconds."),
+        "example": ["Asha", "142"],
+        "track_button": True,
+        "button_text": "Rate your food",
+    },
     CANCELLED: {
         "used_for": "customer, order cancelled",
         "body": ("Hi {{1}}, your Tulsi Foods order #{{2}} has been cancelled. {{3}} "
@@ -106,7 +115,7 @@ def create_payload(name: str) -> dict:
     components = [{"type": "BODY", "text": d["body"], "example": {"body_text": [d["example"]]}}]
     if d["track_button"]:
         components.append({"type": "BUTTONS", "buttons": [{
-            "type": "URL", "text": "Track order", "url": TRACK_URL + "{{1}}",
+            "type": "URL", "text": d.get("button_text", "Track order"), "url": TRACK_URL + "{{1}}",
             "example": [TRACK_EXAMPLE]}]})
     return {"name": name, "language": LANGUAGE, "category": "UTILITY", "components": components}
 
