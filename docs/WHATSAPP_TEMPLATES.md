@@ -7,7 +7,7 @@ and / commands). Check status at `GET /api/admin/whatsapp/templates`, re-run
 with `POST /api/admin/whatsapp/templates/sync`.
 
 Ordering number: **+1 555-397-2507** (Cloud API, WABA 2546645492500823).
-Kitchen alerts go to `ADMIN_PHONE` (the shop's WhatsApp, 99400 62840).
+Kitchen alerts go to `ADMIN_PHONE` (Mom's own WhatsApp, 99406 21800).
 All templates are category **Utility**, language **English (`en`)**, footer
 "Tulsi Foods · pure veg · Alwarpet, Chennai" unless noted.
 

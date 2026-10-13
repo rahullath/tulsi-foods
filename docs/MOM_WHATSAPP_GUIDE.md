@@ -2,8 +2,8 @@
 
 *One page for the kitchen. Print it and keep it near the POS.*
 
-Messages come to the **shop WhatsApp (99400 62840)** from **Tulsi Foods
-(+1 555-397-2507)**. Save that number as "Tulsi Orders Bot".
+Messages come to **your own WhatsApp (99406 21800)** from **Tulsi Foods
+(+1 555-397-2507)**. Save that number as "Tulsi Orders Bot". (The old shop WhatsApp, 99400 62840, is not used for orders.)
 
 ## The one trick: swipe right to reply
 
