@@ -344,7 +344,7 @@ def menu_item_page(request: Request, item_id: str):
     status_text = "Available now" if available else (reason or "Finished for today")
     ordering = {
         "zones": ", ".join(
-            f"{z['name']} up to {z['max_km']:.0f} km — ₹{z['fee']} delivery"
+            f"up to {z['max_km']:.0f} km — ₹{z['fee']} delivery"
             for z in DELIVERY_ZONES
         ),
         "hours": "Mon–Sat 9 AM – 9 PM, Sun 11 AM – 9 PM",
@@ -1267,6 +1267,7 @@ def get_order(ref: str):
     o = db.get_order_by_token(ref) if not ref.isdigit() else db.get_order(int(ref))
     if not o:
         raise HTTPException(404, "Order not found")
+    o.pop("courier_cost", None)  # what we paid Porter is ours, not the customer's
     return o
 
 
@@ -1349,19 +1350,30 @@ def admin_dispatch_order(order_id: int, x_admin_token: str | None = Header(None)
 def admin_whatsapp_templates(x_admin_token: str | None = Header(None)):
     """Compare the templates the code sends with what Meta has approved."""
     _check_admin(x_admin_token)
-    from .config import WHATSAPP_WABA_ID
-    from .whatsapp import templates
-    if not WHATSAPP_WABA_ID:
+    from .whatsapp import client, templates
+    try:
+        waba = client.waba_id()
+    except Exception as e:
+        raise HTTPException(502, f"Could not find the WhatsApp Business Account: {e}")
+    if not waba:
         return {"ok": False, "detail": "Set WHATSAPP_WABA_ID on Railway to check against Meta.",
                 "expected": templates.EXPECTED}
-    from .whatsapp.client import list_templates
     try:
-        meta = list_templates(WHATSAPP_WABA_ID)
+        meta = client.list_templates(waba)
     except Exception as e:
         raise HTTPException(502, f"Could not read templates from Meta: {e}")
     rows = templates.check(meta)
-    return {"ok": all(r["ok"] for r in rows), "templates": rows,
+    return {"ok": all(r["ok"] for r in rows), "waba_id": waba, "templates": rows,
+            "last_sync": templates.last_sync(),
             "on_meta_but_unused": sorted({t["name"] for t in meta} - set(templates.EXPECTED))}
+
+
+@app.post("/api/admin/whatsapp/templates/sync")
+def admin_whatsapp_templates_sync(x_admin_token: str | None = Header(None)):
+    """Create any template the app needs that Meta doesn't have yet."""
+    _check_admin(x_admin_token)
+    from .whatsapp import templates
+    return templates.sync()
 
 
 class ManualDispatchIn(BaseModel):
@@ -1444,3 +1456,9 @@ def on_startup():
     init_qr()
     from .whatsapp import sessions as wa_sessions
     wa_sessions.init_sessions()
+    from .config import WHATSAPP_ACTIVE
+    if WHATSAPP_ACTIVE:
+        # Create any missing WhatsApp templates on Meta, off the boot path.
+        import threading
+        from .whatsapp import templates as wa_templates
+        threading.Thread(target=wa_templates.sync, daemon=True).start()

@@ -170,7 +170,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
     # Delivery settled after booking (Oct 2026): estimate range shown at
     # checkout, the real Porter fare recorded once the rider is booked.
     for col, ddl in (("delivery_fee_low", "REAL"), ("delivery_fee_high", "REAL"),
-                     ("delivery_fee_final", "REAL"),
+                     ("delivery_fee_final", "REAL"), ("courier_cost", "REAL"),
                      ("delivery_paid", "INTEGER NOT NULL DEFAULT 0")):
         if not _has_col("orders", col):
             conn.execute(f"ALTER TABLE orders ADD COLUMN {col} {ddl}")
@@ -404,6 +404,14 @@ def set_delivery_estimate(order_id: int, low: float | None, high: float | None) 
     conn = get_conn()
     conn.execute("UPDATE orders SET delivery_fee_low=?, delivery_fee_high=? WHERE id=?",
                  (low, high, order_id))
+    conn.commit()
+    conn.close()
+
+
+def set_courier_cost(order_id: int, cost: float) -> None:
+    """What the kitchen paid Porter for a fixed-fee order (customer not charged)."""
+    conn = get_conn()
+    conn.execute("UPDATE orders SET courier_cost=? WHERE id=?", (cost, order_id))
     conn.commit()
     conn.close()
 

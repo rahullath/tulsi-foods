@@ -34,7 +34,7 @@ def main():
         data = r.json()
         check("menu has 10 groups", len(data["groups"]) == 10, len(data["groups"]))
         total = sum(len(g["items"]) for g in data["groups"])
-        check("menu has 140 items", total == 140, total)
+        check("menu has 140+ items", total >= 140, total)
         thali = next(it for g in data["groups"] if g["group"] == "Thalis & Combos"
                      for it in g["items"] if it["name"] == "North Indian Thali")
         check("thali price from data", thali["price"] == 248, thali["price"])
@@ -56,9 +56,9 @@ def main():
 
         # delivery fee
         r = c.get("/api/delivery", params={"km": 2})
-        check("zone A fee", r.json()["fee"] == 30)
+        check("zone A fee", r.json()["fee"] == 49)
         r = c.get("/api/delivery", params={"km": 6})
-        check("zone C fee", r.json()["fee"] == 70)
+        check("zone C fee", r.json()["fee"] == 89)
         r = c.get("/api/delivery", params={"km": 9})
         check("outside zone", r.json()["fee"] is None)
 

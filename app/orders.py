@@ -304,7 +304,6 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
     lines, subtotal = build_lines(items)
 
     delivery_fee = 0.0
-    est_low = est_high = None
     tracking_token = _new_tracking_token()
     if order_type == "delivery":
         if km is not None:
@@ -318,8 +317,11 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
             try:
                 from .delivery.estimate import estimate
                 q = estimate(float(lat), float(lng), subtotal, address)
-                delivery_fee = q["fee"] if q.get("serviceable") and q.get("fee") is not None else None
-                est_low, est_high = q.get("fee_low"), q.get("fee_high")
+                if q.get("serviceable") is False:
+                    raise OrderError("We don't deliver there yet. You can pick up from the restaurant.", 400)
+                delivery_fee = q["fee"] if q.get("fee") is not None else None
+            except OrderError:
+                raise
             except Exception:
                 delivery_fee = None
             if delivery_fee is None:
@@ -332,14 +334,9 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
 
     packing_fee = packing_fee_for(subtotal)
     gst_amount = gst_for(subtotal + packing_fee)
-    # Delivery is settled AFTER the rider is booked (Oct 2026): the order
-    # carries only the estimate range; `total` is the food amount, and the
-    # real Porter fare is added via record_delivery_fee() once known.
-    if order_type == "delivery" and delivery_fee:
-        if est_low is None:
-            est_low, est_high = round(delivery_fee * 0.85), round(delivery_fee * 1.2)
-        delivery_fee = 0.0
-    total = subtotal + packing_fee + gst_amount
+    # Delivery is a fixed fee by distance band, charged in the total. The
+    # actual Porter fare is stored as courier_cost when Mom reports it.
+    total = subtotal + packing_fee + gst_amount + (delivery_fee or 0.0)
     flagged, flag_reason = check_address(address, pincode, lat, lng)
     cid = db.upsert_customer(phone, name, address, pincode)
     oid = db.create_order(cid, order_type, subtotal, delivery_fee, total,
@@ -352,8 +349,6 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                           tracking_token=tracking_token,
                           scheduled_window=scheduled_window,
                           pay_courier_direct=pay_courier_direct)
-    if est_low is not None:
-        db.set_delivery_estimate(oid, est_low, est_high)
     if order_type == "delivery" and address:
         base_address, landmark = _split_landmark(address)
         try:
@@ -409,7 +404,6 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
     return {"order_id": oid, "status": "new", "subtotal": round(subtotal, 2),
             "packing_fee": packing_fee, "gst_amount": gst_amount,
             "delivery_fee": delivery_fee, "total": round(total, 2),
-            "delivery_fee_low": est_low, "delivery_fee_high": est_high,
             "tracking_token": tracking_token,
             "scheduled_window": scheduled_window, "pay_courier_direct": pay_courier_direct,
             "schedule_label": _window_label(scheduled_window, scheduled_at),
@@ -495,7 +489,11 @@ def _dispatchable_order(order_id: int) -> dict:
 
 
 def record_delivery_fee(order_id: int, fee: float) -> dict:
-    """Store the real Porter fare for a booked delivery order."""
+    """Store the real Porter fare for a booked delivery order.
+
+    Fixed-fee orders (the customer already paid delivery in the total) keep
+    it as courier_cost only. Older pay-after-booking orders (estimate range,
+    delivery_fee 0) get it as the fare the customer still owes."""
     o = db.get_order(order_id)
     if not o:
         raise OrderError("Order not found", 404)
@@ -504,8 +502,18 @@ def record_delivery_fee(order_id: int, fee: float) -> dict:
     fee = round(float(fee), 2)
     if not 10 <= fee <= 1000:
         raise OrderError(f"₹{fee:g} doesn't look like a delivery fare", 400)
-    db.set_delivery_fee_final(order_id, fee)
+    if is_fee_later(o):
+        db.set_delivery_fee_final(order_id, fee)
+    else:
+        db.set_courier_cost(order_id, fee)
     return db.get_order(order_id)
+
+
+def is_fee_later(order: dict) -> bool:
+    """Order placed under the old pay-after-booking scheme (Oct 7-13 2026)."""
+    if order.get("delivery_fee_final"):
+        return True
+    return bool(order.get("delivery_fee_low")) and not float(order.get("delivery_fee") or 0)
 
 
 def record_manual_dispatch(order_id: int, tracking_url: str, rider_name: str = "",

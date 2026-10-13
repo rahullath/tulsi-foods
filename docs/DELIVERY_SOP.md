@@ -27,11 +27,14 @@ Tulsi Foods business number.
    - Two orders waiting at once? Add the order number: `#42 ₹86`.
    - Forgot the fare? The bot will ask; reply `#42 ₹86`.
    - The bot replies "✅ Order #42 is out for delivery". The customer gets
-     the tracking link and a "Pay ₹86 by UPI" button for the delivery charge.
+     the rider's live tracking link.
+   - The customer already paid a fixed delivery fee (₹49 / ₹69 / ₹89 by
+     distance) in their total. The Porter fare is only recorded so we can see
+     whether those fees cover our cost; the customer is never charged it.
 5. **Food ready: tap "Food Ready" on the POS.** If no rider was recorded yet,
    WhatsApp reminds you to book one.
 6. **Hand over** to the Porter rider. Cash orders: the amount to collect is on
-   the WhatsApp card (the food total; the delivery charge is paid separately).
+   the WhatsApp card. It already includes the delivery fee.
 7. **Mark Delivered on the POS** when the rider confirms. The customer gets
    the "delivered" message.
 
@@ -42,7 +45,7 @@ Tulsi Foods business number.
 | No WhatsApp card after accepting | Book from the POS order details anyway; send the link + fare to the business chat as usual. Tell Rahul (the card should always come). |
 | Porter finds no rider in 10 min | Cancel in Porter and rebook, or try Rapido Parcel. Send the new link + fare; the latest one is used. |
 | Rider is very late | Call the rider from the Porter app; message the customer from WhatsApp with the new time. |
-| Customer wants to cancel | Cancel on the POS (the customer gets the cancellation message). UPI orders: refund the food total. |
+| Customer wants to cancel | Cancel on the POS (the customer gets the cancellation message). UPI orders: refund the full total. |
 | Wrong fare sent | Use the admin page **Book** sheet to correct it, or tell Rahul. |
 | Bot replies "Which order is this for?" | Send the link again with `#<order number>`. |
 

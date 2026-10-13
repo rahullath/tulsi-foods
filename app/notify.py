@@ -1,39 +1,84 @@
 """Customer notification dispatch — WhatsApp primary, SMS (Twilio) fallback.
 
-Order: if WHATSAPP_ACTIVE is set (Meta verified), send via WhatsApp (trying the
-pre-approved template first, then plain text). Otherwise fall back to SMS via
-Twilio. This keeps customers notified even while Meta verification is pending —
-see docs/META_CONTINGENCY_PLAN.md §7.
+WhatsApp: our own templates (app/whatsapp/templates.py, created on Meta by
+templates.sync()) first, then the older Meta library template for that step
+while ours is still in review, then free text (delivered only inside the 24 h
+window). SMS only when WhatsApp is off, since unregistered (non-DLT) SMS to
+Indian numbers is dropped — see docs/META_CONTINGENCY_PLAN.md §7.
 """
 import logging
 
-from .config import WHATSAPP_ACTIVE
+from .config import STORE_PICKUP_LINE, WHATSAPP_ACTIVE
+from .whatsapp import templates as T
 
 log = logging.getLogger("notify")
 
 
-def _status_template(order: dict, status: str):
-    """Return the (template_name, params) for a status, or None."""
-    oid = order["id"]
-    cname = order.get("customer_name") or "there"
-    t = lambda *params: [{"type": "text", "text": str(p)} for p in params]
-    templates = {
-        "preparing": ("order_update_1", t(cname, oid)),
-    }
-    if order["order_type"] == "pickup":
-        templates["ready"] = (
-            "order_pick_up_1",
-            t(cname, oid, order.get("delivery_address") or "Tulsi Foods, Alwarpet"),
-        )
-    else:
-        templates["ready"] = ("order_confirmed", t(cname, oid))
-    templates["delivered"] = ("order_delivered", t(cname, oid))
-    # COD is never pre-charged, so there's nothing to refund; UPI orders are
-    # paid upfront, so a cancellation owes back the actual order total.
-    refund = order["total"] if order.get("payment_method") == "upi" else 0
-    templates["cancelled"] = ("order_cancelled_1", t(cname, oid, round(refund)))
-    templates["out_for_delivery"] = ("delivery_confirmation_1", t(cname, oid))
-    return templates.get(status)
+def _params(*values) -> list[dict]:
+    # Template variables may not contain newlines/tabs or 4+ spaces in a row.
+    return [{"type": "text", "text": " ".join(str(v).split()) or "-"} for v in values]
+
+
+def _track_url(order: dict) -> str:
+    return f"https://tulsifoods.app/track/{order.get('tracking_token') or order['id']}"
+
+
+def _token(order: dict) -> str:
+    return str(order.get("tracking_token") or order["id"])
+
+
+def _send_wa(phone: str, attempts: list[tuple], fallback_text: str | None, order_id) -> bool:
+    """Try each (template, params, button_suffix) in turn, then free text.
+    Returns True if WhatsApp accepted any of them."""
+    from . import whatsapp
+    for name, params, button in attempts:
+        try:
+            whatsapp.client.send_template(phone, name, "en", params, button_url_suffix=button)
+            return True
+        except Exception as e:
+            log.warning("template %s failed for order %s: %s", name, order_id, e)
+    if not fallback_text:
+        return False
+    try:
+        whatsapp.client.send_text(phone, fallback_text)
+        return True
+    except Exception:
+        log.exception("WhatsApp text failed for order %s", order_id)
+        return False
+
+
+def _refund_note(order: dict) -> str:
+    # COD is never pre-charged; UPI orders paid upfront are owed the total.
+    if order.get("payment_method") == "upi":
+        return f"Your UPI payment of ₹{round(float(order.get('total') or 0))} will be refunded."
+    return "Nothing was charged, so there is nothing to refund."
+
+
+def _status_attempts(order: dict, status: str) -> list[tuple]:
+    oid, tok = order["id"], _token(order)
+    name = order.get("customer_name") or "there"
+    pickup = order.get("order_type") == "pickup"
+    if status == "preparing":
+        return [(T.ORDER_ACCEPTED, _params(name, oid), tok),
+                ("order_update_1", _params(name, oid), None)]
+    if status == "ready" and pickup:
+        return [(T.READY_PICKUP, _params(name, oid, STORE_PICKUP_LINE), tok),
+                ("order_pick_up_1", _params(name, oid, STORE_PICKUP_LINE), None)]
+    if status == "ready":
+        return [(T.READY_DELIVERY, _params(name, oid), tok),
+                ("order_confirmed", _params(name, oid), None)]
+    if status == "out_for_delivery":
+        link = order.get("sr_tracking_url") or _track_url(order)
+        return [(T.RIDER_ON_THE_WAY, _params(name, oid, link), tok),
+                ("delivery_confirmation_1", _params(name, oid), None)]
+    if status == "delivered":
+        return [(T.DELIVERED, _params(name, oid), None),
+                ("order_delivered", _params(name, oid), None)]
+    if status == "cancelled":
+        refund = round(float(order.get("total") or 0)) if order.get("payment_method") == "upi" else 0
+        return [(T.CANCELLED, _params(name, oid, _refund_note(order)), None),
+                ("order_cancelled_1", _params(name, oid, refund), None)]
+    return []
 
 
 def _status_text(order: dict, status: str) -> str | None:
@@ -43,47 +88,34 @@ def _status_text(order: dict, status: str) -> str | None:
         return f"Order #{oid} is being cooked now. We'll tell you when it leaves the kitchen."
     if status == "ready":
         if order["order_type"] == "pickup":
-            return f"Order #{oid} is ready for pickup! Come and collect."
-        return f"Order #{oid} is ready! Dispatching shortly."
+            return f"Order #{oid} is ready for pickup at {STORE_PICKUP_LINE}."
+        return f"Order #{oid} is ready! We're booking your rider now."
     if status == "out_for_delivery":
-        track = order.get("sr_tracking_url") or "we will update you"
-        return f"Order #{oid} is on its way! Track: {track}."
+        track = order.get("sr_tracking_url") or _track_url(order)
+        return f"Order #{oid} is on its way! Track the rider: {track}"
     if status == "delivered":
-        return (
-            f"Order #{oid} delivered. Enjoy your meal. If anything wasn't right, "
-            f"reply here and we'll fix it."
-        )
+        return (f"Order #{oid} delivered. Enjoy your meal. If anything wasn't right, "
+                f"reply here and we'll fix it.")
     if status == "cancelled":
-        return f"Order #{oid} has been cancelled."
+        return f"Order #{oid} has been cancelled. {_refund_note(order)}"
     return None
 
 
 def notify_status(order: dict, status: str) -> None:
     """Send a status notification to the customer on the available channel."""
-    from . import sms, whatsapp  # lazy to avoid import cycles
+    from . import sms
 
     phone = order.get("customer_phone")
     if not phone:
         return
     try:
         if WHATSAPP_ACTIVE:
-            tpl = _status_template(order, status)
-            if tpl:
-                name, params = tpl
-                try:
-                    whatsapp.client.send_template(phone, name, "en", params)
-                    return
-                except Exception:
-                    pass  # template not approved → fall back to text
-            text = _status_text(order, status)
-            if text:
-                whatsapp.client.send_text(phone, text)
-                return
+            _send_wa(phone, _status_attempts(order, status), _status_text(order, status),
+                     order.get("id"))
         else:
             text = _status_text(order, status)
             if text:
                 sms.twilio.send_status(phone, text, status=status)
-                return
     except Exception:
         log.exception("notify_status failed for order %s", order.get("id"))
 
@@ -105,87 +137,48 @@ def _eta_text(order: dict) -> str:
         from .orders import _window_label
         return _window_label(order.get("scheduled_window"), order.get("scheduled_at"))
     if order.get("order_type") == "pickup":
-        return "ready for pickup in about 20 minutes"
+        return "about 20 minutes for pickup"
     return "about 45 to 60 minutes"
 
 
 def notify_order_placed(order: dict) -> None:
-    """Order confirmation the moment it is placed, on Meta's pre-approved
-    library template order_management_1 (instant approval, fixed wording):
-    "Hi {{1}}, Thank you for your {{2}}! Your order number is {{3}}. We'll
-    start getting {{4}} ready to ship. Estimated delivery: {{5}} ..."
-    WhatsApp only: the checkout screen already confirms on the web."""
-    from .whatsapp.templates import EXPECTED
+    """Order confirmation the moment it is placed. WhatsApp only: the
+    checkout screen already confirms on the web."""
     phone = order.get("customer_phone")
     if not (WHATSAPP_ACTIVE and phone):
         return
-    name = next(n for n, v in EXPECTED.items() if v["params"] == 5)
-    params = _params(order.get("customer_name") or "there", "order", f"#{order['id']}",
-                     _items_summary(order), _eta_text(order))
-    text = (f"Thank you for your order #{order['id']}! We've got {_items_summary(order)}. "
-            f"Estimated: {_eta_text(order)}. Track it here: {_track_url(order)}")
+    name = order.get("customer_name") or "there"
+    items, eta = _items_summary(order), _eta_text(order)
+    total = f"{float(order.get('total') or 0):.2f}".removesuffix(".00")
+    attempts = [
+        (T.ORDER_PLACED, _params(name, order["id"], items, total, eta), _token(order)),
+        # Meta library template, approved instantly, while ours is in review.
+        ("order_management_1", _params(name, "order", f"#{order['id']}", items, eta), None),
+    ]
+    text = (f"Thank you for your order #{order['id']}! We've got {items}. Total ₹{total}. "
+            f"Estimated: {eta}. Track it here: {_track_url(order)}")
     try:
-        _send_wa(phone, name, params, text, order.get("id"))
+        _send_wa(phone, attempts, text, order.get("id"))
     except Exception:
         log.exception("notify_order_placed failed for order %s", order.get("id"))
 
 
-def _track_url(order: dict) -> str:
-    return f"https://tulsifoods.app/track/{order.get('tracking_token') or order['id']}"
-
-
-# WhatsApp templates for delivery messages. Create each in WhatsApp Manager
-# as category UTILITY, language "en", with exactly these numbered variables
-# (docs/WHATSAPP_TEMPLATES.md has the body text to paste):
-#   delivery_fare     {{1}} name, {{2}} order no., {{3}} fare, {{4}} track link
-#   rider_on_the_way  {{1}} name, {{2}} order no., {{3}} track link
-TPL_DELIVERY_FARE = "delivery_fare"
-TPL_RIDER_ON_THE_WAY = "rider_on_the_way"
-
-
-def _params(*values) -> list[dict]:
-    return [{"type": "text", "text": str(v)} for v in values]
-
-
-def _send_wa(phone: str, template: str, params: list[dict], fallback_text: str,
-             order_id) -> bool:
-    """Template first (the only thing Meta delivers outside the 24 h window),
-    then free text (delivered only if the customer wrote to us in the last
-    24 h). Returns True if WhatsApp accepted either."""
-    from . import whatsapp
-    try:
-        whatsapp.client.send_template(phone, template, "en", params)
-        return True
-    except Exception:
-        log.warning("template %s failed for order %s (not approved yet?); trying text",
-                    template, order_id)
-    try:
-        whatsapp.client.send_text(phone, fallback_text)
-        return True
-    except Exception:
-        log.exception("WhatsApp text failed for order %s", order_id)
-        return False
-
-
 def notify_delivery_fee(order: dict) -> None:
-    """The real delivery charge once the rider is booked, with the tracking
-    page link (which carries the UPI pay button). WhatsApp template; SMS only
-    when WhatsApp is off, since unregistered (non-DLT) SMS is dropped."""
+    """Only for the few orders placed under the old pay-after-booking scheme
+    (Oct 7-13 2026): tell the customer the Porter fare they still owe. Free
+    text, since its template was retired with that scheme."""
     from . import sms
 
     phone = order.get("customer_phone")
     fee = order.get("delivery_fee_final")
     if not phone or not fee:
         return
-    name = order.get("customer_name") or "there"
-    fare = f"{float(fee):g}"
     text = (f"Tulsi Foods: your rider is booked for order #{order['id']}. "
-            f"Delivery charge (Porter fare): ₹{fare}. "
+            f"Delivery charge (Porter fare): ₹{float(fee):g}. "
             f"Track and pay it by UPI here: {_track_url(order)}")
     try:
         if WHATSAPP_ACTIVE:
-            _send_wa(phone, TPL_DELIVERY_FARE, _params(name, order["id"], fare, _track_url(order)),
-                     text, order.get("id"))
+            _send_wa(phone, [], text, order.get("id"))
         else:
             sms.twilio.send_status(phone, text, status="out_for_delivery")
     except Exception:
@@ -193,23 +186,12 @@ def notify_delivery_fee(order: dict) -> None:
 
 
 def notify_dispatch(order: dict, dispatch: dict) -> None:
-    """Rider booked / order on its way. One message: the fare template when
-    the fare is known (it carries the link too), else rider_on_the_way."""
-    from . import sms
-
-    phone = order.get("customer_phone")
-    if not phone:
-        return
+    """Rider booked / order on its way: the rider's live link plus our
+    tracking page button."""
     if order.get("delivery_fee_final"):
+        # Old pay-after-booking order: the fare message carries the link.
         notify_delivery_fee(order)
         return
-    name = order.get("customer_name") or "there"
-    text = f"Order #{order['id']} is on its way! Track it here: {_track_url(order)}"
-    try:
-        if WHATSAPP_ACTIVE:
-            _send_wa(phone, TPL_RIDER_ON_THE_WAY, _params(name, order["id"], _track_url(order)),
-                     text, order.get("id"))
-        else:
-            sms.twilio.send_status(phone, text, status="out_for_delivery")
-    except Exception:
-        log.exception("notify_dispatch failed for order %s", order.get("id"))
+    if dispatch.get("tracking_url") and not order.get("sr_tracking_url"):
+        order = {**order, "sr_tracking_url": dispatch["tracking_url"]}
+    notify_status(order, "out_for_delivery")

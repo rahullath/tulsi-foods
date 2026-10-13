@@ -434,10 +434,11 @@ def _summary(sess: dict) -> list[dict]:
         lines.append("Pickup from the restaurant.")
     lines.append(f"When: {ctx.get('when', 'Now')}")
     lines.append(f"Pay: {ctx.get('payment', 'COD')}")
-    # Delivery fee: zone estimate (actual calculated at dispatch)
+    # Delivery fee: the same fixed fee orders.create_order charges for a
+    # pincode-only address (the nearest band).
     fee = 0
-    if ctx.get("order_type") == "delivery" and total < 700:
-        fee = 30  # Zone A estimate
+    if ctx.get("order_type") == "delivery":
+        fee = orders.delivery_fee_from_pincode(ctx.get("pincode") or "", total)
     # Order-anyway surcharge
     if ctx.get("order_anyway_fee"):
         fee += 30
@@ -448,7 +449,8 @@ def _summary(sess: dict) -> list[dict]:
         lines.append(f"Packing charge: {money(packing)}")
     if gst:
         lines.append(f"GST: {money(gst)}")
-    lines.append(f"Delivery fee: {money(fee)} (approx, confirmed at dispatch)")
+    if fee:
+        lines.append(f"Delivery fee: {money(fee)}")
     lines.append(f"Total: {money(total + packing + gst + fee)}")
     sess["ctx"]["fee"] = fee
     return [buttons("\n".join(lines) + "\n\nReply YES to confirm, EDIT to change, or CANCEL.",
@@ -458,7 +460,8 @@ def _summary(sess: dict) -> list[dict]:
 # ---------------------------------------------------------------- entry point
 
 def handle(wa_id: str, incoming: str, profile_name: str | None = None,
-           lat: str | None = None, lng: str | None = None) -> list[dict]:
+           lat: str | None = None, lng: str | None = None,
+           catalog_items: list[dict] | None = None) -> list[dict]:
     sess = sessions.load(wa_id)
     if profile_name and not sess["ctx"].get("profile_name"):
         sess["ctx"]["profile_name"] = profile_name
@@ -467,9 +470,37 @@ def handle(wa_id: str, incoming: str, profile_name: str | None = None,
         sess["ctx"]["lat"] = lat
         sess["ctx"]["lng"] = lng
 
-    out = _route(sess, incoming or "")
+    if catalog_items is not None:
+        out = _catalog_order(sess, catalog_items)
+    else:
+        out = _route(sess, incoming or "")
     sessions.save(sess)
     return out
+
+
+def _catalog_order(sess: dict, items: list[dict]) -> list[dict]:
+    """A cart sent from the WhatsApp catalogue replaces the chat cart and
+    goes straight to checkout. Dishes finished for today are left out."""
+    cart, skipped = {}, []
+    for it in items:
+        pid = str(it.get("id") or "")
+        if pid.endswith("-half"):  # the feed's half SKU id (app/catalog.py)
+            pid = pid[: -len("-half")] + menu.HALF_SUFFIX
+        m = menu.get_item(pid)
+        if not m:
+            continue
+        if not menu.is_available(m["id"]):
+            skipped.append(m["name"])
+            continue
+        cart[m["id"]] = cart.get(m["id"], 0) + max(1, int(it.get("qty") or 1))
+    if not cart:
+        sess["state"] = "root"
+        why = f"{', '.join(skipped)} {'is' if len(skipped) == 1 else 'are'} finished for today. " if skipped else ""
+        return [text(f"Sorry, {why}Send MENU to pick something else.")]
+    sess["cart"] = cart
+    sess["state"] = "cart"
+    note = [text(f"Finished for today, so left out: {', '.join(skipped)}.")] if skipped else []
+    return note + _route(sess, "CHECKOUT")
 
 
 def _route(sess: dict, incoming: str) -> list[dict]:

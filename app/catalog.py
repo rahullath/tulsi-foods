@@ -19,6 +19,7 @@ BRAND = "Tulsi Foods"
 GOOGLE_CAT = "Food, Beverages & Tobacco > Food"
 HALF_SUFFIX = "-half"
 DISH_PHOTO_DIR = Path("app/static/img/dishes")
+CARD_DIR = Path("app/static/img/cards")
 
 HEADER = [
     "id", "title", "description", "availability", "condition", "link",
@@ -57,8 +58,27 @@ def dish_photo_ids() -> set[str]:
     return {p.stem for p in DISH_PHOTO_DIR.glob("*.jpg")}
 
 
+def card_ids() -> set[str]:
+    """Branded name cards (scripts/make_catalog_cards.py) for dishes with no
+    photo yet: Meta rejects catalogue items without an image."""
+    if not CARD_DIR.is_dir():
+        return set()
+    return {p.stem for p in CARD_DIR.glob("*.jpg")}
+
+
+def _base(item_id: str) -> str:
+    return item_id[: -len(HALF_SUFFIX)] if item_id.endswith(HALF_SUFFIX) else item_id
+
+
 def _description(item: dict) -> str:
-    desc = item.get("description") or FILL_DESCRIPTIONS.get(item["id"], "")
+    desc = (item.get("description") or FILL_DESCRIPTIONS.get(_base(item["id"]), "")).strip()
+    # Some POS descriptions are wrapped in [ ... } brackets.
+    desc = desc.strip("[]{} ").replace("}", "").replace("{", "")
+    if desc and desc[-1] not in ".!?":
+        desc += "."
+    if not desc:
+        desc = f"Home-style {item.get('group') or 'North Indian'} dish, cooked to order."
+    desc += " Pure vegetarian, from the Tulsi Foods kitchen in Mylapore, Chennai."
     if item["id"].endswith(HALF_SUFFIX):
         return "Half portion. " + desc
     return desc
@@ -67,21 +87,34 @@ def _description(item: dict) -> str:
 def _link(item: dict) -> str:
     # Half SKUs get the id <base>-half inside the feed; point both at the
     # base dish page (only one canonical page per dish).
-    base = item["id"][: -len(HALF_SUFFIX)] if item["id"].endswith(HALF_SUFFIX) else item["id"]
-    return f"{SITE_URL}/menu/{base}"
+    return f"{SITE_URL}/menu/{_base(item['id'])}"
 
 
-def _row(item: dict, photos: set[str]) -> list[str]:
-    image = ""
-    photo_id = item.get("photo_id") or item["id"]
-    if photo_id in photos:
-        image = f"https://tulsifoods.app/static/img/dishes/{photo_id}.jpg"
-    return [
-        item["id"], item["name"], _description(item), "in stock", "new",
-        _link(item), image, BRAND, f"{item['price']} INR", GOOGLE_CAT, "", "",
-        "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
-        "", "",
-    ]
+def _image(item: dict, photos: set[str], cards: set[str]) -> str:
+    base = item.get("photo_id") or _base(item["id"])
+    if base in photos:
+        return f"{SITE_URL}/static/img/dishes/{base}.jpg"
+    if base in cards:
+        return f"{SITE_URL}/static/img/cards/{base}.jpg"
+    return f"{SITE_URL}/static/img/landing-hero.jpg"
+
+
+def _row(item: dict, photos: set[str], cards: set[str], off_pos: frozenset,
+         has_half: bool) -> list[str]:
+    base = _base(item["id"])
+    # Off the POS = can't be ordered online at all. Daily "finished for
+    # today" isn't reflected: Meta re-reads the feed only once a day.
+    stock = "out of stock" if base in off_pos else "in stock"
+    size = ("Half" if item["id"].endswith(HALF_SUFFIX) else "Full") if has_half else ""
+    row = {
+        "id": item["id"], "title": item["name"], "description": _description(item),
+        "availability": stock, "condition": "new", "link": _link(item),
+        "image_link": _image(item, photos, cards), "brand": BRAND,
+        "price": f"{item['price']} INR", "google_product_category": GOOGLE_CAT,
+        "item_group_id": base if has_half else "", "size": size,
+        "product_tags[0]": item.get("group") or "", "product_tags[1]": "Pure veg",
+    }
+    return [row.get(col, "") for col in HEADER]
 
 
 def _menu_in_priority_order() -> list[dict]:
@@ -105,8 +138,10 @@ def _menu_in_priority_order() -> list[dict]:
 
 
 def catalog_rows_prioritized() -> list[list[str]]:
-    photos = dish_photo_ids()
-    return [_row(item, photos) for item in _menu_in_priority_order()]
+    photos, cards, off_pos = dish_photo_ids(), card_ids(), menu._off_pos()
+    items = _menu_in_priority_order()
+    halves = {_base(i["id"]) for i in items if i["id"].endswith(HALF_SUFFIX)}
+    return [_row(item, photos, cards, off_pos, _base(item["id"]) in halves) for item in items]
 
 
 def catalog_rows() -> list[list[str]]:

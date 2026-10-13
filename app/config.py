@@ -16,10 +16,14 @@ DB_FILE = DATA_DIR / "tulsi.db"
 ADMIN_TOKEN = os.environ.get("TULSI_ADMIN_TOKEN", "tulsi")
 
 # Delivery config (from spec §7, real distance data)
+# Fixed delivery fee per distance band (Oct 2026): charged at checkout,
+# inside the total, so the customer knows the price before ordering. The
+# kitchen pays the actual Porter fare and absorbs the difference; Mom's fare
+# reply is stored as courier_cost so the bands can be tuned from real data.
 DELIVERY_ZONES = [
-    {"name": "A (core)", "max_km": 3.0, "fee": 30, "min_order": 250},
-    {"name": "B", "max_km": 5.0, "fee": 50, "min_order": 300},
-    {"name": "C", "max_km": 7.0, "fee": 70, "min_order": 350},
+    {"name": "within 3 km", "max_km": 3.0, "fee": 49, "min_order": 250},
+    {"name": "3-5 km", "max_km": 5.0, "fee": 69, "min_order": 300},
+    {"name": "5-7 km", "max_km": 7.0, "fee": 89, "min_order": 350},
 ]
 
 FREE_DELIVERY_ABOVE = 700  # optional: free delivery over this amount

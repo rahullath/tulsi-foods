@@ -4,8 +4,8 @@ Channel: WhatsApp from the business number to ADMIN_PHONE (Mom's personal
 number, wa_id form e.g. "9198XXXXXXXX"), with Telegram as a second channel
 when configured. Meta only allows free-form text inside 24 h of Mom's last
 message to the business number; outside that window it must be an approved
-template. Set KITCHEN_WA_TEMPLATE to a UTILITY template with ONE body
-variable (see docs/COURIER_ROUTER.md) and alerts always get through.
+template: tulsi_kitchen_alert (app/whatsapp/templates.py, created on Meta
+automatically; KITCHEN_WA_TEMPLATE overrides the name).
 
 The Porter loop this powers:
   POS Accept      -> Porter booking card to Mom
@@ -21,13 +21,12 @@ from .config import ADMIN_PHONE, WHATSAPP_ACTIVE
 
 log = logging.getLogger("kitchen")
 
-KITCHEN_WA_TEMPLATE = os.environ.get("KITCHEN_WA_TEMPLATE", "")
 KITCHEN_WA_TEMPLATE_LANG = os.environ.get("KITCHEN_WA_TEMPLATE_LANG", "en")
 
 
 def _template_safe(text: str) -> str:
     # Template variables may not contain newlines, tabs or 4+ spaces in a row.
-    return re.sub(r"\s{2,}", " ", text.replace("\n", " | ")).strip()[:1000]
+    return re.sub(r"\s{2,}", " ", text.replace("\n", " | ")).strip()[:900]
 
 
 def send(text: str, html_text: str | None = None) -> list[str]:
@@ -36,15 +35,20 @@ def send(text: str, html_text: str | None = None) -> list[str]:
     sent = []
     if WHATSAPP_ACTIVE and ADMIN_PHONE:
         from .whatsapp import client
+        from .whatsapp.templates import KITCHEN_ALERT
         try:
-            if KITCHEN_WA_TEMPLATE:
-                client.send_template(ADMIN_PHONE, KITCHEN_WA_TEMPLATE, KITCHEN_WA_TEMPLATE_LANG,
-                                     [{"type": "text", "text": _template_safe(text)}])
-            else:
-                client.send_text(ADMIN_PHONE, text)
+            client.send_template(ADMIN_PHONE, KITCHEN_ALERT, KITCHEN_WA_TEMPLATE_LANG,
+                                 [{"type": "text", "text": _template_safe(text)}])
             sent.append("whatsapp")
-        except Exception:
-            log.exception("kitchen WhatsApp alert failed (template=%s)", KITCHEN_WA_TEMPLATE or "-")
+        except Exception as e:
+            # Not approved yet: free text still reaches Mom if she messaged
+            # the business number in the last 24 h.
+            log.warning("kitchen template %s failed (%s); trying text", KITCHEN_ALERT, e)
+            try:
+                client.send_text(ADMIN_PHONE, text)
+                sent.append("whatsapp")
+            except Exception:
+                log.exception("kitchen WhatsApp alert failed")
     from . import telegram
     if telegram.enabled():
         from html import escape
@@ -60,7 +64,7 @@ def porter_card(order: dict, reason: str) -> list[str]:
     from html import escape
     from .delivery import porter
     card = porter.booking_text(order)
-    tail = ("\n\nBooked? Send the Porter tracking link AND the fare here, "
+    tail = ("\n\nBooked? Send the Porter tracking link and the fare here, "
             f"e.g. \"<link> ₹86\" (add #{order['id']} if more than one order is waiting).")
     return send(f"{reason}\n\n{card}{tail}",
                 f"{escape(reason)}\n\n<pre>{escape(card)}</pre>{escape(tail)}")
@@ -100,7 +104,8 @@ def handle_admin_tracking_link(text: str) -> str:
         none_msg = "No delivery order is waiting for a rider right now."
     else:
         pool = [o for o in today if (o.get("sr_courier") or o.get("sr_tracking_url"))
-                and not o.get("delivery_fee_final") and o.get("status") != "cancelled"]
+                and not (o.get("delivery_fee_final") or o.get("courier_cost"))
+                and o.get("status") != "cancelled"]
         none_msg = "No booked order is waiting for its fare. Send the Porter link with the fare."
     if ref:
         target = next((o for o in pool if o["id"] == int(ref.group(1))), None)
@@ -128,13 +133,18 @@ def handle_admin_tracking_link(text: str) -> str:
         o = db.get_order(target["id"])
         if url:
             notify_dispatch(o, result)
-        elif fare:
+        elif fare and orders.is_fee_later(o):
             notify_delivery_fee(o)
     except Exception:
         log.exception("customer notification failed for order %s", target["id"])
+    fee_later = orders.is_fee_later(db.get_order(target["id"]) or target)
     if url and not fare:
-        return (f"✅ Order #{target['id']} is out for delivery. What did Porter charge? "
-                f"Reply e.g. \"#{target['id']} ₹86\" so the customer can pay it.")
+        why = "so the customer can pay it" if fee_later else "so we can keep track of delivery costs"
+        return (f"✅ Order #{target['id']} is out for delivery and the customer has the link. "
+                f"What did Porter charge? Reply e.g. \"#{target['id']} ₹86\" {why}.")
     if url:
-        return f"✅ Order #{target['id']} is out for delivery. Customer has the link and the ₹{fare:g} delivery charge."
-    return f"✅ Delivery ₹{fare:g} saved for order #{target['id']}. The customer has been asked to pay it."
+        extra = f" and the ₹{fare:g} delivery charge" if fee_later else ""
+        return f"✅ Order #{target['id']} is out for delivery. Customer has the link{extra}."
+    if fee_later:
+        return f"✅ Delivery ₹{fare:g} saved for order #{target['id']}. The customer has been asked to pay it."
+    return f"✅ Porter fare ₹{fare:g} noted for order #{target['id']}."
