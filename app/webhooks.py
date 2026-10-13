@@ -102,6 +102,35 @@ def verify(
     return PlainTextResponse("Verification failed", status_code=403)
 
 
+@router.get("/catalog")
+def verify_catalog(
+    hub_mode: str | None = Query(None, alias="hub.mode"),
+    hub_token: str | None = Query(None, alias="hub.verify_token"),
+    hub_challenge: str | None = Query(None, alias="hub.challenge"),
+):
+    """Meta's handshake for the Catalog webhook (App Dashboard → Webhooks →
+    Catalog). Same verify token as the WhatsApp webhook."""
+    return verify(hub_mode, hub_token, hub_challenge)
+
+
+@router.post("/catalog")
+async def catalog_event(request: Request, x_hub_signature_256: str | None = Header(None)):
+    """product_feed / items_batch results for the Menu catalogue, logged so
+    a broken feed run (dishes missing or wrong in WhatsApp) shows in Railway."""
+    raw = await request.body()
+    if not _verify_signature(raw, x_hub_signature_256):
+        raise HTTPException(status_code=403, detail="Invalid signature")
+    try:
+        body = json.loads(raw or b"{}")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    for entry in body.get("entry", []):
+        for change in entry.get("changes", []):
+            value = change.get("value") or {}
+            log.info("catalog webhook %s: %s", change.get("field"), json.dumps(value)[:1000])
+    return {"status": "ok"}
+
+
 @router.post("/whatsapp")
 async def inbound(request: Request, x_hub_signature_256: str | None = Header(None)):
     raw = await request.body()

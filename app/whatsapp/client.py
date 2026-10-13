@@ -211,24 +211,29 @@ _waba_cache: list[str] = []
 
 
 def waba_id() -> str:
-    """The WhatsApp Business Account id: WHATSAPP_WABA_ID if set, else read
-    from the access token itself (debug_token lists the WABA the token may
-    manage under the whatsapp_business_management scope)."""
-    from ..config import WHATSAPP_WABA_ID
+    """The WhatsApp Business Account that owns WHATSAPP_PHONE_ID:
+    WHATSAPP_WABA_ID if set, else looked up among the business portfolio's
+    WABAs (a system-user token's debug_token carries no WABA id), so
+    switching to another phone number needs no extra variable."""
+    from ..config import META_BUSINESS_ID, WHATSAPP_WABA_ID
     if WHATSAPP_WABA_ID:
         return WHATSAPP_WABA_ID
     if _waba_cache:
         return _waba_cache[0]
-    if not WHATSAPP_TOKEN:
+    if not (WHATSAPP_TOKEN and WHATSAPP_PHONE_ID and META_BUSINESS_ID):
         return ""
-    url = f"{WHATSAPP_GRAPH_URL}/{WHATSAPP_GRAPH_VERSION}/debug_token"
+    base = f"{WHATSAPP_GRAPH_URL}/{WHATSAPP_GRAPH_VERSION}"
+    auth = {"Authorization": f"Bearer {WHATSAPP_TOKEN}"}
     with httpx.Client(timeout=20) as c:
-        r = c.get(url, params={"input_token": WHATSAPP_TOKEN, "access_token": WHATSAPP_TOKEN})
-    r.raise_for_status()
-    for scope in r.json().get("data", {}).get("granular_scopes", []):
-        if scope.get("scope") == "whatsapp_business_management" and scope.get("target_ids"):
-            _waba_cache.append(str(scope["target_ids"][0]))
-            return _waba_cache[0]
+        for edge in ("owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"):
+            r = c.get(f"{base}/{META_BUSINESS_ID}/{edge}", headers=auth, params={"fields": "id"})
+            if not r.is_success:
+                continue
+            for waba in r.json().get("data", []):
+                p = c.get(f"{base}/{waba['id']}/phone_numbers", headers=auth, params={"fields": "id"})
+                if p.is_success and any(n.get("id") == WHATSAPP_PHONE_ID for n in p.json().get("data", [])):
+                    _waba_cache.append(str(waba["id"]))
+                    return _waba_cache[0]
     return ""
 
 
