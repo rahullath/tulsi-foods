@@ -58,6 +58,13 @@
       ₹{{ item.price }}
       {% if half %}<span class="half-inline">· ₹{{ half }} (half)</span>{% endif %}
     </div>
+    {% set sw = swiggy_rating(item.id) %}
+    {% if sw or dish_rating.count %}
+    <div class="ratings-line">
+      {% if dish_rating.count %}<a href="#reviews"><span class="rv-stars">★</span> {{ dish_rating.average }} · {{ dish_rating.count }} rating{{ "" if dish_rating.count == 1 else "s" }} here</a>{% endif %}
+      {% if sw %}<span><span class="rv-stars">★</span> {{ sw.rating }} · {{ sw.count_text }} ratings on <a href="{{ sw.url }}" target="_blank" rel="nofollow noopener">Swiggy</a></span>{% endif %}
+    </div>
+    {% endif %}
 
     <div class="order-box" id="order-box"
          data-id="{{ item.id }}" data-name="{{ item.name }}"
@@ -226,6 +233,8 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
 .ordering li:last-child { border-bottom: none; }
 .ordering li b { color: var(--ink); }
 
+.ratings-line { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--sub); margin-top: 6px; }
+.ratings-line a { color: var(--sub); }
 .rv-sum { font-size: 14px; color: #3C4137; margin-bottom: 8px; }
 .rv-stars { color: #E08A1E; letter-spacing: 1px; }
 .rv { border-bottom: 1px dashed var(--line2); padding: 10px 0; margin: 0; }

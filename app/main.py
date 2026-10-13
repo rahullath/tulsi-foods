@@ -49,6 +49,8 @@ app.include_router(qr_router)
 
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["aliases_for"] = seo_aliases.aliases_for
+from . import third_party_ratings  # noqa: E402
+templates.env.globals["swiggy_rating"] = third_party_ratings.swiggy
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 DISH_PHOTO_DIR = Path("app/static/img/dishes")

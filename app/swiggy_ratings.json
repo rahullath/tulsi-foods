@@ -1,0 +1,576 @@
+{
+ "source": "Swiggy item ratings, Tulsi Foods (Teynampet outlet)",
+ "url": "https://www.swiggy.com/city/chennai/tulsi-foods-alwarpet-teynampet-rest28173",
+ "as_of": "2026-10-13",
+ "restaurant": {
+  "rating": 4.6,
+  "count": 7100
+ },
+ "items": {
+  "aloo-dum": {
+   "swiggy_name": "Aloo Dum",
+   "rating": 4.8,
+   "count": 9
+  },
+  "aloo-gobi": {
+   "swiggy_name": "Aloo Gobi",
+   "rating": 4.5,
+   "count": 18
+  },
+  "aloo-pakoda": {
+   "swiggy_name": "Aloo Pakoda",
+   "rating": 3.8,
+   "count": 25
+  },
+  "aloo-paratha": {
+   "swiggy_name": "Aloo Paratha",
+   "rating": 4.4,
+   "count": 1100
+  },
+  "aloo-sabzi": {
+   "swiggy_name": "Aloo Sabzi",
+   "rating": 4.8,
+   "count": 9
+  },
+  "aloo-sandwich": {
+   "swiggy_name": "Aloo Sandwich",
+   "rating": 3.5,
+   "count": 78
+  },
+  "aloo-tikki-2pcs": {
+   "swiggy_name": "Aloo Tikki (2pcs)",
+   "rating": 4.0,
+   "count": 7
+  },
+  "badam-milkshake": {
+   "swiggy_name": "Badam Milkshake",
+   "rating": 2.7,
+   "count": 22
+  },
+  "banana-milkshake": {
+   "swiggy_name": "Banana Milkshake",
+   "rating": 3.2,
+   "count": 18
+  },
+  "bhel-puri": {
+   "swiggy_name": "Bhel Puri",
+   "rating": 4.8,
+   "count": 93
+  },
+  "bhindi-ki-sabzi": {
+   "swiggy_name": "Bhindi Ki Sabzi",
+   "rating": 4.3,
+   "count": 50
+  },
+  "blue-lagoon": {
+   "swiggy_name": "Blue Lagoon",
+   "rating": 3.6,
+   "count": 7
+  },
+  "bread-chat": {
+   "swiggy_name": "Bread Chat",
+   "rating": 5.0,
+   "count": 8
+  },
+  "butter-naan": {
+   "swiggy_name": "Butter Naan",
+   "rating": 4.8,
+   "count": 172
+  },
+  "buttermilk": {
+   "swiggy_name": "Buttermilk",
+   "rating": 2.9,
+   "count": 73
+  },
+  "channa-masala": {
+   "swiggy_name": "Channa Masala",
+   "rating": 4.9,
+   "count": 7
+  },
+  "cheese-balls": {
+   "swiggy_name": "Cheese Balls",
+   "rating": 4.7,
+   "count": 10
+  },
+  "cheese-pasta": {
+   "swiggy_name": "Cheese Pasta",
+   "rating": 2.1,
+   "count": 16
+  },
+  "cheesy-disc-2pcs": {
+   "swiggy_name": "Cheesy Disc (2pcs)",
+   "rating": 4.8,
+   "count": 337
+  },
+  "chilli-cheeesetoast": {
+   "swiggy_name": "Chilli Cheese Toast Sandwich",
+   "rating": 4.3,
+   "count": 139
+  },
+  "chocolate-ice-cream": {
+   "swiggy_name": "Chocolate Ice Cream",
+   "rating": 4.2,
+   "count": 9
+  },
+  "chocolate-milkshake": {
+   "swiggy_name": "Chocolate Milkshake",
+   "rating": 3.5,
+   "count": 22
+  },
+  "chola-bhatura": {
+   "swiggy_name": "Chola Bhatura",
+   "rating": 4.9,
+   "count": 43
+  },
+  "chola-tikki-2pcs": {
+   "swiggy_name": "Chola Tikki (2pcs)",
+   "rating": 4.7,
+   "count": 10
+  },
+  "club-kachori-6pcs": {
+   "swiggy_name": "Club Kachori (6pcs)",
+   "rating": 5.0,
+   "count": 5
+  },
+  "cold-coffee": {
+   "swiggy_name": "Cold Coffee",
+   "rating": 4.5,
+   "count": 63
+  },
+  "corn-aloo-tikki-2pcs": {
+   "swiggy_name": "Corn Aloo Tikki (2pcs)",
+   "rating": 5.0,
+   "count": 10
+  },
+  "corn-cheese-bun-2pcs": {
+   "swiggy_name": "Corn Cheese Bun (2pcs)",
+   "rating": 4.7,
+   "count": 42
+  },
+  "corn-cheese-sandwich": {
+   "swiggy_name": "Corn Cheese Sandwich",
+   "rating": 4.1,
+   "count": 32
+  },
+  "crispy-chilly-corn": {
+   "swiggy_name": "Crispy Chilly Corn",
+   "rating": 4.7,
+   "count": 8
+  },
+  "crispy-chilly-paneer": {
+   "swiggy_name": "Crispy Chilly Paneer",
+   "rating": 3.1,
+   "count": 9
+  },
+  "crispy-chilly-potato": {
+   "swiggy_name": "Crispy Chilly Potato",
+   "rating": 4.7,
+   "count": 3
+  },
+  "curd-rice": {
+   "swiggy_name": "Curd Rice",
+   "rating": 3.9,
+   "count": 6
+  },
+  "cutlet-2pcs": {
+   "swiggy_name": "Cutlet (2pcs)",
+   "rating": 4.4,
+   "count": 4
+  },
+  "dahi-aloo-tikki-2pcs": {
+   "swiggy_name": "Dahi Aloo Tikki (2pcs)",
+   "rating": 4.7,
+   "count": 4
+  },
+  "dahi-papdi-chat-6pcs": {
+   "swiggy_name": "Dahi Papdi Chat (6pcs)",
+   "rating": 4.0,
+   "count": 3
+  },
+  "dahi-puri-6pcs": {
+   "swiggy_name": "Dahi Puri (6pcs)",
+   "rating": 5.0,
+   "count": 6
+  },
+  "dal-makhani": {
+   "swiggy_name": "Dal Makhani",
+   "rating": 4.4,
+   "count": 136
+  },
+  "dal-tadka": {
+   "swiggy_name": "Dal Tadka",
+   "rating": 4.3,
+   "count": 102
+  },
+  "dhokla": {
+   "swiggy_name": "Dhokla",
+   "rating": 4.7,
+   "count": 22
+  },
+  "dhokla-chat": {
+   "swiggy_name": "Dhokla Chat",
+   "rating": 4.2,
+   "count": 6
+  },
+  "executive-combo": {
+   "swiggy_name": "Executive Combo",
+   "rating": 4.2,
+   "count": 6
+  },
+  "extra-bhatura": {
+   "swiggy_name": "Extra Bhatura",
+   "rating": 4.9,
+   "count": 3
+  },
+  "extra-pav": {
+   "swiggy_name": "Extra Pav",
+   "rating": 4.2,
+   "count": 4
+  },
+  "french-fries": {
+   "swiggy_name": "French Fries",
+   "rating": 4.9,
+   "count": 89
+  },
+  "garlic-bread": {
+   "swiggy_name": "Garlic Bread",
+   "rating": 4.7,
+   "count": 17
+  },
+  "garlic-bread-cheese": {
+   "swiggy_name": "Garlic Bread (cheese)",
+   "rating": 4.8,
+   "count": 4
+  },
+  "garlic-naan": {
+   "swiggy_name": "Garlic Naan",
+   "rating": 4.8,
+   "count": 13
+  },
+  "gobi-manchurian": {
+   "swiggy_name": "Gobi Manchurian",
+   "rating": 4.3,
+   "count": 68
+  },
+  "gobi-masala": {
+   "swiggy_name": "Gobi Masala",
+   "rating": 3.7,
+   "count": 47
+  },
+  "gobi-paratha": {
+   "swiggy_name": "Gobi Paratha",
+   "rating": 4.0,
+   "count": 252
+  },
+  "grilled-sandwich": {
+   "swiggy_name": "Grilled Sandwich",
+   "rating": 4.9,
+   "count": 136
+  },
+  "gulab-jamun-2pcs": {
+   "swiggy_name": "Gulab Jamun (2 Pcs)",
+   "rating": 5.0,
+   "count": 14
+  },
+  "jeera-rice": {
+   "swiggy_name": "Jeera Rice",
+   "rating": 4.8,
+   "count": 35
+  },
+  "jhal-puri": {
+   "swiggy_name": "Jhal Puri",
+   "rating": 4.2,
+   "count": 49
+  },
+  "kadai-ki-puri": {
+   "swiggy_name": "Kadai Ki Puri",
+   "rating": 5.0,
+   "count": 7
+  },
+  "kathi-roll": {
+   "swiggy_name": "Kathi Roll",
+   "rating": 4.6,
+   "count": 30
+  },
+  "kulfi": {
+   "swiggy_name": "Kulfi",
+   "rating": 3.6,
+   "count": 4
+  },
+  "lassi": {
+   "swiggy_name": "Lassi",
+   "rating": 4.4,
+   "count": 166
+  },
+  "lemonade": {
+   "swiggy_name": "Lemonade",
+   "rating": 5.0,
+   "count": 10
+  },
+  "malai-kofta": {
+   "swiggy_name": "Malai Kofta",
+   "rating": 4.8,
+   "count": 50
+  },
+  "masala-chai": {
+   "swiggy_name": "Masala Chai",
+   "rating": 4.2,
+   "count": 25
+  },
+  "masala-kulcha": {
+   "swiggy_name": "Masala Kulcha",
+   "rating": 5.0,
+   "count": 113
+  },
+  "masala-papad": {
+   "swiggy_name": "Masala Papad",
+   "rating": 5.0,
+   "count": 28
+  },
+  "masala-thumsup": {
+   "swiggy_name": "Masala Thumsup",
+   "rating": 5.0,
+   "count": 16
+  },
+  "mini-thali": {
+   "swiggy_name": "Mini Thali",
+   "rating": 4.7,
+   "count": 202
+  },
+  "mint-mojito": {
+   "swiggy_name": "Mint Mojito",
+   "rating": 2.8,
+   "count": 6
+  },
+  "mixed-sauce-pasta": {
+   "swiggy_name": "Mixed Sauce Pasta",
+   "rating": 2.5,
+   "count": 13
+  },
+  "mixed-vegetable": {
+   "swiggy_name": "Mixed Vegetable",
+   "rating": 4.7,
+   "count": 186
+  },
+  "mosambi-juice": {
+   "swiggy_name": "Mosambi Juice",
+   "rating": 4.9,
+   "count": 29
+  },
+  "naan": {
+   "swiggy_name": "Naan",
+   "rating": 2.0,
+   "count": 57
+  },
+  "nachos": {
+   "swiggy_name": "Nachos",
+   "rating": 1.5,
+   "count": 3
+  },
+  "north-indian-thali": {
+   "swiggy_name": "North Indian Thali",
+   "rating": 4.4,
+   "count": 794
+  },
+  "orange-juice": {
+   "swiggy_name": "Orange Juice",
+   "rating": 1.5,
+   "count": 20
+  },
+  "pakodi-ki-kadi": {
+   "swiggy_name": "Pakodi Ki Kadi",
+   "rating": 2.5,
+   "count": 3
+  },
+  "palak-paneer": {
+   "swiggy_name": "Palak Paneer",
+   "rating": 3.6,
+   "count": 61
+  },
+  "paneer-butter-masala": {
+   "swiggy_name": "Paneer Butter Masala",
+   "rating": 4.3,
+   "count": 383
+  },
+  "paneer-paratha": {
+   "swiggy_name": "Paneer Paratha",
+   "rating": 4.4,
+   "count": 274
+  },
+  "paneer-sandwich": {
+   "swiggy_name": "Paneer Sandwich",
+   "rating": 3.3,
+   "count": 51
+  },
+  "paneer-tikka": {
+   "swiggy_name": "Paneer Tikka",
+   "rating": 4.5,
+   "count": 596
+  },
+  "pani-puri": {
+   "swiggy_name": "Pani Puri",
+   "rating": 4.9,
+   "count": 179
+  },
+  "papdi-chat-6pcs": {
+   "swiggy_name": "Papdi Chat (6pcs)",
+   "rating": 4.9,
+   "count": 4
+  },
+  "pav-bhaji": {
+   "swiggy_name": "Pav Bhaji",
+   "rating": 3.6,
+   "count": 293
+  },
+  "peas-masala": {
+   "swiggy_name": "Peas Masala",
+   "rating": 4.4,
+   "count": 23
+  },
+  "peas-paratha": {
+   "swiggy_name": "Peas Paratha",
+   "rating": 4.3,
+   "count": 73
+  },
+  "peas-pulao": {
+   "swiggy_name": "Peas Pulao",
+   "rating": 4.6,
+   "count": 147
+  },
+  "phulka": {
+   "swiggy_name": "Phulka",
+   "rating": 4.6,
+   "count": 699
+  },
+  "plain-paratha": {
+   "swiggy_name": "Plain Paratha",
+   "rating": 4.8,
+   "count": 13
+  },
+  "plain-roti": {
+   "swiggy_name": "Plain Roti",
+   "rating": 4.9,
+   "count": 16
+  },
+  "poha": {
+   "swiggy_name": "Poha",
+   "rating": 4.5,
+   "count": 48
+  },
+  "regular-pizza": {
+   "swiggy_name": "Regular Pizza",
+   "rating": 3.6,
+   "count": 193
+  },
+  "roasted-papad": {
+   "swiggy_name": "Roasted Papad",
+   "rating": 4.1,
+   "count": 11
+  },
+  "rose-milkshake": {
+   "swiggy_name": "Rose Milkshake",
+   "rating": 3.2,
+   "count": 14
+  },
+  "sabudana-vada-2pcs": {
+   "swiggy_name": "Sabudana Vada (2pcs)",
+   "rating": 4.5,
+   "count": 49
+  },
+  "samosa-2pcs": {
+   "swiggy_name": "Samosa (2pcs)",
+   "rating": 4.7,
+   "count": 244
+  },
+  "samosa-chat": {
+   "swiggy_name": "Samosa Chat",
+   "rating": 1.9,
+   "count": 3
+  },
+  "sweet-corn-soup": {
+   "swiggy_name": "Sweet Corn Soup",
+   "rating": 4.8,
+   "count": 15
+  },
+  "tandoori-roti": {
+   "swiggy_name": "Tandoori Roti",
+   "rating": 4.5,
+   "count": 127
+  },
+  "tea": {
+   "swiggy_name": "Tea",
+   "rating": 4.2,
+   "count": 90
+  },
+  "tomato-soup": {
+   "swiggy_name": "Tomato Soup",
+   "rating": 3.9,
+   "count": 39
+  },
+  "vada-pav": {
+   "swiggy_name": "Vada Pav",
+   "rating": 4.7,
+   "count": 86
+  },
+  "vanilla-ice-cream": {
+   "swiggy_name": "Vanilla Ice Cream",
+   "rating": 3.2,
+   "count": 11
+  },
+  "vanilla-milkshake": {
+   "swiggy_name": "Vanilla Milkshake",
+   "rating": 3.5,
+   "count": 9
+  },
+  "veg-briyani": {
+   "swiggy_name": "Veg Briyani",
+   "rating": 3.6,
+   "count": 8
+  },
+  "veg-burger": {
+   "swiggy_name": "Veg Burger",
+   "rating": 2.1,
+   "count": 51
+  },
+  "veg-fried-rice": {
+   "swiggy_name": "Veg Fried Rice",
+   "rating": 4.1,
+   "count": 59
+  },
+  "vegetable-hakka-noodles": {
+   "swiggy_name": "Veg Hakka Noodles",
+   "rating": 4.9,
+   "count": 43
+  },
+  "vegetable-kofta": {
+   "swiggy_name": "Vegetable Kofta",
+   "rating": 4.7,
+   "count": 75
+  },
+  "vegetable-pulao": {
+   "swiggy_name": "Vegetable Pulao",
+   "rating": 3.9,
+   "count": 107
+  },
+  "vegetable-sandwich": {
+   "swiggy_name": "Vegetable Sandwich",
+   "rating": 4.8,
+   "count": 35
+  },
+  "vegetable-soup": {
+   "swiggy_name": "Vegetable Soup",
+   "rating": 4.1,
+   "count": 25
+  },
+  "watermelon-juice": {
+   "swiggy_name": "Watermelon Juice",
+   "rating": 3.0,
+   "count": 54
+  },
+  "white-sauce-pasta": {
+   "swiggy_name": "White Sauce Pasta",
+   "rating": 4.5,
+   "count": 44
+  }
+ }
+}
