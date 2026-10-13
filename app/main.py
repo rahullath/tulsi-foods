@@ -364,7 +364,7 @@ def menu_item_page(request: Request, item_id: str):
         ),
         "hours": "Mon–Sat 9 AM – 9 PM, Sun 11 AM – 9 PM",
         "address": "34 Murrays Gate Road, Alwarpet, Chennai 600018",
-        "whatsapp": "+91 99400 62840",
+        "whatsapp": "+91 99406 21800",
         "phone": "+91 99406 21800",
     }
     breadcrumb = {
@@ -701,7 +701,7 @@ def llms_txt():
         "- Location: 34 Murrays Gate Road, Alwarpet, Chennai 600018, Tamil Nadu, India",
         "- Hours: Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM",
         "- Delivery: " + ", ".join(seo_aliases.NEARBY_AREAS) + " and nearby areas within ~7 km, by Borzo courier at live rates",
-        "- Order: on this website, or WhatsApp at +91 99400 62840",
+        "- Order: on this website, or on WhatsApp at +1 555-397-2507. Kitchen: +91 99406 21800",
         "- Phone: +91 99406 21800",
         "- Prices: ₹45–₹400 per dish; most mains available as half portions",
         "",

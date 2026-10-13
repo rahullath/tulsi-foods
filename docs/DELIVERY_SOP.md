@@ -1,7 +1,7 @@
 # Delivery: what to do for every order (kitchen procedure)
 
 For Mom and kitchen staff. Everything starts on the **Petpooja POS**; nobody
-needs to open the admin page. WhatsApp messages come to the shop WhatsApp (99400 62840) from the
+needs to open the admin page. WhatsApp messages come to Mom's own WhatsApp (99406 21800) from the
 Tulsi Foods ordering number (+1 555-397-2507). See docs/MOM_WHATSAPP_GUIDE.md.
 
 ## Every delivery order, step by step
