@@ -49,74 +49,107 @@ def _dry_log(payload: dict) -> None:
     log.info("DRY-RUN WhatsApp message: %s", payload.get("text") or payload.get("interactive"))
 
 
+def _send(to: str, kind: str, body: dict, preview: str = "") -> dict:
+    """POST one message; dry-run log without credentials. Raises
+    WhatsAppError carrying Meta's reason (e.g. 131047 = outside the 24 h
+    window, 131037 = display name not approved yet)."""
+    payload = {"messaging_product": "whatsapp", "recipient_type": "individual",
+               "to": wa_number(to), "type": kind, kind: body}
+    if not configured():
+        _dry_log(payload)
+        return {"dry_run": True, "to": to, "text": preview}
+    return _post(payload)
+
+
+def _btn(b) -> dict:
+    bid, title = b if isinstance(b, (list, tuple)) else (b, b)
+    return {"type": "reply", "reply": {"id": str(bid)[:256], "title": str(title)[:20]}}
+
+
 def send_text(to: str, body: str) -> dict:
-    payload = {
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": wa_number(to),
-        "type": "text",
-        "text": {"body": body},
-    }
-    if not configured():
-        _dry_log(payload)
-        return {"dry_run": True, "to": to, "text": body}
-    with httpx.Client(timeout=20) as c:
-        r = c.post(_url(), headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}, json=payload)
-        r.raise_for_status()
-        return r.json()
+    return _send(to, "text", {"body": body[:4096], "preview_url": True}, body)
 
 
-def send_buttons(to: str, body: str, buttons: list[str]) -> dict:
-    payload = {
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": wa_number(to),
-        "type": "interactive",
-        "interactive": {
-            "type": "button",
-            "body": {"text": body},
-            "action": {"buttons": [{"type": "reply", "reply": {"id": b, "title": b}} for b in buttons]},
-        },
-    }
-    if not configured():
-        _dry_log(payload)
-        return {"dry_run": True, "to": to, "text": body}
-    with httpx.Client(timeout=20) as c:
-        r = c.post(_url(), headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}, json=payload)
-        r.raise_for_status()
-        return r.json()
+def send_buttons(to: str, body: str, buttons: list) -> dict:
+    return _send(to, "interactive", {
+        "type": "button", "body": {"text": body[:1024]},
+        "action": {"buttons": [_btn(b) for b in buttons[:3]]}}, body)
 
 
 def send_list(to: str, body: str, button: str, sections: list[dict]) -> dict:
-    payload = {
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": wa_number(to),
-        "type": "interactive",
-        "interactive": {
-            "type": "list",
-            "body": {"text": body},
-            "action": {
-                "button": button,
-                "sections": sections,
-            },
-        },
-    }
-    if not configured():
-        _dry_log(payload)
-        return {"dry_run": True, "to": to, "text": body}
-    with httpx.Client(timeout=20) as c:
-        r = c.post(_url(), headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"}, json=payload)
-        r.raise_for_status()
-        return r.json()
+    for sec in sections:
+        sec["title"] = sec.get("title", "")[:24]
+        for row in sec.get("rows", []):
+            row["title"] = row["title"][:24]
+            if "description" in row:
+                row["description"] = row["description"][:72]
+    return _send(to, "interactive", {
+        "type": "list", "body": {"text": body[:4096]},
+        "action": {"button": button[:20], "sections": sections}}, body)
+
+
+def send_catalog(to: str, body: str) -> dict:
+    """The whole menu in WhatsApp's own catalogue view."""
+    return _send(to, "interactive", {
+        "type": "catalog_message", "body": {"text": body[:1024]},
+        "action": {"name": "catalog_message"}}, body)
+
+
+def send_products(to: str, header: str, body: str, sections: list[dict]) -> dict:
+    """Up to 30 dishes from the catalogue, in up to 10 titled sections."""
+    from ..config import WHATSAPP_CATALOG_ID
+    return _send(to, "interactive", {
+        "type": "product_list", "header": {"type": "text", "text": header[:60]},
+        "body": {"text": body[:1024]},
+        "action": {"catalog_id": WHATSAPP_CATALOG_ID, "sections": [
+            {"title": sec["title"][:24],
+             "product_items": [{"product_retailer_id": pid} for pid in sec["ids"]]}
+            for sec in sections]}}, body)
+
+
+def send_location_request(to: str, body: str) -> dict:
+    return _send(to, "interactive", {
+        "type": "location_request_message", "body": {"text": body[:1024]},
+        "action": {"name": "send_location"}}, body)
+
+
+def send_address_request(to: str, body: str, values: dict | None = None) -> dict:
+    """India-only native address form; the reply arrives as an nfm_reply."""
+    params = {"country": "IN"}
+    if values:
+        params["values"] = {k: v for k, v in values.items() if v}
+    return _send(to, "interactive", {
+        "type": "address_message", "body": {"text": body[:1024]},
+        "action": {"name": "address_message", "parameters": params}}, body)
+
+
+def send_cta(to: str, body: str, label: str, url: str) -> dict:
+    return _send(to, "interactive", {
+        "type": "cta_url", "body": {"text": body[:1024]},
+        "action": {"name": "cta_url", "parameters": {"display_text": label[:20], "url": url}}}, body)
 
 
 def send_outbound(to: str, msg: dict) -> dict:
-    if msg.get("type") == "buttons":
+    kind = msg.get("type")
+    if kind == "buttons":
         return send_buttons(to, msg["text"], msg["buttons"])
-    if msg.get("type") == "list":
+    if kind == "list":
         return send_list(to, msg["text"], msg["button"], msg["sections"])
-    if msg.get("type") == "template":
+    if kind == "catalog":
+        return send_catalog(to, msg["text"])
+    if kind == "products":
+        return send_products(to, msg["header"], msg["text"], msg["sections"])
+    if kind == "location_request":
+        return send_location_request(to, msg["text"])
+    if kind == "address":
+        try:
+            return send_address_request(to, msg["text"], msg.get("values"))
+        except WhatsAppError as e:  # not enabled for this number: ask in text
+            log.warning("address form failed (%s); asking in text", e)
+            return send_text(to, "Please type your full delivery address: house/flat, street, area, landmark, pincode.")
+    if kind == "cta":
+        return send_cta(to, msg["text"], msg["label"], msg["url"])
+    if kind == "template":
         return send_template(to, msg["name"], msg.get("language", "en"), msg.get("params", []))
     return send_text(to, msg["text"])
 
