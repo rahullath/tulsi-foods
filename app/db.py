@@ -87,6 +87,17 @@ CREATE TABLE IF NOT EXISTS reviews (
     sort_order  INTEGER NOT NULL DEFAULT 0,
     created_at  TEXT DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS dish_reviews (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id    INTEGER NOT NULL,
+    item_id     TEXT NOT NULL,
+    rating      INTEGER NOT NULL,
+    comment     TEXT,
+    author_name TEXT,
+    hidden      INTEGER NOT NULL DEFAULT 0,
+    created_at  TEXT DEFAULT (datetime('now')),
+    UNIQUE(order_id, item_id)
+);
 CREATE TABLE IF NOT EXISTS platform_stats (
     platform     TEXT PRIMARY KEY,
     rating       REAL,
@@ -787,5 +798,65 @@ def set_order_count_estimate(count: int) -> None:
         "ON CONFLICT(id) DO UPDATE SET order_count=excluded.order_count, updated_at=excluded.updated_at",
         (count,),
     )
+    conn.commit()
+    conn.close()
+
+
+# ---- dish reviews (verified: one per dish per delivered order) ----
+
+def add_dish_review(order_id: int, item_id: str, rating: int,
+                    comment: str | None, author_name: str | None) -> bool:
+    """False if this order already rated this dish."""
+    conn = get_conn()
+    try:
+        conn.execute(
+            "INSERT INTO dish_reviews(order_id, item_id, rating, comment, author_name) "
+            "VALUES(?,?,?,?,?)", (order_id, item_id, rating, comment, author_name))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+        conn.close()
+
+
+def order_reviewed_items(order_id: int) -> set[str]:
+    conn = get_conn()
+    rows = conn.execute("SELECT item_id FROM dish_reviews WHERE order_id=?", (order_id,)).fetchall()
+    conn.close()
+    return {r["item_id"] for r in rows}
+
+
+def dish_rating(item_id: str) -> dict:
+    """{'count', 'average'} over visible reviews of a dish (base id)."""
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT COUNT(*) AS n, AVG(rating) AS avg FROM dish_reviews WHERE item_id=? AND hidden=0",
+        (item_id,)).fetchone()
+    conn.close()
+    return {"count": row["n"] or 0, "average": round(row["avg"], 1) if row["avg"] else None}
+
+
+def dish_reviews(item_id: str, limit: int = 5) -> list[dict]:
+    """Newest visible reviews that have a comment, for the dish page."""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT id, rating, comment, author_name, created_at FROM dish_reviews "
+        "WHERE item_id=? AND hidden=0 AND comment IS NOT NULL AND comment != '' "
+        "ORDER BY id DESC LIMIT ?", (item_id, limit)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def all_dish_reviews(limit: int = 200) -> list[dict]:
+    conn = get_conn()
+    rows = conn.execute("SELECT * FROM dish_reviews ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def set_dish_review_hidden(review_id: int, hidden: bool) -> None:
+    conn = get_conn()
+    conn.execute("UPDATE dish_reviews SET hidden=? WHERE id=?", (1 if hidden else 0, review_id))
     conn.commit()
     conn.close()

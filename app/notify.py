@@ -72,7 +72,8 @@ def _status_attempts(order: dict, status: str) -> list[tuple]:
         return [(T.RIDER_ON_THE_WAY, _params(name, oid, link), tok),
                 ("delivery_confirmation_1", _params(name, oid), None)]
     if status == "delivered":
-        return [(T.DELIVERED, _params(name, oid), None),
+        return [(T.DELIVERED_RATE, _params(name, oid), tok),
+                (T.DELIVERED, _params(name, oid), None),
                 ("order_delivered", _params(name, oid), None)]
     if status == "cancelled":
         refund = round(float(order.get("total") or 0)) if order.get("payment_method") == "upi" else 0
@@ -94,8 +95,8 @@ def _status_text(order: dict, status: str) -> str | None:
         track = order.get("sr_tracking_url") or _track_url(order)
         return f"Order #{oid} is on its way! Track the rider: {track}"
     if status == "delivered":
-        return (f"Order #{oid} delivered. Enjoy your meal. If anything wasn't right, "
-                f"reply here and we'll fix it.")
+        return (f"Order #{oid} delivered. Enjoy your meal! Rate the dishes here: "
+                f"{_track_url(order)}#rate")
     if status == "cancelled":
         return f"Order #{oid} has been cancelled. {_refund_note(order)}"
     return None

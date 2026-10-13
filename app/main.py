@@ -49,6 +49,8 @@ app.include_router(qr_router)
 
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["aliases_for"] = seo_aliases.aliases_for
+from . import third_party_ratings  # noqa: E402
+templates.env.globals["swiggy_rating"] = third_party_ratings.swiggy
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 DISH_PHOTO_DIR = Path("app/static/img/dishes")
@@ -388,7 +390,8 @@ def menu_item_page(request: Request, item_id: str):
          "category_slug": _group_slug(item["group"]),
          "categories": all_categories(),
          "item_schema": _item_product_schema(item, item_url, photo_url, desc, available, aliases),
-         "breadcrumb_schema": breadcrumb},
+         "breadcrumb_schema": breadcrumb,
+         "dish_rating": db.dish_rating(base_id), "dish_reviews": db.dish_reviews(base_id)},
     )
 
 
@@ -457,14 +460,27 @@ def _item_product_schema(item: dict, item_url: str, photo_url: str,
             },
         },
     }
-    # aggregateRating/review deliberately omitted — we have no real per-dish
-    # review data (the `reviews` table is curated restaurant-level
-    # testimonials, not per-item ratings). Fabricating either would violate
-    # Google's structured-data policy and risks a manual action; fill this
-    # in honestly once the per-order review system (see docs/ROADMAP.md)
-    # actually exists.
+    # Real per-dish ratings only (verified delivered orders, see
+    # /api/orders/{ref}/review), and only when the page shows them too.
+    rating = db.dish_rating(item["id"])
+    if rating["count"]:
+        schema["aggregateRating"] = {"@type": "AggregateRating",
+                                     "ratingValue": str(rating["average"]),
+                                     "ratingCount": rating["count"],
+                                     "bestRating": "5", "worstRating": "1"}
+        reviews = [{"@type": "Review",
+                    "author": {"@type": "Person", "name": r["author_name"]},
+                    "datePublished": (r["created_at"] or "")[:10],
+                    "reviewBody": r["comment"],
+                    "reviewRating": {"@type": "Rating", "ratingValue": str(r["rating"]),
+                                     "bestRating": "5", "worstRating": "1"}}
+                   for r in db.dish_reviews(item["id"]) if r.get("author_name")]
+        if reviews:
+            schema["review"] = reviews
     if photo_url:
         schema["image"] = photo_url
+    elif (Path("app/static/img/cards") / f"{item['id']}.jpg").is_file():
+        schema["image"] = f"{SITE_URL}/static/img/cards/{item['id']}.jpg"
     else:
         schema["image"] = f"{SITE_URL}/static/logo.png"
     return schema
@@ -1268,7 +1284,60 @@ def get_order(ref: str):
     if not o:
         raise HTTPException(404, "Order not found")
     o.pop("courier_cost", None)  # what we paid Porter is ours, not the customer's
+    o["reviewed_items"] = sorted(db.order_reviewed_items(o["id"]))
     return o
+
+
+class DishRatingIn(BaseModel):
+    item_id: str
+    rating: int
+    comment: str | None = None
+
+
+class OrderReviewIn(BaseModel):
+    ratings: list[DishRatingIn]
+    name: str | None = None
+
+
+@app.post("/api/orders/{ref}/review")
+def review_order(ref: str, body: OrderReviewIn):
+    """Dish ratings from the customer, by tracking token only (no numeric
+    ids, so nobody can rate someone else's order). Delivered orders only,
+    one rating per dish per order: these feed the dish pages' visible
+    reviews and their Product aggregateRating / review markup."""
+    o = db.get_order_by_token(ref) if not ref.isdigit() else None
+    if not o:
+        raise HTTPException(404, "Order not found")
+    if o["status"] != "delivered":
+        raise HTTPException(400, "You can rate your food once it's delivered")
+    in_order = {menu._base_id(i["item_id"]) for i in o["items"]}
+    first = (body.name or o.get("customer_name") or "").strip().split(" ")[0][:30] or None
+    saved = 0
+    for r in body.ratings:
+        base = menu._base_id(r.item_id)
+        if base not in in_order or not 1 <= r.rating <= 5:
+            continue
+        comment = (r.comment or "").strip()[:500] or None
+        saved += db.add_dish_review(o["id"], base, r.rating, comment, first)
+    return {"ok": True, "saved": saved}
+
+
+@app.get("/api/admin/dish-reviews")
+def admin_dish_reviews(x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    return {"reviews": db.all_dish_reviews()}
+
+
+class HideIn(BaseModel):
+    hidden: bool
+
+
+@app.post("/api/admin/dish-reviews/{review_id}")
+def admin_hide_dish_review(review_id: int, body: HideIn, x_admin_token: str | None = Header(None)):
+    """Hide abusive or off-topic reviews (they stay in the database)."""
+    _check_admin(x_admin_token)
+    db.set_dish_review_hidden(review_id, body.hidden)
+    return {"ok": True}
 
 
 class PhoneLookupIn(BaseModel):
