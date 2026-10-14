@@ -84,8 +84,8 @@ def _phone_display(wa_id: str) -> str:
 
 def catalog_message(body: str | None = None) -> dict:
     return {"type": "catalog", "text": body or (
-        "Here's today's menu. Tap *View catalogue*, add what you'd like, "
-        "then tap the cart and *Send* to order.")}
+        "Here's today's menu 🍛 Tap *View catalogue*: dishes are grouped by section "
+        "(thalis, parathas, chaats…). Add what you like, then tap the cart and *Send*.")}
 
 
 def picks_message() -> dict | None:
@@ -117,7 +117,7 @@ def _closed_now() -> bool:
 
 
 KITCHEN_PHONE = "99406 21800"
-CHECKOUT_STATES = {"type", "address", "location", "when", "payment", "confirm"}
+CHECKOUT_STATES = {"type", "checkout_flow", "address", "location", "when", "payment", "confirm"}
 
 
 def _ask_kitchen(sess: dict) -> list[dict]:
@@ -133,6 +133,57 @@ def _relay(sess: dict, raw: str) -> list[dict]:
             buttons("Got it 👍 I've passed your message to the kitchen. They'll reply right here.\n\n"
                     f"Urgent? Call {KITCHEN_PHONE}.",
                     [("MENU", "See the menu"), ("TRACK", "Track order")])]
+
+
+def category_list(body: str = "What would you like? Pick a section of the menu:") -> dict | None:
+    """The menu as a WhatsApp list: one row per category with what's
+    available today, so nobody scrolls 150 dishes. Rows are CAT_<index>."""
+    rows = []
+    for i, g in enumerate(menu.grouped()):
+        avail = [it for it in g["items"] if it["available"]]
+        full = [it for it in avail if not it["id"].endswith(menu.HALF_SUFFIX)]
+        if not full:
+            continue
+        prices = [float(it["price"]) for it in avail]
+        rows.append({"id": f"CAT_{i}", "title": g["group"][:24],
+                     "description": f"{len(full)} dishes · {money(min(prices))}–{money(max(prices))}"})
+    if not rows:
+        return None
+    return {"type": "list", "text": body, "button": "Browse the menu",
+            "sections": [{"title": "Today's menu", "rows": rows[:10]}]}
+
+
+def category_products(index: int) -> list[dict]:
+    """One category as tappable product lists (WhatsApp shows at most 30
+    products per message, so big categories are split evenly; a dish and
+    its half portion stay together). Items added go to the same cart."""
+    groups = menu.grouped()
+    if not 0 <= index < len(groups):
+        return [category_list() or catalog_message()]
+    g = groups[index]
+    ids = [it["id"] for it in g["items"] if it["available"]]
+    # Feed ids: half portions are <id>-half in the catalogue (app/catalog.py).
+    ids = [i[: -len(menu.HALF_SUFFIX)] + "-half" if i.endswith(menu.HALF_SUFFIX) else i for i in ids]
+    ordered = []
+    for i in ids:  # keep "dish, dish (half)" pairs adjacent
+        if i.endswith("-half"):
+            continue
+        ordered.append(i)
+        if i + "-half" in ids:
+            ordered.append(i + "-half")
+    if not ordered:
+        return [text(f"{g['group']} is finished for today."), category_list() or catalog_message()]
+    parts = -(-len(ordered) // 30)
+    size = -(-len(ordered) // parts)
+    out = []
+    for n in range(parts):
+        chunk = ordered[n * size:(n + 1) * size]
+        title = g["group"] if parts == 1 else f"{g['group']} ({n + 1}/{parts})"
+        out.append({"type": "products", "header": title[:60],
+                    "text": "Tap a dish to see it and add it to your cart, then send the cart. "
+                            "Want something from another section? Tap *Browse the menu* again.",
+                    "sections": [{"title": title[:24], "ids": chunk}]})
+    return out
 
 
 def _welcome(sess: dict) -> list[dict]:
@@ -201,10 +252,57 @@ def _catalog_order(sess: dict, items: list[dict]) -> list[dict]:
 
 
 def _ask_order_type(sess: dict) -> list[dict]:
+    """After the cart: one checkout form (WhatsApp Flow) when configured,
+    else Delivery / Pickup buttons and the step-by-step questions."""
+    from ..config import DELIVERY_ZONES, WHATSAPP_CHECKOUT_FLOW_ID, WHATSAPP_FLOW_MODE
     body, _ = cart_summary(sess)
     sess["state"] = "type"
-    return [buttons(f"Your order:\n{body}\n\nDelivery or pickup?",
-                    [("DELIVERY", "Delivery"), ("PICKUP", "Pickup"), ("EDIT", "Change cart")])]
+    steps = buttons(f"Your order:\n{body}\n\nDelivery or pickup?",
+                    [("DELIVERY", "Delivery"), ("PICKUP", "Pickup"), ("EDIT", "Change cart")])
+    slots = [{"id": r["id"], "title": r["title"][:30], "description": r.get("description", "")[:300]}
+             for r in _window_options()]
+    if not (WHATSAPP_CHECKOUT_FLOW_ID and slots):
+        return [steps]
+    saved = db.get_customer(sess["wa_id"]) or {}
+    fees = ", ".join(f"₹{z['fee']} up to {z['max_km']:.0f} km" for z in DELIVERY_ZONES)
+    sess["state"] = "checkout_flow"
+    return [{"type": "flow", "flow_id": WHATSAPP_CHECKOUT_FLOW_ID, "mode": WHATSAPP_FLOW_MODE,
+             "header": "Your order", "cta": "Checkout", "screen": "CHECKOUT",
+             "token": f"checkout-{sess['wa_id']}",
+             "text": f"{body}\n\nTap *Checkout* to choose delivery, time and payment in one go. "
+                     "Want to change the dishes? Edit the cart and send it again.",
+             "data": {"summary": body.replace("*", ""), "slots": slots,
+                      "saved_address": (saved.get("address") or "")[:300],
+                      "saved_pincode": (saved.get("pincode") or "")[:6],
+                      "fees": f"Fixed fee: {fees}"},
+             "fallback": steps}]
+
+
+def _on_checkout_form(sess: dict, f: dict) -> list[dict]:
+    """The checkout Flow was submitted: apply everything, place the address
+    on the map for the fee band, then show the summary to confirm."""
+    if not sess["cart"]:
+        return [text("Your cart is empty now. Send a cart from the menu first."), catalog_message()]
+    ctx = sess["ctx"]
+    ctx["order_type"] = "pickup" if f.get("order_type") == "pickup" else "delivery"
+    ctx["payment"] = "COD" if f.get("payment") == "cod" else "UPI"
+    if (f.get("note") or "").strip():
+        ctx["note"] = f["note"].strip()[:300]
+    if not _apply_when(ctx, f.get("when") or ""):
+        return _ask_when(sess)
+    if ctx["order_type"] == "pickup":
+        ctx["fee"] = 0
+        return _summary(sess)
+    ctx["address"] = (f.get("address") or "").strip()[:300]
+    ctx["pincode"] = (f.get("pincode") or "").strip()[:6] or None
+    from .. import geo
+    point = geo.geocode(ctx["address"], ctx.get("pincode") or "")
+    if not point or not point.get("precise"):
+        # Only an area match: the rider needs the exact spot (it goes on the
+        # Porter card), so ask for the pin. One tap in WhatsApp.
+        return [text("Got it! One last thing: share your location pin so the rider finds "
+                     "your door. It also sets the delivery fee.")] + _ask_location(sess)
+    return _set_location(sess, point["lat"], point["lng"])
 
 
 # ---------------------------------------------------------------- address
@@ -252,6 +350,8 @@ def _set_location(sess: dict, lat: str, lng: str) -> list[dict]:
                         "You can pick it up from Alwarpet instead.",
                         [("PICKUP", "Pickup instead"), ("CANCEL", "Cancel order")])]
     ctx.update(lat=str(lat), lng=str(lng), fee=q["fee"], km=round(q["km"], 1))
+    if ctx.get("when") and ctx.get("payment"):  # the checkout Flow already asked
+        return _summary(sess)
     return _ask_when(sess)
 
 
@@ -291,22 +391,30 @@ def _ask_when(sess: dict) -> list[dict]:
              "sections": [{"title": "Delivery / pickup time", "rows": rows}]}]
 
 
-def _set_when(sess: dict, choice: str) -> list[dict] | None:
+def _apply_when(ctx: dict, choice: str) -> bool:
+    """WHEN_NOW or WHEN_<window>_<date> into ctx; False if not understood."""
     from ..config import DELIVERY_WINDOWS
-    ctx = sess["ctx"]
+    choice = (choice or "").upper()
     if choice == "WHEN_NOW":
         ctx.update(when="As soon as possible", scheduled_at=None, scheduled_window=None)
-    else:
-        try:
-            _, win_id, day = choice.split("_", 2)
-            w = next(x for x in DELIVERY_WINDOWS if x["id"] == win_id.lower())
-            d = datetime.fromisoformat(day)
-        except (ValueError, StopIteration):
-            return None
-        ref = datetime(d.year, d.month, d.day, *w["ref"], tzinfo=orders.IST)
-        ctx.update(scheduled_at=ref.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                   scheduled_window=w["id"])
-        ctx["when"] = orders._window_label(w["id"], ctx["scheduled_at"])
+        return True
+    try:
+        _, win_id, day = choice.split("_", 2)
+        w = next(x for x in DELIVERY_WINDOWS if x["id"] == win_id.lower())
+        d = datetime.fromisoformat(day)
+    except (ValueError, StopIteration):
+        return False
+    ref = datetime(d.year, d.month, d.day, *w["ref"], tzinfo=orders.IST)
+    ctx.update(scheduled_at=ref.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+               scheduled_window=w["id"])
+    ctx["when"] = orders._window_label(w["id"], ctx["scheduled_at"])
+    return True
+
+
+def _set_when(sess: dict, choice: str) -> list[dict] | None:
+    ctx = sess["ctx"]
+    if not _apply_when(ctx, choice):
+        return None
     sess["state"] = "payment"
     return [buttons("How would you like to pay?",
                     [("PAY_UPI", "UPI"), ("PAY_COD", "Cash on delivery" if ctx.get("order_type") == "delivery" else "Cash at pickup")])]
@@ -348,7 +456,7 @@ def _summary(sess: dict) -> list[dict]:
         lines.append("_Any request (less spicy, no onion)? Just type it._")
     sess["state"] = "confirm"
     return [buttons("\n".join(lines)[:1000],
-                    [("PLACE", "Place order"), ("EDIT", "Change"), ("CANCEL", "Cancel")])]
+                    [("PLACE", "Place order"), ("CHANGE", "Change details"), ("CANCEL", "Cancel")])]
 
 
 def _place_order(sess: dict) -> list[dict]:
@@ -426,12 +534,14 @@ def _reorder(sess: dict) -> list[dict]:
 def handle(wa_id: str, incoming: str, profile_name: str | None = None,
            lat: str | None = None, lng: str | None = None,
            catalog_items: list[dict] | None = None,
-           address: dict | None = None) -> list[dict]:
+           address: dict | None = None, flow_reply: dict | None = None) -> list[dict]:
     sess = sessions.load(wa_id)
     if profile_name and not sess["ctx"].get("profile_name"):
         sess["ctx"]["profile_name"] = profile_name
     if catalog_items is not None:
         out = _catalog_order(sess, catalog_items)
+    elif flow_reply is not None:
+        out = _on_checkout_form(sess, flow_reply)
     elif address is not None:
         out = _on_address_form(sess, address)
     elif lat and lng:
@@ -493,6 +603,10 @@ def _route(sess: dict, incoming: str) -> list[dict]:
     if t == "EDIT":
         sess["state"] = "root"
         return [catalog_message("Change your cart in the menu and send it again.")]
+    if t.startswith("CAT_") and t[4:].isdigit():
+        return category_products(int(t[4:]))
+    if t in ("FULL MENU", "CATALOGUE", "CATALOG", "ALL"):
+        return [catalog_message()]
     if t in ("KITCHEN", "TALK TO THE KITCHEN", "CALL", "CONTACT"):
         return _ask_kitchen(sess)
     if t in GREETINGS:
@@ -501,6 +615,8 @@ def _route(sess: dict, incoming: str) -> list[dict]:
             return [buttons(f"Welcome back! You were in the middle of an order:\n{body}",
                             [("CONTINUE", "Continue order"), ("RESTART", "Start over")])]
         return _welcome(sess)
+    if t == "CHANGE" and sess["cart"]:
+        return _ask_order_type(sess)
     if t == "RESTART":
         _reset_checkout(sess)
         return _welcome(sess)
@@ -510,6 +626,12 @@ def _route(sess: dict, incoming: str) -> list[dict]:
         return _relay(sess, raw)
     if t in THANKS and state not in CHECKOUT_STATES:
         return [text("You're welcome! 🙏 Send *menu* any time to order again.")]
+
+    if state == "checkout_flow":
+        if t in ("DELIVERY", "PICKUP", "D", "P"):
+            state = sess["state"] = "type"
+        else:
+            return _ask_order_type(sess)
 
     if state == "type":
         if t in ("DELIVERY", "D"):

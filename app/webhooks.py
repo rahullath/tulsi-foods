@@ -50,6 +50,7 @@ def _extract_messages(body: dict) -> list[dict]:
                 lng = None
                 items = None
                 address = None
+                flow_reply = None
                 media = None
                 if msg.get("type") == "interactive":
                     intr = msg.get("interactive", {})
@@ -64,8 +65,12 @@ def _extract_messages(body: dict) -> list[dict]:
                             resp = json.loads(intr.get("nfm_reply", {}).get("response_json") or "{}")
                         except ValueError:
                             resp = {}
-                        address = resp.get("values") or resp
-                        m = "[Address form]"
+                        if "flow_token" in resp and "values" not in resp:
+                            flow_reply = resp  # checkout Flow submitted
+                            m = "[Checkout form]"
+                        else:
+                            address = resp.get("values") or resp
+                            m = "[Address form]"
                 elif msg.get("type") == "request_welcome":
                     m = "REQUEST_WELCOME"  # first time the customer opens the chat
                 elif msg.get("type") == "order":
@@ -98,6 +103,7 @@ def _extract_messages(body: dict) -> list[dict]:
                     "lng": lng,
                     "catalog_items": items,
                     "address": address,
+                    "flow_reply": flow_reply,
                     "media": media,
                     "id": msg.get("id"),
                     "context": (msg.get("context") or {}).get("id"),
@@ -249,7 +255,8 @@ async def inbound(request: Request, x_hub_signature_256: str | None = Header(Non
                 replies = conversation.handle(msg["wa_id"], msg["text"], msg["profile_name"],
                                               lat=msg.get("lat"), lng=msg.get("lng"),
                                               catalog_items=msg.get("catalog_items"),
-                                              address=msg.get("address"))
+                                              address=msg.get("address"),
+                                              flow_reply=msg.get("flow_reply"))
             for reply in replies:
                 if reply.get("type") == "relay":
                     from .kitchen_alerts import relay_question

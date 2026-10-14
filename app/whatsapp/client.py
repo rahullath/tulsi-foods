@@ -129,8 +129,29 @@ def send_cta(to: str, body: str, label: str, url: str) -> dict:
         "action": {"name": "cta_url", "parameters": {"display_text": label[:20], "url": url}}}, body)
 
 
+def send_flow(to: str, flow_id: str, header: str, body: str, cta: str, screen: str,
+              data: dict, token: str, mode: str = "") -> dict:
+    """Open a WhatsApp Flow (a native form) on `screen` with initial `data`."""
+    params = {"flow_message_version": "3", "flow_token": token, "flow_id": flow_id,
+              "flow_cta": cta[:20], "flow_action": "navigate",
+              "flow_action_payload": {"screen": screen, "data": data}}
+    if mode:
+        params["mode"] = mode
+    return _send(to, "interactive", {
+        "type": "flow", "header": {"type": "text", "text": header[:60]},
+        "body": {"text": body[:1024]}, "footer": {"text": "Tulsi Foods"},
+        "action": {"name": "flow", "parameters": params}}, body)
+
+
 def send_outbound(to: str, msg: dict) -> dict:
     kind = msg.get("type")
+    if kind == "flow":
+        try:
+            return send_flow(to, msg["flow_id"], msg["header"], msg["text"], msg["cta"],
+                             msg["screen"], msg["data"], msg["token"], msg.get("mode", ""))
+        except WhatsAppError as e:
+            log.warning("flow message failed (%s); using the step-by-step fallback", e)
+            return send_outbound(to, msg["fallback"])
     if kind == "buttons":
         return send_buttons(to, msg["text"], msg["buttons"])
     if kind == "list":
