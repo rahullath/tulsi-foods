@@ -40,7 +40,7 @@ section[id] { scroll-margin-top: 76px; }
 .hero-info { display: flex; flex-direction: column; gap: 9px; margin-top: 32px; font-size: 14px; color: var(--sub); }
 .hero-info span { display: flex; gap: 9px; align-items: baseline; }
 .hero-info span::before { content: "·"; color: var(--g); font-weight: 700; }
-.hero-photo { height: 420px; border-radius: 16px; background: repeating-linear-gradient(135deg, var(--line2) 0 12px, #E6E1D7 12px 24px); overflow: hidden; }
+.hero-photo { position: relative; height: 420px; border-radius: 16px; background: repeating-linear-gradient(135deg, var(--line2) 0 12px, #E6E1D7 12px 24px); overflow: hidden; }
 .hero-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* Shared section heads */
@@ -117,6 +117,34 @@ section[id] { scroll-margin-top: 76px; }
 .faq-item[open] summary::after { content: '–'; }
 .faq-item p { padding: 0 18px 16px; margin: 0; font-size: 14.5px; line-height: 1.7; color: #4A4F45; }
 
+
+/* Open/closed strip */
+.open-strip { max-width: 1200px; margin: 14px auto 0; padding: 11px 14px; background: #fff; border: 1px solid #ECE6DA; border-radius: 12px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.open-dot { width: 8px; height: 8px; border-radius: 50%; background: #C27C0E; flex: none; }
+.open-strip.is-open .open-dot { background: #25A55F; }
+.open-strip a { margin-left: auto; font-weight: 600; color: var(--g); text-decoration: none; white-space: nowrap; }
+.open-strip b { font-weight: 600; }
+@media (max-width: 768px) {
+  .open-strip { margin: 2px 18px 0; }
+  .hero { gap: 0; padding: 14px 18px 0; }
+  .hero-photo { order: -1; height: 264px; border-radius: 22px; margin-bottom: 22px; }
+  .hero-badge { font-size: 11px; padding: 7px 11px; }
+  .hero h1 { margin-top: 14px; }
+  .hero h1 { font-size: 31px; line-height: 1.05; text-wrap: balance; }
+  .hero h1 .h1-brand { display: none; }
+  .hero-sub { font-size: 15px; margin-top: 10px; }
+  .hero-actions { flex-direction: column; align-items: stretch; gap: 12px; margin-top: 20px; }
+  .btn-wa { min-height: 54px; display: flex; align-items: center; justify-content: center; border-radius: 14px; font-size: 16.5px; }
+  .btn-menu { border: none; text-align: center; padding: 6px; font-size: 13.5px; color: #5C6157; }
+  .hero-info { display: none; }
+  .stove-grid { gap: 12px; }
+  .stove-card { border-radius: 16px; }
+  .stove-body { padding: 10px 11px 12px; }
+  .stove-name { font-size: 13.5px; }
+  .stove-desc { display: none; }
+  .stove-price { font-size: 13.5px; margin-top: 3px; font-weight: 500; }
+  .nav-cta, .btn-wa, .cta-btn { min-height: 48px; }
+}
 @media (max-width: 768px) {
   .hero { grid-template-columns: 1fr; padding: 32px 18px; }
   .hero-photo { height: 240px; }
@@ -136,14 +164,15 @@ section[id] { scroll-margin-top: 76px; }
 }
 </style>
 
+<div class="open-strip" id="open-strip" aria-live="polite"><span class="open-dot" id="open-dot"></span><span id="open-text">Check hours</span><a href="/menu" id="open-cta">Order ahead</a></div>
 <section class="hero">
   <div>
     <div class="hero-badge">11 YEARS · MYLAPORE · PURE VEG</div>
     <h1><span class="h1-brand">Tulsi Foods · pure veg restaurant, Alwarpet, Chennai</span>North Indian food, cooked the way it is at home.</h1>
     <p class="hero-sub">Kavita Lath has run this kitchen in Mylapore since 2015. Thalis, hot parathas, dal, sabzi, chaat — pure vegetarian, cooked the same day you eat it.</p>
     <div class="hero-actions">
-      <a class="btn-wa" href="/menu">Order from the menu</a>
-      <a class="btn-menu" href="{{ wa_order_link("Hi") }}" target="_blank">Message us instead</a>
+      <a class="btn-wa" href="/menu">Order now <span aria-hidden="true">&rarr;</span></a>
+      <a class="btn-menu" href="{{ wa_order_link("Hi") }}" target="_blank" rel="noopener">or message us on WhatsApp</a>
     </div>
     <div class="hero-info">
       <span>Cooked to order, at your door in 30 to 60 minutes</span>
@@ -409,6 +438,29 @@ section[id] { scroll-margin-top: 76px; }
 }
 </script>
 
+
+<script>
+(() => {
+  // Open / closed strip from kitchen windows (IST): Lunch 12:00-14:30 (not Mondays), Dinner 18:30-21:30.
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const mins = now.getHours() * 60 + now.getMinutes(), day = now.getDay();
+  const lunch = [720, 870], dinner = [1110, 1290];
+  const inW = w => mins >= w[0] && mins < w[1];
+  const fmt = m => { const h = Math.floor(m / 60), mm = String(m % 60).padStart(2, "0"); return ((h + 11) % 12 + 1) + ":" + mm + " " + (h >= 12 ? "PM" : "AM"); };
+  const strip = document.getElementById("open-strip"), text = document.getElementById("open-text"), cta = document.getElementById("open-cta");
+  if (!strip) return;
+  if ((day !== 1 && inW(lunch)) || inW(dinner)) {
+    strip.classList.add("is-open");
+    text.innerHTML = "<b>Open now</b> \u00b7 cooking to order";
+    cta.textContent = "Order";
+  } else {
+    let next = null;
+    if (day !== 1 && mins < lunch[0]) next = ["Lunch", lunch[0]];
+    else if (mins < dinner[0]) next = ["Dinner", dinner[0]];
+    text.innerHTML = next ? "<b>Closed now</b> \u00b7 " + next[0] + " from " + fmt(next[1]) : "<b>Closed for today</b> \u00b7 order ahead for tomorrow";
+  }
+})();
+</script>
 <script>
 (() => {
   // Reveal sections as they scroll into view

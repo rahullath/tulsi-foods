@@ -5,8 +5,34 @@
 {% endblock %}
 {% block body %}
 <style>
-  body { background: #f7f8f4; font-family: 'Inter', system-ui, sans-serif; color: #1a1a1a; margin: 0; }
-  .wrap { max-width: 520px; margin: 0 auto; padding: 32px 20px 48px; }
+  body { background: #FBF8F2; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #171A14; margin: 0; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 18px 18px 48px; }
+  .th { background: #0E7A45; color: #fff; padding: 22px 20px 24px; }
+  .th-in { max-width: 520px; margin: 0 auto; }
+  .th-top { display: flex; justify-content: space-between; align-items: center; }
+  .th-top span { font: 600 12px/1 'IBM Plex Mono', monospace; letter-spacing: .05em; opacity: .85; }
+  .th-top img { width: 28px; height: 28px; object-fit: contain; background: #FBF8F2; border-radius: 7px; padding: 2px; }
+  .th h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; line-height: 1; font-weight: 700; margin: 22px 0 0; }
+  .th-eta { margin-top: 8px; font-size: 16px; opacity: .92; }
+  .th-btn { display: flex; align-items: center; justify-content: center; margin-top: 18px; min-height: 50px; border-radius: 13px; background: #fff; color: #0E7A45; font-size: 15.5px; font-weight: 600; text-decoration: none; }
+  .th.cx { background: #FBF8F2; color: #171A14; border-bottom: 1px solid #ECE6DA; }
+  .th.cx .th-top span { color: #9A3324; opacity: 1; }
+  .th.cx h1 { font-size: 26px; }
+  .stars button { min-width: 44px; min-height: 44px; font-size: 32px; }
+  .rate-dish { background: #fff; }
+  .th-btn:empty, .th-btn[hidden] { display: none; }
+  .card > h1, #status-note, #eta-line { display: none; }
+  .card { border-radius: 16px; border-color: #ECE6DA; box-shadow: none; padding: 20px; }
+  .step { padding-bottom: 14px; }
+  .step .lbl { font-size: 15px; }
+  .step.done .dot { background: #0E7A45; border-color: #0E7A45; }
+  .step.current .dot { background: #fff; border: 4px solid #0E7A45; box-shadow: none; width: 18px; height: 18px; margin: 0 -2px 0 -2px; box-sizing: border-box; }
+  .step:not(:last-child)::before { background: #DED7C8; }
+  .step.done:not(:last-child)::before { background: #0E7A45; }
+  .step .desc { display: none; }
+  .step.current .desc { display: block; }
+  .pr.wa { background: #fff; border-color: #DED7C8; color: #0E7A45; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+  .pr { min-height: 48px; display: flex; align-items: center; justify-content: center; }
   .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
   .top img { height: 40px; }
   .back { color: #4a5a3a; text-decoration: none; font-size: 14px; }
@@ -64,11 +90,13 @@
   .rate .send:disabled { background: #B9B2A2; }
   .fee-box .pr { display: block; margin-top: 10px; background: #0E7A45; color: #fff; border-color: #0E7A45; }
 </style>
+<header class="th"><div class="th-in">
+  <div class="th-top"><span>ORDER #{{ order_id }}</span><img src="/static/logo.png" alt="Tulsi Foods"></div>
+  <h1 id="th-title">Loading…</h1>
+  <div class="th-eta" id="th-eta"></div>
+  <a class="th-btn" id="th-btn" href="#" target="_blank" rel="noopener" hidden>Follow the rider live ↗</a>
+</div></header>
 <div class="wrap">
-  <div class="top">
-    <img src="/static/logo.png" alt="Tulsi Foods">
-    <a class="back" href="/">← Back to menu</a>
-  </div>
   <div class="card" id="card">
     <h1>Order #{{ order_id }}</h1>
     <p class="sub" id="status-note">Loading your order…</p>
@@ -142,6 +170,17 @@
     } else {
       noteEl.textContent = statusDesc;
     }
+    const TITLES = { new: "Order placed", preparing: "Being cooked", ready: o.order_type === "pickup" ? "Ready for pickup" : "Ready, rider coming", out_for_delivery: "On its way", delivered: "Delivered", cancelled: "Cancelled" };
+    const pickupReady = st === "ready" && o.order_type === "pickup";
+    document.getElementById("th-title").textContent = pickupReady ? "Ready to collect" : (TITLES[st] || "Your order");
+    document.querySelector(".th").classList.toggle("cx", st === CANCELED);
+    document.querySelector(".th-top span").textContent = "ORDER #" + ORDER_ID + (st === CANCELED ? " · CANCELLED" : o.order_type === "pickup" ? " · PICKUP" : "");
+    const etaShort = { new: o.order_type === "pickup" ? "Ready in about 20–25 min" : "Arriving in about 40–60 min", preparing: o.order_type === "pickup" ? "Ready in about 15–20 min" : "Arriving in about 30–45 min", ready: o.order_type === "pickup" ? "34 Murrays Gate Road, Alwarpet" : "Arriving in about 20–30 min", out_for_delivery: "Arriving in about 15 min", delivered: "Enjoy your meal", cancelled: o.paid ? "₹" + (+o.total).toFixed(2).replace(/\.00$/, "") + " goes back to your UPI account within 5–7 working days" : "Nothing to pay" };
+    document.getElementById("th-eta").textContent = (o.scheduled_at && st === "new") ? "Scheduled — we'll have it out in your window" : (etaShort[st] || "");
+    const thBtn = document.getElementById("th-btn"), liveUrl = o.sr_tracking_url || o.tracking_url;
+    thBtn.hidden = !((liveUrl && st === "out_for_delivery") || pickupReady);
+    if (pickupReady) { thBtn.textContent = "Directions ↗"; thBtn.href = "https://maps.google.com/?q=34+Murrays+Gate+Road,+Alwarpet,+Chennai"; }
+    else { thBtn.textContent = "Follow the rider live ↗"; if (liveUrl) thBtn.href = liveUrl; }
     const etaText = eta(o);
     document.getElementById('eta-line')?.remove();
     if (etaText && st !== CANCELED) {
@@ -150,7 +189,7 @@
 
     let html = '';
     if (st === CANCELED) {
-      html += '<div class="err">This order was cancelled. If you were charged, we\'ll refund you right away.</div><div class="chip warn" style="margin-top:12px">Status: Cancelled</div>';
+      html += '<div class="err">This order was cancelled. If you were charged, we\'ll refund you right away.</div><a class="pr" style="margin-top:12px;color:#0E7A45" href="/menu">Order again</a>';
     } else {
       html += '<div class="stepper">';
       for (const [key, lbl, desc] of STATUSES) {
@@ -221,7 +260,7 @@
 
     html += '<div class="pr-list">';
     if (o.tracking_url || o.sr_tracking_url) {
-      html += `<a class="pr" href="${o.sr_tracking_url || o.tracking_url}" target="_blank" rel="noopener">Track rider live 🛵</a>`;
+      if (st !== "out_for_delivery") html += `<a class="pr" href="${o.sr_tracking_url || o.tracking_url}" target="_blank" rel="noopener">Track rider live</a>`;
     } else if ((st === "out_for_delivery" || st === "delivered") && !o.sr_tracking_url && !o.tracking_url) {
       html += '<div class="empty">Rider tracking will appear here once available.</div>';
     }
