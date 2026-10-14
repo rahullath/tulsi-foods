@@ -505,10 +505,18 @@ def _set_when(sess: dict, choice: str) -> list[dict] | None:
 def _totals(sess: dict) -> dict:
     _, subtotal = cart_summary(sess)
     packing = orders.packing_fee_for(subtotal)
-    gst = orders.gst_for(subtotal + packing)
+    discount = 0.0
+    if sess["ctx"].get("discount_code"):
+        from .. import discounts
+        try:
+            discount = discounts.evaluate(sess["ctx"]["discount_code"],
+                                          orders._normalize_phone(sess["wa_id"]), subtotal)["amount"]
+        except discounts.DiscountError:
+            sess["ctx"].pop("discount_code", None)  # cart changed below its minimum, etc.
+    gst = orders.gst_for(subtotal - discount + packing)
     fee = float(sess["ctx"].get("fee") or 0) if sess["ctx"].get("order_type") == "delivery" else 0.0
-    return {"subtotal": subtotal, "packing": packing, "gst": gst, "fee": fee,
-            "total": round(subtotal + packing + gst + fee, 2)}
+    return {"subtotal": subtotal, "discount": discount, "packing": packing, "gst": gst, "fee": fee,
+            "total": round(subtotal - discount + packing + gst + fee, 2)}
 
 
 def _summary(sess: dict) -> list[dict]:
@@ -516,12 +524,14 @@ def _summary(sess: dict) -> list[dict]:
     body, _ = cart_summary(sess)
     t = _totals(sess)
     lines = [body]
+    if t["discount"]:
+        lines.append(f"Discount ({ctx['discount_code']}): −{money(t['discount'])}")
     if t["packing"]:
-        lines.append(f"Packing — {money(t['packing'])}")
+        lines.append(f"Packing: {money(t['packing'])}")
     if t["gst"]:
-        lines.append(f"GST — {money(t['gst'])}")
+        lines.append(f"GST: {money(t['gst'])}")
     if ctx.get("order_type") == "delivery":
-        lines.append(f"Delivery ({ctx.get('km', '?')} km) — {money(t['fee'])}")
+        lines.append(f"Delivery ({ctx.get('km', '?')} km): {money(t['fee'])}")
     lines.append(f"*Total: {money(t['total'])}*")
     lines.append("")
     if ctx.get("order_type") == "delivery":
@@ -539,6 +549,24 @@ def _summary(sess: dict) -> list[dict]:
                     [("PLACE", "Place order"), ("CHANGE", "Change details"), ("CANCEL", "Cancel")])]
 
 
+def _try_code(sess: dict, raw: str) -> list[dict] | None:
+    """A discount code typed at the summary ("TRIAL15" or "code TRIAL15").
+    Anything that isn't a known code is left alone (it becomes a note)."""
+    from .. import discounts
+    words = raw.split()
+    if len(words) == 2 and words[0].lower() in ("code", "coupon", "promo"):
+        words = words[1:]
+    if len(words) != 1 or not discounts.get(words[0]):
+        return None
+    _, subtotal = cart_summary(sess)
+    try:
+        d = discounts.evaluate(words[0], orders._normalize_phone(sess["wa_id"]), subtotal)
+    except discounts.DiscountError as e:
+        return [text(str(e))] + _summary(sess)
+    sess["ctx"]["discount_code"] = d["code"]
+    return [text(f"🎉 {d['code']} applied: {d['label']}.")] + _summary(sess)
+
+
 def _place_order(sess: dict) -> list[dict]:
     ctx = sess["ctx"]
     items = [{"item_id": i, "qty": q} for i, q in sess["cart"].items()]
@@ -552,6 +580,7 @@ def _place_order(sess: dict) -> list[dict]:
             payment_method="upi" if ctx.get("payment") == "UPI" else "cod",
             scheduled_at=ctx.get("scheduled_at"),
             scheduled_window=ctx.get("scheduled_window"),
+            discount_code=ctx.get("discount_code"),
             instructions=ctx.get("note"),
             items=items,
             lat=ctx.get("lat"),
@@ -581,7 +610,7 @@ def _reset_checkout(sess: dict) -> None:
     sess["state"] = "root"
     for k in ("name", "address", "pincode", "saved_address", "asked_saved", "when",
               "scheduled_at", "scheduled_window", "payment", "order_type", "fee",
-              "km", "lat", "lng", "note"):
+              "km", "lat", "lng", "note", "discount_code"):
         sess["ctx"].pop(k, None)
 
 
@@ -758,6 +787,9 @@ def _route(sess: dict, incoming: str) -> list[dict]:
     if state == "confirm":
         if t in ("PLACE", "YES", "CONFIRM"):
             return _place_order(sess)
+        code_out = _try_code(sess, raw)
+        if code_out:
+            return code_out
         if len(raw) >= 3:  # "less spicy please" -> a note for the kitchen
             note = (sess["ctx"].get("note", "") + " " + raw).strip()[:300]
             sess["ctx"]["note"] = note

@@ -226,6 +226,7 @@
     const gst = +o.gst_amount || 0, fee = +o.delivery_fee || 0, total = +o.total || 0;
     html += '<div class="timeline">';
     html += `<div><span>Subtotal</span><span>₹${subtotal.toFixed(0)}</span></div>`;
+    if (+o.discount_total) html += `<div style="color:#0E7A45"><span>Discount${o.discount_code ? " (" + o.discount_code + ")" : ""}</span><span>−₹${(+o.discount_total).toFixed(0)}</span></div>`;
     if (packing) html += `<div><span>Packing</span><span>₹${packing.toFixed(0)}</span></div>`;
     if (gst) html += `<div><span>GST (5%)</span><span>₹${gst.toFixed(0)}</span></div>`;
     const finalFee = +o.delivery_fee_final || 0;

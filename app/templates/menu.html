@@ -193,6 +193,13 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .map-pin { height: 180px; border-radius: 10px; overflow: hidden; margin-top: 8px; border: 1px solid var(--border); background: #E9E4D8; }
 .map-address-preview { font-size: 12px; color: #4A4F45; margin-top: 6px; line-height: 1.4; min-height: 1.4em; }
 .checkout-field textarea { resize: vertical; }
+.co-code { margin-top: 6px; font-size: 14px; }
+.co-code summary { cursor: pointer; color: var(--sub, #6F7468); list-style: none; padding: 6px 0; }
+.co-code summary::-webkit-details-marker { display: none; }
+.co-code[open] summary { color: var(--ink, #171A14); }
+.co-code-row { display: flex; gap: 8px; margin-top: 6px; }
+.co-code-row input { flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--border, #E7E1D6); border-radius: 8px; font-size: 15px; text-transform: uppercase; background: #fff; }
+.co-code-row button { padding: 0 16px; border: 1px solid var(--g, #0E7A45); color: var(--g, #0E7A45); background: #fff; border-radius: 8px; font-weight: 600; cursor: pointer; }
 .checkout-summary { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 14px; }
 .checkout-row { display: flex; justify-content: space-between; padding: 4px 0; }
 .checkout-row.total { font-weight: 700; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; font-size: 16px; }
@@ -673,6 +680,14 @@ main { padding: 8px 16px 130px; }
             <div class="checkout-hint" id="pay-hint"></div>
           </div>
           <div class="checkout-field"><label>Note</label><input name="instructions" placeholder="e.g. no coriander"></div>
+          <details class="co-code" id="co-code">
+            <summary>Have a discount code?</summary>
+            <div class="co-code-row">
+              <input id="code-input" placeholder="Enter code" autocapitalize="characters" autocomplete="off" maxlength="20">
+              <button type="button" id="code-apply">Apply</button>
+            </div>
+            <div class="checkout-hint" id="code-msg"></div>
+          </details>
             </section>
           </div>
           <div class="co-footer">
@@ -687,6 +702,38 @@ main { padding: 8px 16px 130px; }
     document.body.appendChild(overlay);
 
     overlay.querySelector("#checkout-close").addEventListener("click", () => overlay.remove());
+
+    // Discount code: tucked away under "Have a discount code?". The server
+    // re-checks it when the order is placed; this is only the preview.
+    let appliedCode = null;  // {code, kind, value, max_discount, min_subtotal, label}
+    const discountFor = (sub) => {
+      if (!appliedCode || sub < (appliedCode.min_subtotal || 0)) return 0;
+      let d = appliedCode.kind === "percent" ? sub * appliedCode.value / 100 : appliedCode.value;
+      if (appliedCode.max_discount) d = Math.min(d, appliedCode.max_discount);
+      return Math.round(Math.min(d, sub) * 100) / 100;
+    };
+    const codeInput = overlay.querySelector("#code-input");
+    const codeMsg = overlay.querySelector("#code-msg");
+    async function applyCode() {
+      const code = codeInput.value.trim();
+      if (!code) return;
+      const sub = Object.keys(cart).reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
+      const phone = overlay.querySelector('[name=phone]').value.trim();
+      codeMsg.style.color = ""; codeMsg.textContent = "Checking…";
+      try {
+        const r = await fetch(`/api/discount/check?code=${encodeURIComponent(code)}&subtotal=${sub}` + (phone ? `&phone=${encodeURIComponent(phone)}` : ""));
+        const d = await r.json();
+        appliedCode = d.valid ? d : null;
+        codeMsg.style.color = d.valid ? "var(--g, #0E7A45)" : "#B3261E";
+        codeMsg.textContent = d.message;
+      } catch (_) {
+        codeMsg.style.color = "#B3261E"; codeMsg.textContent = "Couldn't check the code. Try again.";
+      }
+      refreshCheckoutSummary();
+    }
+    overlay.querySelector("#code-apply").addEventListener("click", applyCode);
+    codeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); applyCode(); } });
+    codeInput.addEventListener("input", () => { if (appliedCode) { appliedCode = null; codeMsg.textContent = ""; refreshCheckoutSummary(); } });
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
 
     // Persist in-progress checkout details (separate from the cart, which
@@ -799,7 +846,8 @@ main { padding: 8px 16px 130px; }
       const currentIds = Object.keys(cart);
       const currentSubtotal = currentIds.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
       const packing = packingFeeFor(currentSubtotal);
-      const gst = gstFor(currentSubtotal + packing);
+      const discount = discountFor(currentSubtotal);
+      const gst = gstFor(currentSubtotal - discount + packing);
       const isDelivery = overlay.querySelector('[name=order_type]').value === "delivery";
       const q = isDelivery ? quoteDelivery(currentSubtotal) : null;
 
@@ -839,13 +887,14 @@ main { padding: 8px 16px 130px; }
         `).join("")
         + (currentSubtotal > 0 ? `
           <div class="checkout-row"><span>Subtotal</span><span>₹${currentSubtotal}</span></div>
+          ${discount ? `<div class="checkout-row" style="color:var(--g, #0E7A45)"><span>Discount (${appliedCode.code})</span><span>−₹${discount.toFixed(2).replace(/\.00$/, "")}</span></div>` : ""}
           ${packing ? `<div class="checkout-row"><span>Packing charge</span><span>₹${packing}</span></div>` : ""}
           ${gst ? `<div class="checkout-row"><span>GST (${(GST_RATE * 100).toFixed(0)}%)</span><span>₹${gst.toFixed(2)}</span></div>` : ""}
         ` : "")
         + (deliveryRow ? deliveryRow : "")
-        + `<div class="checkout-row total"><span>Total</span><span>₹${(currentSubtotal + packing + gst + deliveryFee).toFixed(2)}</span></div>
+        + `<div class="checkout-row total"><span>Total</span><span>₹${(currentSubtotal - discount + packing + gst + deliveryFee).toFixed(2)}</span></div>
            <div class="checkout-row-note">${deliveryNote || "This is the final total. Nothing is added later."}</div>`;
-      const grand = Math.round((currentSubtotal + packing + gst + deliveryFee) * 100) / 100;
+      const grand = Math.round((currentSubtotal - discount + packing + gst + deliveryFee) * 100) / 100;
       const placeBtn = overlay.querySelector("#place-btn");
       const totAmt = overlay.querySelector("#co-total-amt");
       if (totAmt) totAmt.textContent = "₹" + grand.toFixed(2);
@@ -1335,6 +1384,7 @@ main { padding: 8px 16px 130px; }
         scheduled_at: fd.get("scheduled_at") || null,
         scheduled_window: fd.get("scheduled_window") || null,
         pay_courier_direct: false,
+        discount_code: appliedCode ? appliedCode.code : null,
         items: ids.map(id => {
           const noteEl = document.querySelector(`.card-note[data-id="${id}"]`);
           const note = noteEl ? noteEl.value.trim() : "";
@@ -1384,6 +1434,7 @@ main { padding: 8px 16px 130px; }
           ...placedItems.map(i => `${i.qty} × ${i.name} — ₹${Math.round(i.price * i.qty)}`),
           "",
           `Subtotal ₹${data.subtotal}`,
+          ...(data.discount ? [`Discount (${data.discount_code}) −₹${data.discount}`] : []),
           ...(data.packing_fee ? [`Packing ₹${data.packing_fee}`] : []),
           ...(data.gst_amount ? [`GST ₹${data.gst_amount}`] : []),
           ...(data.delivery_fee ? [`Delivery ₹${data.delivery_fee}`] : []),

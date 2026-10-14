@@ -1368,6 +1368,7 @@ class OrderIn(BaseModel):
     scheduled_at: str | None = None
     scheduled_window: str | None = None  # lunch | dinner (else None = asap/custom)
     pay_courier_direct: bool = False      # delivery fee is part of the total (Oct 2026); kept for old clients
+    discount_code: str | None = None
     items: list[OrderItemIn]
 
 
@@ -1382,11 +1383,59 @@ def create_order(order: OrderIn):
             scheduled_at=order.scheduled_at,
             scheduled_window=order.scheduled_window,
             pay_courier_direct=order.pay_courier_direct,
+            discount_code=order.discount_code,
             items=[{"item_id": it.item_id, "qty": it.qty, "note": it.note} for it in order.items],
         )
         return result
     except orders.OrderError as e:
         raise HTTPException(e.status, e.message)
+
+
+@app.get("/api/discount/check")
+def discount_check(code: str, subtotal: float, phone: str | None = None):
+    """Checkout preview of a discount code. The order itself re-checks it."""
+    from . import discounts
+    try:
+        d = discounts.evaluate(code, orders._normalize_phone(phone) if phone else None, subtotal)
+    except discounts.DiscountError as e:
+        return {"valid": False, "message": str(e)}
+    row = discounts.get(d["code"])
+    return {"valid": True, "code": d["code"], "amount": d["amount"], "label": d["label"],
+            "kind": row["kind"], "value": row["value"], "max_discount": row["max_discount"],
+            "min_subtotal": row["min_subtotal"],
+            "message": f"{d['code']} applied: {d['label']}."}
+
+
+class DiscountCodeIn(BaseModel):
+    code: str
+    kind: str = "percent"
+    value: float
+    max_discount: float | None = None
+    min_subtotal: float = 0
+    once_per_customer: bool = True
+    first_order_only: bool = False
+    max_uses: int | None = None
+    active: bool = True
+    expires_at: str | None = None
+    note: str | None = None
+
+
+@app.get("/api/admin/discount-codes")
+def admin_discount_codes(x_admin_token: str | None = Header(None)):
+    _check_admin(x_admin_token)
+    from . import discounts
+    return discounts.list_codes()
+
+
+@app.post("/api/admin/discount-codes")
+def admin_upsert_discount_code(body: DiscountCodeIn, x_admin_token: str | None = Header(None)):
+    """Create or update a code. Pause one with {"code": "X", "value": .., "active": false}."""
+    _check_admin(x_admin_token)
+    from . import discounts
+    try:
+        return discounts.upsert(body.model_dump())
+    except discounts.DiscountError as e:
+        raise HTTPException(400, str(e))
 
 
 @app.get("/api/delivery/quote")
@@ -1645,6 +1694,8 @@ def track_order(order_id: int):
 def on_startup():
     db.init_db()
     db.seeded()
+    from . import discounts
+    discounts.seed()
     init_qr()
     from .whatsapp import sessions as wa_sessions
     wa_sessions.init_sessions()

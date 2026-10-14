@@ -192,6 +192,24 @@ def _migrate(conn: sqlite3.Connection) -> None:
                      ("delivery_paid", "INTEGER NOT NULL DEFAULT 0")):
         if not _has_col("orders", col):
             conn.execute(f"ALTER TABLE orders ADD COLUMN {col} {ddl}")
+    # Discount codes (Oct 2026): what was taken off and which code did it.
+    for col, ddl in (("discount_total", "REAL NOT NULL DEFAULT 0"), ("discount_code", "TEXT")):
+        if not _has_col("orders", col):
+            conn.execute(f"ALTER TABLE orders ADD COLUMN {col} {ddl}")
+    conn.execute("""CREATE TABLE IF NOT EXISTS discount_codes (
+        code TEXT PRIMARY KEY,           -- stored upper-case
+        kind TEXT NOT NULL DEFAULT 'percent',  -- 'percent' or 'flat' (rupees)
+        value REAL NOT NULL,
+        max_discount REAL,               -- cap in rupees for percent codes
+        min_subtotal REAL NOT NULL DEFAULT 0,
+        once_per_customer INTEGER NOT NULL DEFAULT 1,
+        first_order_only INTEGER NOT NULL DEFAULT 0,
+        max_uses INTEGER,                -- across everyone; NULL = unlimited
+        active INTEGER NOT NULL DEFAULT 1,
+        expires_at TEXT,                 -- ISO date/time, IST; NULL = never
+        note TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')))""")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_orders_discount_code ON orders(discount_code)")
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_tracking_token ON orders(tracking_token)")
     # Backfill a token for any older orders that predate this column, so every
     # order — new and old — gets a guess-proof tracking reference.
@@ -368,19 +386,23 @@ def create_order(customer_id: int, order_type: str, subtotal: float,
                  gst_amount: float = 0.0,
                  tracking_token: str | None = None,
                  scheduled_window: str | None = None,
-                 pay_courier_direct: bool = False) -> int:
+                 pay_courier_direct: bool = False,
+                 discount_total: float = 0.0,
+                 discount_code: str | None = None) -> int:
     conn = get_conn()
     cur = conn.execute(
         "INSERT INTO orders(customer_id, status, order_type, subtotal, delivery_fee, "
         "packing_fee, gst_amount, total, payment_method, instructions, delivery_address, "
         "delivery_pincode, delivery_lat, delivery_lng, scheduled_at, address_flagged, "
-        "address_flag_reason, tracking_token, scheduled_window, pay_courier_direct) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "address_flag_reason, tracking_token, scheduled_window, pay_courier_direct, "
+        "discount_total, discount_code) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (customer_id, "new", order_type, subtotal, delivery_fee, packing_fee, gst_amount,
          total, payment_method, instructions, delivery_address, delivery_pincode,
          delivery_lat, delivery_lng, scheduled_at,
          1 if address_flagged else 0, address_flag_reason, tracking_token,
-         scheduled_window, 1 if pay_courier_direct else 0),
+         scheduled_window, 1 if pay_courier_direct else 0,
+         discount_total or 0.0, discount_code),
     )
     oid = cur.lastrowid
     conn.executemany(
