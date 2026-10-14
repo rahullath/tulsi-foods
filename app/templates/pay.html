@@ -5,28 +5,39 @@
 {% endblock %}
 {% block body %}
 <style>
-  .pay-wrap { max-width: 440px; margin: 0 auto; padding: 28px 18px 48px; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #171A14; }
-  .pay-card { background: #fff; border: 1px solid #E7E1D6; border-radius: 18px; padding: 22px 20px; }
-  .pay-kicker { font: 500 12px/1 'IBM Plex Mono', monospace; color: #0E7A45; letter-spacing: .05em; text-transform: uppercase; }
-  .pay-amount { font-family: 'Bricolage Grotesque', sans-serif; font-size: 44px; font-weight: 800; margin: 10px 0 2px; }
-  .pay-sub { font-size: 14px; color: #6F7468; line-height: 1.5; }
-  .pay-apps { display: grid; gap: 10px; margin-top: 18px; }
-  .pay-btn { display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; border-radius: 12px; padding: 15px; font-size: 16px; font-weight: 600; border: 1px solid #DDE2D4; color: #171A14; background: #fff; }
-  .pay-btn.primary { background: #0E7A45; border-color: #0E7A45; color: #fff; font-size: 17px; }
-  .pay-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  .pay-row .pay-btn { font-size: 14px; padding: 13px 8px; }
-  .pay-qr { margin: 20px auto 6px; width: 200px; height: 200px; }
-  .pay-qr svg { width: 200px; height: 200px; }
-  .pay-note { font-size: 13px; color: #6F7468; text-align: center; line-height: 1.55; margin-top: 8px; }
-  .pay-vpa { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 10px; font: 500 14px 'IBM Plex Mono', monospace; }
-  .pay-vpa button { border: 1px solid #DDE2D4; background: #fff; border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
-  .pay-done { margin-top: 18px; background: #EDF6E2; border: 1px solid #DDE4CC; border-radius: 12px; padding: 14px; font-size: 14px; line-height: 1.55; color: #2C5A1E; }
-  .pay-links { text-align: center; margin-top: 16px; font-size: 14px; }
-  .pay-links a { color: #0E7A45; font-weight: 600; text-decoration: none; }
+  body { background: #FBF8F2; }
+  .site-wa { display: none !important; }
+  .pay-wrap { max-width: 440px; margin: 0 auto; padding: 22px 18px 150px; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #171A14; }
+  .pay-card { background: none; border: none; padding: 0; }
+  .pay-kicker { display: flex; align-items: center; gap: 9px; font: 600 12px/1 'IBM Plex Mono', monospace; color: #171A14; letter-spacing: .05em; text-transform: uppercase; }
+  .pay-kicker img { width: 28px; height: 28px; object-fit: contain; }
+  .pay-head { text-align: center; padding-top: 40px; }
+  .pay-head .lbl { font-size: 14px; color: #5C6157; }
+  .pay-amount { font-family: 'Bricolage Grotesque', sans-serif; font-size: 58px; line-height: 1; font-weight: 700; letter-spacing: -.02em; margin: 6px 0 0; text-align: center; }
+  .pay-sub { font-size: 14px; color: #5C6157; line-height: 1.5; text-align: center; margin: 10px 0 0; }
+  .pay-label { margin-top: 34px; font: 600 11.5px/1 'IBM Plex Mono', monospace; color: #5C6157; letter-spacing: .05em; }
+  .pay-apps { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .pay-btn { display: flex; align-items: center; gap: 14px; text-decoration: none; border-radius: 14px; padding: 0 16px; min-height: 60px; font-size: 16px; font-weight: 600; border: 1px solid #DED7C8; color: #171A14; background: #fff; }
+  .pay-btn .go { margin-left: auto; font: 600 11px/1 'IBM Plex Mono', monospace; color: #0E7A45; }
+  .pay-btn.primary { border: 2px solid #171A14; }
+  .pay-ico { width: 34px; height: 34px; border-radius: 8px; background: #F3EFE7; display: flex; align-items: center; justify-content: center; font: 700 12px/1 'IBM Plex Mono', monospace; color: #5C6157; flex: none; }
+  .pay-other { display: flex; gap: 14px; align-items: center; margin-top: 16px; padding: 14px; border-radius: 14px; background: #F3EFE7; }
+  .pay-qr { width: 76px; height: 76px; border-radius: 10px; background: #fff; flex: none; overflow: hidden; }
+  .pay-qr svg { width: 76px; height: 76px; display: block; }
+  .pay-other b { font-size: 13.5px; font-weight: 600; }
+  .pay-other .s { font-size: 12.5px; color: #5C6157; margin-top: 3px; }
+  .pay-vpa { display: flex; gap: 10px; align-items: center; margin-top: 8px; font: 500 13px 'IBM Plex Mono', monospace; }
+  .pay-vpa button { border: none; background: none; font-size: 13px; font-weight: 600; color: #0E7A45; cursor: pointer; padding: 8px 0; }
+  .pay-foot { position: fixed; left: 0; right: 0; bottom: 0; background: linear-gradient(rgba(251,248,242,0), #FBF8F2 28%); padding: 16px 18px calc(22px + env(safe-area-inset-bottom)); text-align: center; }
+  .pay-foot-in { max-width: 404px; margin: 0 auto; }
+  .pay-ivepaid { display: flex; align-items: center; justify-content: center; min-height: 50px; border-radius: 14px; border: 1.5px solid #171A14; background: #FBF8F2; font-size: 15px; font-weight: 600; text-decoration: none; color: #171A14; }
+  .pay-foot p { margin: 10px 0 0; font-size: 13px; color: #5C6157; }
+  .pay-links { text-align: center; margin-top: 26px; font-size: 14.5px; }
+  .pay-links a { color: #0E7A45; font-weight: 600; text-decoration: none; padding: 10px; display: inline-block; }
 </style>
 <div class="pay-wrap">
   <div class="pay-card">
-    <div class="pay-kicker">Tulsi Foods · order #{{ order.id }}</div>
+    <div class="pay-kicker"><img src="/static/logo.png" alt="">Tulsi Foods · order #{{ order.id }}</div>
     {% if state == "paid" %}
       <div class="pay-amount">Paid ✅</div>
       <p class="pay-sub">We've received ₹{{ amount_text }} for this order. Thank you!</p>
@@ -40,24 +51,31 @@
       <div class="pay-amount">₹{{ amount_text }}</div>
       <p class="pay-sub">UPI isn't set up right now. Please pay {{ "at pickup" if order.order_type == "pickup" else "the rider" }}.</p>
     {% else %}
+      <div class="pay-head"><div class="lbl">Amount due</div></div>
       <div class="pay-amount">₹{{ amount_text }}</div>
       <p class="pay-sub">to <b>{{ payee }}</b> for {{ items_text }}</p>
+      <div class="pay-label">PAY WITH</div>
       <div class="pay-apps">
-        <a class="pay-btn primary" id="pay-any" href="{{ links.any }}">Pay with any UPI app</a>
-        <div class="pay-row">
-          <a class="pay-btn" href="{{ links.gpay_android }}" data-ios="{{ links.gpay_ios }}">GPay</a>
-          <a class="pay-btn" href="{{ links.phonepe }}">PhonePe</a>
-          <a class="pay-btn" href="{{ links.paytm }}">Paytm</a>
-        </div>
+        <a class="pay-btn primary" id="pay-any" href="{{ links.any }}"><span class="pay-ico">UPI</span>Any UPI app<span class="go">OPENS APP →</span></a>
+        <a class="pay-btn" id="pay-gpay" href="{{ links.gpay_android }}" data-ios="{{ links.gpay_ios }}"><span class="pay-ico">G</span>Google Pay</a>
+        <a class="pay-btn" href="{{ links.phonepe }}"><span class="pay-ico">Pe</span>PhonePe</a>
+        <a class="pay-btn" href="{{ links.paytm }}"><span class="pay-ico">Pt</span>Paytm</a>
       </div>
-      {% if qr_svg %}<div class="pay-qr" aria-label="UPI QR code">{{ qr_svg | safe }}</div>{% endif %}
-      <p class="pay-note">Paying from another phone? Scan this with any UPI app.</p>
-      <div class="pay-vpa"><span id="vpa">{{ vpa }}</span><button type="button" id="copy-vpa">Copy</button></div>
-      <div class="pay-done">✅ <b>Paid?</b> That's it. The kitchen checks UPI and confirms on WhatsApp within a few minutes. If it asks, send the payment screenshot in the WhatsApp chat.</div>
+      <div class="pay-other">
+        {% if qr_svg %}<div class="pay-qr" aria-label="UPI QR code">{{ qr_svg | safe }}</div>{% endif %}
+        <div><b>Paying from another phone?</b><div class="s">Scan, or copy the UPI ID</div>
+          <div class="pay-vpa"><span id="vpa">{{ vpa }}</span><button type="button" id="copy-vpa">Copy</button></div></div>
+      </div>
     {% endif %}
-    <div class="pay-links"><a href="/track/{{ order.tracking_token }}">Track your order →</a></div>
+    {% if state != "due" %}<div class="pay-links"><a href="/track/{{ order.tracking_token }}">Track your order →</a></div>{% endif %}
   </div>
 </div>
+{% if state == "due" %}
+<div class="pay-foot"><div class="pay-foot-in">
+  <a class="pay-ivepaid" href="/track/{{ order.tracking_token }}">I've paid</a>
+  <p>The kitchen confirms on WhatsApp within a few minutes.</p>
+</div></div>
+{% endif %}
 {% if state == "due" %}
 <script>
   (function () {
@@ -65,7 +83,7 @@
     var isIOS = /iPhone|iPad|iPod/i.test(ua), isAndroid = /Android/i.test(ua);
     if (isIOS) {
       document.querySelectorAll("[data-ios]").forEach(function (a) { a.style.display = "none"; });
-      document.querySelector(".pay-row").style.gridTemplateColumns = "1fr 1fr";
+      var g = document.getElementById("pay-gpay"); if (g) g.style.display = "none";
       // iPhones have no "any UPI app" chooser: lead with GPay.
       var any = document.getElementById("pay-any");
       any.href = {{ links.gpay_ios | tojson }}; any.textContent = "Pay with GPay";

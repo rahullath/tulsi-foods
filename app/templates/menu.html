@@ -14,13 +14,13 @@
 <div id="menu-app">
   <header class="mh">
     <div class="mh-top">
-      <h1 class="mh-title">Today's menu</h1>
-      <span class="mh-badge">Lunch</span>
+      <a href="/" class="mh-logo" aria-label="Tulsi Foods home"><img src="/static/logo.png" alt=""></a>
+      <div class="mh-search" id="search-box">
+        <span class="mh-search-icon" aria-hidden="true"></span>
+        <input type="text" id="search-input" placeholder="Search paneer, chaat, पनीर…" autocomplete="off" aria-label="Search the menu">
+      </div>
     </div>
-    <div class="mh-search" id="search-box">
-      <span class="mh-search-icon">⌕</span>
-      <input type="text" id="search-input" placeholder="Search for a dish" autocomplete="off">
-    </div>
+    <h1 class="mh-title">Today's menu</h1>
   </header>
 
   <nav class="group-nav" id="group-nav">
@@ -213,6 +213,91 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 .checkout-success .checkout-title { margin-bottom: 8px; }
 .checkout-success-detail { font-size: 14px; line-height: 1.6; color: var(--sub); margin-bottom: 20px; }
 
+
+/* ---- Launch redesign (390px-first) ---- */
+.mh { background: #fff; color: var(--ink); padding: 12px 16px 0; border-bottom: 1px solid var(--border); }
+.mh-top { gap: 10px; }
+.cart-bar.hidden { display: none; }
+.mh-logo { display: none; }
+.site-wa { display: none !important; }  /* cart bar already offers WhatsApp */
+.co-total[hidden] { display: none; }
+.card-stepper.zero { background: #fff; border-color: var(--g); box-shadow: none; }
+.card-stepper.zero button { color: var(--g); }
+.card-stepper.zero .qty { color: var(--g); }
+.card-stepper.zero button[data-act="dec"], .card-stepper.zero .qty { display: none; }
+.card-stepper.zero { padding: 0 6px; }
+.mh-title { font-size: 1px; height: 1px; width: 1px; overflow: hidden; position: absolute; clip: rect(0 0 0 0); }
+.mh-search { margin: 0; flex: 1; background: #F3EFE7; border-radius: 12px; height: 44px; padding: 0 13px; }
+.mh-search-icon { width: 13px; height: 13px; border: 2px solid var(--sub); border-radius: 50%; opacity: 1; flex: 0 0 auto; }
+.mh-search input { color: var(--ink); font-size: 14.5px; }
+.mh-search input::placeholder { color: var(--sub); }
+.group-nav { padding: 12px 16px; background: #fff; }
+.chip { min-height: 36px; display: inline-flex; align-items: center; font-weight: 500; border-color: #DED7C8; }
+.chip.active { background: var(--ink); border-color: var(--ink); font-weight: 600; }
+main { padding: 8px 16px 130px; }
+.group h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; font-weight: 700; margin: 24px 0 4px; }
+.menu-card { background: none; border: none; border-bottom: 1px solid var(--line2); border-radius: 0; padding: 16px 0; margin: 0; align-items: flex-start; }
+.menu-card:hover { box-shadow: none; transform: none; }
+.card-photo { width: 112px; height: 112px; border-radius: 14px; order: 2; }
+.card-body { order: 1; min-width: 0; }
+.card-name { font-size: 16px; }
+.card-desc { font-size: 13px; line-height: 1.45; }
+.card-price { font-size: 15px; font-weight: 500; }
+.card-pop { background: none; color: #B06A00; font: 600 10.5px/1 'IBM Plex Mono', monospace; letter-spacing: .04em; padding: 0; }
+.card-stepper { gap: 6px; background: var(--g); color: #fff; border-color: var(--g); border-radius: 10px; padding: 0 4px; min-height: 40px; box-shadow: 0 4px 12px rgba(14,122,69,.25); }
+.card-stepper button { color: #fff; font-size: 20px; min-width: 36px; min-height: 40px; }
+.card-stepper .qty { color: #fff; }
+.cart-bar { background: linear-gradient(rgba(251,248,242,0), var(--bg) 30%); border-top: none; padding: 10px 14px 18px; }
+.cart-inner { border-radius: 16px; min-height: 58px; padding: 0 18px; box-shadow: 0 10px 24px -8px rgba(14,122,69,.55); }
+.cart-btn { font-size: 15.5px; padding: 18px 0 18px 12px; }
+.cart-gap { font-size: 11.5px; }
+
+/* Checkout: 3-step sheet */
+.checkout-overlay { background: rgba(23,26,20,.55); }
+.checkout-panel { max-height: calc(100dvh - 44px); height: calc(100dvh - 44px); border-radius: 24px 24px 0 0; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+.co-grab { width: 40px; height: 4px; border-radius: 2px; background: #D6CFC1; margin: 10px auto 0; flex: none; }
+.co-top { display: flex; justify-content: space-between; align-items: center; padding: 10px 18px 0; flex: none; }
+.co-back { background: none; border: none; font: 600 12px/1 'IBM Plex Mono', monospace; letter-spacing: .04em; color: var(--sub); cursor: pointer; padding: 12px 8px 12px 0; min-height: 44px; visibility: hidden; }
+.co-top .checkout-close { position: static; width: 44px; height: 44px; border-radius: 50%; background: none; font-size: 20px; }
+.co-progress { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 0 18px; flex: none; }
+.co-progress span { height: 4px; border-radius: 2px; background: #DED7C8; }
+.co-progress span.on { background: var(--g); }
+#checkout-form { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.co-body { flex: 1; overflow-y: auto; padding: 18px 18px 24px; }
+.co-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; line-height: 1.1; font-weight: 700; margin: 0 0 16px; }
+.co-step[hidden] { display: none; }
+.co-label { font: 600 11.5px/1 'IBM Plex Mono', monospace; letter-spacing: .05em; text-transform: uppercase; color: #5C6157; margin: 18px 0 10px; }
+.co-footer { flex: none; background: #fff; border-top: 1px solid var(--line2); padding: 12px 18px calc(18px + env(safe-area-inset-bottom)); }
+.co-foot-note { display: flex; justify-content: space-between; font-size: 13.5px; padding-bottom: 10px; }
+.co-foot-note:empty { display: none; }
+.co-total { display: flex; justify-content: space-between; align-items: baseline; padding: 0 2px 10px; }
+.co-total span:first-child { font-size: 15px; font-weight: 600; }
+.co-total span:last-child { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 700; }
+.checkout-place { min-height: 54px; border-radius: 14px; font-size: 16px; }
+.checkout-field input, .checkout-field select, .checkout-field textarea { min-height: 48px; border-radius: 12px; border-color: #CFC8B9; font-size: 15px; padding: 0 14px; }
+.checkout-field textarea { padding: 12px 14px; }
+.checkout-field label { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.time-pills { background: #EFEAE0; border-radius: 14px; padding: 4px; gap: 4px; }
+.time-pill { min-height: 44px; border: none; background: transparent; border-radius: 11px; font-size: 15px; color: var(--sub); }
+.time-pill.active { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+#time-pills { flex-direction: column; background: none; padding: 0; gap: 10px; }
+#time-pills .time-pill { text-align: left; padding: 14px 16px; border: 1px solid #E3DDD0; background: #fff; border-radius: 14px; color: var(--ink); font-weight: 600; }
+#time-pills .time-pill.active { border: 2px solid var(--g); padding: 13px 15px; box-shadow: none; }
+.map-pin { height: 190px; border-radius: 16px; }
+.saved-addr-list { flex-direction: row; overflow-x: auto; gap: 8px; }
+.saved-addr-card { flex: 0 0 auto; white-space: nowrap; min-height: 44px; border-radius: 999px; padding: 0 14px; }
+.saved-addr-card .saved-addr-text { display: none; }
+.saved-addr-card.selected { background: var(--ink); color: #fff; border-color: var(--ink); }
+.checkout-summary { border-radius: 16px; padding: 6px 14px 12px; }
+.checkout-item-qty { border-radius: 9px; padding: 0; }
+.qty-btn { min-width: 36px; min-height: 36px; font-size: 18px; }
+.co-success { padding: 56px 24px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; overflow-y: auto; flex: 1; }
+.co-success .checkout-success-icon { width: 76px; height: 76px; font-size: 36px; box-shadow: 0 0 0 10px #E7F1EA; margin-bottom: 26px; }
+.co-success .co-kicker { font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--g); letter-spacing: .06em; }
+.co-success .co-title { font-size: 32px; margin: 10px 0 0; }
+.co-links { display: flex; justify-content: center; gap: 28px; margin-top: 16px; font-size: 14.5px; font-weight: 600; }
+.co-links a, .co-links button { color: var(--g); text-decoration: none; background: none; border: none; font: inherit; cursor: pointer; padding: 10px 0; }
+
 /* Responsive */
 @media (min-width: 600px) {
   #menu-app { max-width: 720px; }
@@ -221,6 +306,16 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 }
 </style>
 
+<script>
+  // Cards at qty 0 show a plain outlined "+" (Add); at 1+ they show the green stepper.
+  (function () {
+    document.querySelectorAll(".card-stepper .qty").forEach(q => {
+      const sync = () => q.closest(".card-stepper").classList.toggle("zero", (parseInt(q.textContent, 10) || 0) === 0);
+      sync();
+      new MutationObserver(sync).observe(q, { childList: true, characterData: true, subtree: true });
+    });
+  })();
+</script>
 <script>
 (() => {
   const PICKUP_LAT = {{ pickup_lat }};
@@ -414,29 +509,20 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   function openCheckout() {
     const overlay = document.createElement("div");
     overlay.className = "checkout-overlay";
+    let coStep = 1;
     const ids = Object.keys(cart);
     const subtotal = ids.reduce((s, id) => s + (PRICES[id] || 0) * cart[id], 0);
     const items = ids.map(id => `<div class="checkout-row"><span>${NAMES[id]} × ${cart[id]}</span><span>₹${(PRICES[id] || 0) * cart[id]}</span></div>`).join("");
     overlay.innerHTML = `
       <div class="checkout-panel" style="position:relative">
-        <button class="checkout-close" id="checkout-close">✕</button>
-        <div class="checkout-title">Checkout</div>
-        <div class="checkout-summary">
-          ${items}
-          <div class="checkout-row total"><span>Total</span><span>₹${subtotal}</span></div>
-        </div>
-        <div class="checkout-nudge" id="checkout-nudge" hidden>
-          <div class="checkout-nudge-title">One delivery, however much you order</div>
-          <div class="checkout-nudge-sub">The rider costs the same either way — worth adding a little.</div>
-          <div class="checkout-nudge-chips"></div>
-        </div>
-        <form id="checkout-form">
-          <div class="checkout-step">1 · Your details</div>
-          <div class="checkout-field"><label>Phone</label><input name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" required placeholder="10-digit mobile number" pattern="[0-9]{10,}">
-            <div class="checkout-hint">We'll fill in your saved address if you've ordered before.</div></div>
-          <div class="checkout-field"><label>Name</label><input name="name" autocomplete="name" required placeholder="Your name"></div>
-          <div class="checkout-step">2 · Delivery</div>
-          <div class="checkout-field">
+        <div class="co-grab"></div>
+        <div class="co-top"><button type="button" class="co-back" id="co-back">‹ BACK</button><button type="button" class="checkout-close" id="checkout-close" aria-label="Close checkout">✕</button></div>
+        <div class="co-progress" id="co-progress"><span class="on"></span><span></span><span></span></div>
+        <form id="checkout-form" novalidate>
+          <div class="co-body">
+            <section class="co-step" data-step="1">
+              <h2 class="co-title">How and when?</h2>
+              <div class="checkout-field">
             <label>Order type</label>
             <input type="hidden" name="order_type" value="delivery">
             <div class="time-pills" id="order-type-tiles">
@@ -456,7 +542,14 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             <input type="hidden" name="scheduled_at" id="input-scheduled">
             <input type="hidden" name="scheduled_window" id="input-window">
           </div>
-          <div class="checkout-field" id="saved-addr-field" hidden>
+              <div class="co-label">Your details</div>
+              <div class="checkout-field"><label>Phone</label><input name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" required placeholder="10-digit mobile number" pattern="[0-9]{10,}">
+            <div class="checkout-hint">We'll fill in your saved address if you've ordered before.</div></div>
+          <div class="checkout-field"><label>Name</label><input name="name" autocomplete="name" required placeholder="Your name"></div>
+            </section>
+            <section class="co-step" data-step="2" hidden>
+              <h2 class="co-title">Where should we deliver?</h2>
+              <div class="checkout-field" id="saved-addr-field" hidden>
             <label>You have ordered here before</label>
             <div class="saved-addr-list" id="saved-addr-list"></div>
           </div>
@@ -478,8 +571,17 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             <div class="checkout-hint">Riders always ask for this.</div>
           </div>
           <div class="checkout-field" id="pin-field"><label>Pincode</label><input name="pincode" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{6}" maxlength="6" placeholder="Filled in from your address"></div>
-          <div class="checkout-step">3 · Payment</div>
-          <div class="checkout-field">
+            </section>
+            <section class="co-step" data-step="3" hidden>
+              <h2 class="co-title">Check and place</h2>
+              <div class="checkout-summary"></div>
+              <div class="checkout-nudge" id="checkout-nudge" hidden>
+                <div class="checkout-nudge-title">One delivery, however much you order</div>
+                <div class="checkout-nudge-sub">The rider costs the same either way — worth adding a little.</div>
+                <div class="checkout-nudge-chips"></div>
+              </div>
+              <div class="co-label">Pay</div>
+              <div class="checkout-field">
             <input type="hidden" name="payment_method" id="payment-method" value="{{ 'upi' if upi_vpa else 'cod' }}">
             <div class="time-pills" id="payment-tiles">
               {% if upi_vpa %}<button type="button" class="time-pill active" data-value="upi">Pay by UPI</button>{% endif %}
@@ -488,8 +590,14 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
             <div class="checkout-hint" id="pay-hint"></div>
           </div>
           <div class="checkout-field"><label>Note</label><input name="instructions" placeholder="e.g. no coriander"></div>
-          <button type="submit" class="checkout-place" id="place-btn">Place order</button>
-          <div class="checkout-msg" id="checkout-msg"></div>
+            </section>
+          </div>
+          <div class="co-footer">
+            <div class="co-foot-note" id="co-foot-note"></div>
+            <div class="co-total" id="co-total" hidden><span>Total</span><span id="co-total-amt"></span></div>
+            <button type="submit" class="checkout-place" id="place-btn">Continue</button>
+            <div class="checkout-msg" id="checkout-msg"></div>
+          </div>
         </form>
       </div>
     `;
@@ -612,7 +720,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       const isDelivery = overlay.querySelector('[name=order_type]').value === "delivery";
       const q = isDelivery ? quoteDelivery(currentSubtotal) : null;
 
-      let deliveryRow, deliveryNote, deliveryFee = 0;
+      let deliveryRow, deliveryNote, deliveryFee = 0, footText = "";
       if (isDelivery) {
         const eff = (liveQuote && liveQuote.serviceable) ? liveQuote : q;
         if (eff && eff.outside) {
@@ -620,6 +728,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           deliveryNote = `<span style="color:#B3261E">We don't deliver ${eff.km ? Math.round(eff.km) + " km away" : "that far"}. Pickup is in Alwarpet.</span>`;
         } else if (eff) {
           deliveryFee = +eff.fee || 0;
+          footText = `<span>${eff.km ? "<b>" + eff.km.toFixed(1) + " km</b> · " : ""}Delivery ₹${deliveryFee}</span>` + (eff.min_order ? `<span style="color:${currentSubtotal >= eff.min_order ? "var(--g)" : "#B3261E"};font-weight:600">Min ₹${eff.min_order}${currentSubtotal >= eff.min_order ? " ✓" : ""}</span>` : "");
           deliveryRow = `<div class="checkout-row"><span>Delivery${eff.km ? ` (${eff.km.toFixed(1)} km)` : ""}</span><span>${deliveryFee ? "₹" + deliveryFee : "Free"}</span></div>`;
           deliveryNote = `Delivery is a fixed ₹${deliveryFee} for your distance and it's already in this total. Nothing is added later.${
             currentSubtotal && currentSubtotal < eff.min_order
@@ -655,8 +764,11 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
            <div class="checkout-row-note">${deliveryNote || "No hidden charges — this is the final total."}</div>`;
       const grand = Math.round((currentSubtotal + packing + gst + deliveryFee) * 100) / 100;
       const placeBtn = overlay.querySelector("#place-btn");
-      if (placeBtn && !placeBtn.disabled) placeBtn.textContent = currentSubtotal
-        ? `Place order · ₹${grand.toFixed(2).replace(/\.00$/, "")}` : "Place order";
+      const totAmt = overlay.querySelector("#co-total-amt");
+      if (totAmt) totAmt.textContent = "₹" + grand.toFixed(2);
+      const footEl = overlay.querySelector("#co-foot-note");
+      if (footEl) footEl.innerHTML = coStep === 2 ? footText : "";
+      if (placeBtn && !placeBtn.disabled && coStep === 3) placeBtn.textContent = "Place order";
 
       // Let the customer adjust quantities without leaving checkout — closing
       // the panel to go back to the menu grid just to change a "2" to a "1"
@@ -999,8 +1111,56 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       );
     });
 
+    // ---- Step navigation: 1 When -> 2 Address (delivery only) -> 3 Review ----
+    const stepEls = [...overlay.querySelectorAll(".co-step")];
+    const backBtn = overlay.querySelector("#co-back");
+    const segs = [...overlay.querySelectorAll("#co-progress span")];
+    const isDeliveryNow = () => typeSelect.value === "delivery";
+    function validateStep(n) {
+      const sec = stepEls[n - 1];
+      for (const el of sec.querySelectorAll("input, textarea, select")) {
+        if (el.type === "hidden" || el.disabled || !el.offsetParent) continue;
+        if (!el.checkValidity()) { el.reportValidity(); return false; }
+      }
+      return true;
+    }
+    function showStep(n) {
+      coStep = n;
+      stepEls.forEach((el, i) => { el.hidden = (i + 1) !== n; });
+      segs.forEach((sp, i) => sp.classList.toggle("on", i < n));
+      backBtn.style.visibility = n > 1 ? "visible" : "hidden";
+      const b = overlay.querySelector("#place-btn");
+      b.textContent = n === 3 ? "Place order" : (n === 1 ? (isDeliveryNow() ? "Continue" : "Review order") : "Continue");
+      overlay.querySelector("#co-total").hidden = n !== 3;
+      overlay.querySelector("#checkout-msg").textContent = "";
+      overlay.querySelector(".co-body").scrollTop = 0;
+      if (n === 2 && gMap && window.google) { google.maps.event.trigger(gMap, "resize"); if (gMarker) gMap.setCenter(gMarker.getPosition()); }
+      refreshCheckoutSummary();
+    }
+    function goNext() {
+      if (!validateStep(coStep)) return;
+      if (coStep === 1) showStep(isDeliveryNow() ? 2 : 3);
+      else if (coStep === 2) showStep(3);
+    }
+    backBtn.addEventListener("click", () => {
+      if (coStep === 3) showStep(isDeliveryNow() ? 2 : 1);
+      else if (coStep === 2) showStep(1);
+    });
+    typeSelect.addEventListener("change", () => {
+      const b = overlay.querySelector("#place-btn");
+      if (coStep === 1) b.textContent = isDeliveryNow() ? "Continue" : "Review order";
+    });
+    showStep(1);
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (coStep !== 3) { goNext(); return; }
+      // Final submit: re-validate earlier steps, jump back to whichever is incomplete.
+      for (const n of (isDeliveryNow() ? [1, 2] : [1])) {
+        showStep(n);
+        if (!validateStep(n)) return;
+      }
+      showStep(3);
       const msg = overlay.querySelector("#checkout-msg");
       const btn = form.querySelector(".checkout-place");
       const fd = new FormData(form);
@@ -1111,29 +1271,31 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         ];
         const confirmHref = "https://wa.me/{{ wa_order_number }}?text=" + encodeURIComponent(confirmLines.join("\n"));
         overlay.querySelector(".checkout-panel").innerHTML = `
-          <button class="checkout-close" id="checkout-close-2">✕</button>
-          <div class="checkout-success">
-            <div class="checkout-success-icon">${isUpi ? "₹" : "✓"}</div>
-            <div class="checkout-title">${isUpi ? "Order placed — pay to confirm" : "Order placed — the kitchen has it"}</div>
-            <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}${data.delivery_fee ? ` including ₹${data.delivery_fee} delivery` : ""}.<br>
-              It's gone straight to the kitchen — no confirmation text needed.<br>
-              📲 Updates will come on WhatsApp from <b>Tulsi Foods ({{ wa_order_display }})</b>. Save the number so you don't miss them.</p>
-
-            ${isUpi ? `
-              <a class="checkout-place" id="upi-pay-now" style="text-decoration:none;display:inline-block;margin-bottom:10px"
-                 href="/pay/${data.tracking_token}">Pay ₹${data.total} with UPI →</a>
-              <p style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
-                Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Opens GPay / PhonePe / Paytm pre-filled — your order starts once the kitchen accepts it.</p>
-            ` : ""}
-            ${WA_CUSTOMER ? `<a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px;background:#25D366" href="https://wa.me/{{ wa_order_number }}">Back to WhatsApp</a>` : ""}
-            <a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px" href="/track/${data.tracking_token}">Track my order ↳</a>
-            <button class="checkout-place" id="checkout-continue">Continue browsing</button>
-            <p class="confirm-state" style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
-              Have a query or a custom swap? <a id="wa-optional" href="${confirmHref}" target="_blank" rel="noopener" style="color:#25D366;font-weight:600">Message us on WhatsApp</a> — your order's already placed, nothing else to confirm.</p>
-            ${isDelivery ? `<div class="edit-window" id="edit-window">
-              <div class="edit-window-text">Wrong address? You have <span id="edit-countdown">3:00</span> to fix it.</div>
-              <button type="button" class="edit-window-btn" id="edit-address-btn">Change the address</button>
-            </div>` : ""}
+          <div class="co-grab"></div>
+          <div class="co-top"><span></span><button type="button" class="checkout-close" id="checkout-close-2" aria-label="Close">✕</button></div>
+          <div class="co-success">
+            <div class="checkout-success-icon">✓</div>
+            <div class="co-kicker">ORDER #${data.order_id}</div>
+            <h2 class="co-title">${isUpi ? "Placed — pay to confirm" : "Placed — the kitchen has it"}</h2>
+            <p class="checkout-success-detail" style="margin:10px 0 0">${when} · ₹${data.total}${data.delivery_fee ? ` incl. ₹${data.delivery_fee} delivery` : ""}<br>${placedItems.map(i => i.name).join(", ")}</p>
+            <div style="align-self:stretch;margin-top:26px;display:flex;flex-direction:column;gap:10px;text-align:left">
+              <div style="padding:14px 16px;border-radius:14px;background:#fff;border:1px solid #ECE6DA;font-size:14px;line-height:1.5"><b style="font-weight:600">Updates come on WhatsApp</b><br><span style="color:var(--sub)">from Tulsi Foods, {{ wa_order_display }}. Save the number.</span></div>
+              ${isDelivery ? `<div class="edit-window" id="edit-window" style="margin-top:0">
+                <div class="edit-window-text">Wrong address? <span id="edit-countdown">3:00</span> left to fix it.</div>
+                <button type="button" class="edit-window-btn" id="edit-address-btn">Change the address</button>
+              </div>` : ""}
+            </div>
+          </div>
+          <div class="co-footer">
+            ${isUpi
+              ? `<a class="checkout-place" id="upi-pay-now" style="text-decoration:none;display:flex;align-items:center;justify-content:center" href="/pay/${data.tracking_token}">Pay ₹${data.total} with UPI</a>`
+              : `<a class="checkout-place" style="text-decoration:none;display:flex;align-items:center;justify-content:center" href="/track/${data.tracking_token}">Track my order</a>`}
+            <div class="co-links">
+              ${isUpi ? `<a href="/track/${data.tracking_token}">Track order</a>` : ""}
+              ${WA_CUSTOMER ? `<a href="https://wa.me/{{ wa_order_number }}">Back to WhatsApp</a>` : ""}
+              <button type="button" id="checkout-continue">Keep browsing</button>
+            </div>
+            <p class="confirm-state" style="font-size:12.5px;color:var(--sub);text-align:center;margin:4px 0 0">Custom swap or a question? <a id="wa-optional" href="${confirmHref}" target="_blank" rel="noopener" style="color:var(--g);font-weight:600">Message us on WhatsApp</a>. The order is already placed.</p>
           </div>
         `;
         const closeAndReset = () => overlay.remove();
