@@ -5,8 +5,8 @@ webhook layer sends them (app/whatsapp/client.send_outbound). No network
 calls here, so the whole flow runs in tests and scripts/whatsapp_repl.py.
 
 The flow (Oct 2026):
-  hi / anything      -> the menu as WhatsApp's own catalogue (+ Reorder /
-                        Track for returning customers)
+  hi                 -> the menu as a list of sections; each opens a tappable
+                        product list. Typing a dish name searches.
   cart from catalogue -> cart summary, Delivery / Pickup
   Delivery           -> address form (India) or typed address, then a
                         location pin, which sets the fixed fee band
@@ -45,7 +45,8 @@ STATUS_LABEL = {
 }
 
 HELP_TEXT = (
-    "Tap *View catalogue* to see the menu, add dishes, then send the cart.\n"
+    "Tap *Open the menu*, pick a section, add dishes, then send the cart. "
+    "Or type a dish name to search.\n"
     "You can also type MENU, TRACK, REORDER or CANCEL any time."
 )
 
@@ -82,10 +83,21 @@ def _phone_display(wa_id: str) -> str:
 
 # ---------------------------------------------------------------- menu
 
-def catalog_message(body: str | None = None) -> dict:
+MENU_BODY = ("Here's today's menu 🍛 Pick a section to see its dishes, tap *Add* on what you "
+             "like, then open the cart and *Send*.\n\n🔎 Or just type a dish name, like _paneer_ or _chaat_.")
+
+
+def full_catalogue(body: str | None = None) -> dict:
+    """Every dish in WhatsApp's own catalogue view (one long scroll)."""
     return {"type": "catalog", "text": body or (
-        "Here's today's menu 🍛 Tap *View catalogue*: dishes are grouped by section "
-        "(thalis, parathas, chaats…). Add what you like, then tap the cart and *Send*.")}
+        "The full menu 🍛 Add what you like, then tap the cart and *Send*.")}
+
+
+def catalog_message(body: str | None = None) -> dict:
+    """The menu: a list of sections; each opens a tappable product list."""
+    if body and not body.endswith("\n"):
+        body = f"{body}\n\n{MENU_BODY}"
+    return category_list(body or MENU_BODY) or full_catalogue(body)
 
 
 def picks_message() -> dict | None:
@@ -135,8 +147,8 @@ def _relay(sess: dict, raw: str) -> list[dict]:
                     [("MENU", "See the menu"), ("TRACK", "Track order")])]
 
 
-def category_list(body: str = "What would you like? Pick a section of the menu:") -> dict | None:
-    """The menu as a WhatsApp list: one row per category with what's
+def category_list(body: str = MENU_BODY) -> dict | None:
+    """The menu as a WhatsApp list: one row per section with what's
     available today, so nobody scrolls 150 dishes. Rows are CAT_<index>."""
     rows = []
     for i, g in enumerate(menu.grouped()):
@@ -149,41 +161,105 @@ def category_list(body: str = "What would you like? Pick a section of the menu:"
                      "description": f"{len(full)} dishes · {money(min(prices))}–{money(max(prices))}"})
     if not rows:
         return None
-    return {"type": "list", "text": body, "button": "Browse the menu",
+    return {"type": "list", "text": body, "button": "Open the menu",
             "sections": [{"title": "Today's menu", "rows": rows[:10]}]}
 
 
-def category_products(index: int) -> list[dict]:
-    """One category as tappable product lists (WhatsApp shows at most 30
-    products per message, so big categories are split evenly; a dish and
-    its half portion stay together). Items added go to the same cart."""
-    groups = menu.grouped()
-    if not 0 <= index < len(groups):
-        return [category_list() or catalog_message()]
-    g = groups[index]
-    ids = [it["id"] for it in g["items"] if it["available"]]
-    # Feed ids: half portions are <id>-half in the catalogue (app/catalog.py).
-    ids = [i[: -len(menu.HALF_SUFFIX)] + "-half" if i.endswith(menu.HALF_SUFFIX) else i for i in ids]
-    ordered = []
-    for i in ids:  # keep "dish, dish (half)" pairs adjacent
-        if i.endswith("-half"):
-            continue
-        ordered.append(i)
-        if i + "-half" in ids:
-            ordered.append(i + "-half")
+def _feed_id(item_id: str) -> str:
+    # Half portions are <id>-half in the catalogue feed (app/catalog.py).
+    if item_id.endswith(menu.HALF_SUFFIX):
+        return item_id[: -len(menu.HALF_SUFFIX)] + "-half"
+    return item_id
+
+
+def product_lists(title: str, items: list[dict], body: str) -> list[dict]:
+    """Dishes as tappable product lists, sectioned by category. WhatsApp
+    shows at most 30 products per message, so long lists are split evenly;
+    a dish and its half portion stay together. Everything goes in one cart."""
+    ids = {it["id"] for it in items}
+    ordered = []  # (category, feed id)
+    for it in items:
+        iid = it["id"]
+        if iid.endswith(menu.HALF_SUFFIX) and iid[: -len(menu.HALF_SUFFIX)] in ids:
+            continue  # added right after its full portion
+        ordered.append((it.get("category") or title, _feed_id(iid)))
+        if iid + menu.HALF_SUFFIX in ids:
+            ordered.append((it.get("category") or title, _feed_id(iid + menu.HALF_SUFFIX)))
     if not ordered:
-        return [text(f"{g['group']} is finished for today."), category_list() or catalog_message()]
-    parts = -(-len(ordered) // 30)
+        return []
+    parts = -(-len(ordered) // PICKS_LIMIT)
     size = -(-len(ordered) // parts)
     out = []
     for n in range(parts):
         chunk = ordered[n * size:(n + 1) * size]
-        title = g["group"] if parts == 1 else f"{g['group']} ({n + 1}/{parts})"
-        out.append({"type": "products", "header": title[:60],
-                    "text": "Tap a dish to see it and add it to your cart, then send the cart. "
-                            "Want something from another section? Tap *Browse the menu* again.",
-                    "sections": [{"title": title[:24], "ids": chunk}]})
+        sections: list[dict] = []
+        for cat, pid in chunk:
+            if not sections or sections[-1]["title"] != cat[:24]:
+                if len(sections) == 10:
+                    sections[-1]["ids"].append(pid)
+                    continue
+                sections.append({"title": cat[:24], "ids": []})
+            sections[-1]["ids"].append(pid)
+        head = title if parts == 1 else f"{title} ({n + 1}/{parts})"
+        out.append({"type": "products", "header": head[:60], "text": body, "sections": sections})
     return out
+
+
+def category_products(index: int) -> list[dict]:
+    """One menu section as tappable product lists."""
+    groups = menu.grouped()
+    if not 0 <= index < len(groups):
+        return [catalog_message()]
+    g = groups[index]
+    items = sorted((it for it in g["items"] if it["available"]),
+                   key=lambda it: it.get("category") or "")  # stable: popular first within each
+    out = product_lists(g["group"], items,
+                        "Tap a dish to add it to your cart. When you're done, open the cart and "
+                        "*Send*. Want another section? Tap *Open the menu* again.")
+    return out or [text(f"{g['group']} is finished for today."), catalog_message()]
+
+
+SEARCH_SKIP = {"the", "and", "you", "have", "want", "with", "for", "please", "pls", "plz", "can",
+               "get", "any", "some", "one", "two", "three", "order", "need", "give", "today",
+               "send", "from", "what", "your", "there", "this", "that", "like", "also", "more"}
+
+
+def search_menu(query: str) -> list[dict]:
+    """Available dishes matching a typed query ('paneer', 'aloo paratha'),
+    best matches first. Matches names, other names (aloo/potato…) and
+    categories by word prefix, so 'parathas' finds 'Aloo Paratha'."""
+    import re
+    from ..seo_aliases import aliases_for
+    words = [w for w in re.findall(r"[a-z]+", query.lower()) if len(w) >= 3 and w not in SEARCH_SKIP]
+    if not words:
+        return []
+    scored = []
+    for it in menu.load_menu():
+        if not it.get("available", True):
+            continue
+        hay = " ".join([it["name"], it.get("category") or "", it.get("group") or "",
+                        *aliases_for(it["id"])]).lower()
+        hay_words = set(re.findall(r"[a-z]+", hay))
+        score = sum(1 for w in words
+                    if any(h.startswith(w) or (len(h) >= 4 and w.startswith(h)) for h in hay_words))
+        if score:
+            scored.append((score, it))
+    if not scored:
+        return []
+    best = max(sc for sc, _ in scored)
+    hits = [it for sc, it in scored if sc == best]
+    hits.sort(key=lambda it: (not it.get("popular"), it["name"]))
+    hits = hits[:PICKS_LIMIT]
+    return sorted(hits, key=lambda it: it.get("category") or "")  # one section per category
+
+
+def _search(raw: str) -> list[dict] | None:
+    hits = search_menu(raw)
+    if not hits:
+        return None
+    return product_lists(f"Results for “{raw[:40]}”", hits,
+                         "Tap a dish to add it to your cart, then open the cart and *Send*. "
+                         "Not what you meant? Type another dish, or *kitchen* to ask us.")[:1]
 
 
 def _welcome(sess: dict) -> list[dict]:
@@ -200,15 +276,14 @@ def _welcome(sess: dict) -> list[dict]:
         out.append(text(f"Today's special: {special['item_name']} — {money(special['price'])} ✨"))
     if _closed_now():
         out.append(catalog_message(
-            "We're closed right now, but you can order ahead for the next lunch or dinner. "
-            "Tap *View catalogue*, add dishes and send the cart."))
+            "We're closed right now, but you can order ahead for the next lunch or dinner."))
     else:
         out.append(catalog_message())
     extra = []
     if db.customer_orders(sess["wa_id"], limit=1):
-        extra += [("REORDER", "Reorder last"), ("TRACK", "Track order")]
-    extra.append(("PICKS", "Popular dishes"))
-    out.append(buttons("Or pick one:" if len(extra) > 1 else "Not sure what to get?", extra[:3]))
+        extra.append(("REORDER", "Reorder last"))
+    extra += [("PICKS", "Popular dishes"), ("FULL MENU", "Full menu")]
+    out.append(buttons("Or:", extra[:3]))
     return out
 
 
@@ -606,7 +681,7 @@ def _route(sess: dict, incoming: str) -> list[dict]:
     if t.startswith("CAT_") and t[4:].isdigit():
         return category_products(int(t[4:]))
     if t in ("FULL MENU", "CATALOGUE", "CATALOG", "ALL"):
-        return [catalog_message()]
+        return [full_catalogue()]
     if t in ("KITCHEN", "TALK TO THE KITCHEN", "CALL", "CONTACT"):
         return _ask_kitchen(sess)
     if t in GREETINGS:
@@ -680,7 +755,12 @@ def _route(sess: dict, incoming: str) -> list[dict]:
             return [text(f"📝 Noted for the kitchen: “{note}”")] + _summary(sess)
         return _summary(sess)
 
-    # Not part of ordering: a question or request for the kitchen.
+    # A dish name ("paneer", "aloo paratha") is a search; anything else,
+    # like a question, goes to the kitchen.
+    if "?" not in raw and len(raw.split()) <= 5 and not raw.startswith("["):
+        found = _search(raw)
+        if found:
+            return found
     if len(raw) >= 2 and not raw.startswith("["):
         return _relay(sess, raw)
     return _welcome(sess)
