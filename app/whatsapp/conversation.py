@@ -45,8 +45,7 @@ STATUS_LABEL = {
 }
 
 HELP_TEXT = (
-    "Tap *Open the menu*, pick a section, add dishes, then send the cart. "
-    "Or type a dish name to search.\n"
+    "Tap *Order now* to open the menu, or type a dish name to search here.\n"
     "You can also type MENU, TRACK, REORDER or CANCEL any time."
 )
 
@@ -83,8 +82,9 @@ def _phone_display(wa_id: str) -> str:
 
 # ---------------------------------------------------------------- menu
 
-MENU_BODY = ("Here's today's menu 🍛 Pick a section to see its dishes, tap *Add* on what you "
-             "like, then open the cart and *Send*.\n\n🔎 Or just type a dish name, like _paneer_ or _chaat_.")
+MENU_BODY = ("Tap *Order now* to open our menu 🍛 Search any dish, browse by section, add to "
+             "cart and check out. Your number is already filled in, and order updates come "
+             "right here on WhatsApp.")
 
 
 def full_catalogue(body: str | None = None) -> dict:
@@ -94,10 +94,14 @@ def full_catalogue(body: str | None = None) -> dict:
 
 
 def catalog_message(body: str | None = None) -> dict:
-    """The menu: a list of sections; each opens a tappable product list."""
-    if body and not body.endswith("\n"):
-        body = f"{body}\n\n{MENU_BODY}"
-    return category_list(body or MENU_BODY) or full_catalogue(body)
+    """The menu: an *Order now* button opening the web menu signed in with
+    this WhatsApp number (made into a cta in handle(), which knows wa_id)."""
+    return {"type": "menu_link", "text": f"{body}\n\n{MENU_BODY}" if body else MENU_BODY}
+
+
+def _menu_link(msg: dict, wa_id: str) -> dict:
+    from .. import wa_link
+    return {"type": "cta", "text": msg["text"], "label": "Order now", "url": wa_link.url(wa_id)}
 
 
 def picks_message() -> dict | None:
@@ -161,7 +165,7 @@ def category_list(body: str = MENU_BODY) -> dict | None:
                      "description": f"{len(full)} dishes · {money(min(prices))}–{money(max(prices))}"})
     if not rows:
         return None
-    return {"type": "list", "text": body, "button": "Open the menu",
+    return {"type": "list", "text": body, "button": "See sections",
             "sections": [{"title": "Today's menu", "rows": rows[:10]}]}
 
 
@@ -215,7 +219,7 @@ def category_products(index: int) -> list[dict]:
                    key=lambda it: it.get("category") or "")  # stable: popular first within each
     out = product_lists(g["group"], items,
                         "Tap a dish to add it to your cart. When you're done, open the cart and "
-                        "*Send*. Want another section? Tap *Open the menu* again.")
+                        "*Send*. Want another section? Type *browse*.")
     return out or [text(f"{g['group']} is finished for today."), catalog_message()]
 
 
@@ -282,8 +286,9 @@ def _welcome(sess: dict) -> list[dict]:
     extra = []
     if db.customer_orders(sess["wa_id"], limit=1):
         extra.append(("REORDER", "Reorder last"))
-    extra += [("PICKS", "Popular dishes"), ("FULL MENU", "Full menu")]
-    out.append(buttons("Or:", extra[:3]))
+    extra += [("BROWSE", "Order in WhatsApp"), ("PICKS", "Popular dishes")]
+    out.append(buttons("Prefer to stay in WhatsApp? Browse the menu here, or type a dish name "
+                       "like _paneer_.", extra[:3]))
     return out
 
 
@@ -624,7 +629,7 @@ def handle(wa_id: str, incoming: str, profile_name: str | None = None,
     else:
         out = _route(sess, incoming or "")
     sessions.save(sess)
-    return out
+    return [_menu_link(m, wa_id) if m.get("type") == "menu_link" else m for m in out]
 
 
 def _on_address_form(sess: dict, values: dict) -> list[dict]:
@@ -680,6 +685,10 @@ def _route(sess: dict, incoming: str) -> list[dict]:
         return [catalog_message("Change your cart in the menu and send it again.")]
     if t.startswith("CAT_") and t[4:].isdigit():
         return category_products(int(t[4:]))
+    if t in ("BROWSE", "SECTIONS"):
+        return [category_list(
+            "Pick a section to see its dishes, tap *Add* on what you like, then open the cart "
+            "and *Send*.") or full_catalogue()]
     if t in ("FULL MENU", "CATALOGUE", "CATALOG", "ALL"):
         return [full_catalogue()]
     if t in ("KITCHEN", "TALK TO THE KITCHEN", "CALL", "CONTACT"):
