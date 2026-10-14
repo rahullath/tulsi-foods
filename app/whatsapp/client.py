@@ -135,10 +135,18 @@ def send_outbound(to: str, msg: dict) -> dict:
         return send_buttons(to, msg["text"], msg["buttons"])
     if kind == "list":
         return send_list(to, msg["text"], msg["button"], msg["sections"])
-    if kind == "catalog":
-        return send_catalog(to, msg["text"])
-    if kind == "products":
-        return send_products(to, msg["header"], msg["text"], msg["sections"])
+    if kind in ("catalog", "products"):
+        try:
+            if kind == "catalog":
+                return send_catalog(to, msg["text"])
+            return send_products(to, msg["header"], msg["text"], msg["sections"])
+        except WhatsAppError as e:
+            # Catalogue not usable yet (e.g. a new catalogue still being
+            # indexed: "Products not found in FB catalog"): the website menu
+            # is the same food with the same cart and checkout.
+            log.warning("catalogue message failed (%s); sending the menu link", e)
+            return send_cta(to, "Here's today's menu. Tap below, add dishes to the cart and "
+                            "check out, it takes a minute.", "View menu", "https://tulsifoods.app/menu")
     if kind == "location_request":
         return send_location_request(to, msg["text"])
     if kind == "address":

@@ -255,7 +255,11 @@ async def inbound(request: Request, x_hub_signature_256: str | None = Header(Non
                     from .kitchen_alerts import relay_question
                     relay_question(msg["wa_id"], msg["profile_name"], reply["text"])
                     continue
-                client.send_outbound(msg["wa_id"], reply)
+                try:
+                    client.send_outbound(msg["wa_id"], reply)
+                except Exception:
+                    # One rejected message must not silence the rest.
+                    log.exception("reply to %s failed: %s", msg["wa_id"], reply.get("type"))
         except Exception:
             log.exception("failed to process message from %s", msg["wa_id"])
     return {"status": "ok"}
