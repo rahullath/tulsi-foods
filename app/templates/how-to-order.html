@@ -61,6 +61,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .steps li { counter-increment: s; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px 14px 56px; position: relative; font-size: 15px; line-height: 1.6; color: #43483F; }
 .steps li::before { content: counter(s); position: absolute; left: 16px; top: 13px; width: 26px; height: 26px; border-radius: 50%; background: var(--g); color: #fff; font: 600 13px/26px 'IBM Plex Mono', monospace; text-align: center; }
 .steps li b { color: var(--ink); }
+.page a:not(.jump a):not(.page-cta a) { color: var(--g); }
 .jump { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
 .jump a { font-size: 14px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--ink); text-decoration: none; }
 .snippet ul { margin: 8px 0 0; padding-left: 20px; font-size: 15px; line-height: 1.7; color: #43483F; max-width: 720px; }
