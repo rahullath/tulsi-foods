@@ -47,10 +47,21 @@ def _send_wa(phone: str, attempts: list[tuple], fallback_text: str | None, order
         return False
 
 
+def _refund_due(order: dict) -> int:
+    """What we owe back on cancellation: only a UPI payment the kitchen
+    actually received. An unpaid UPI order or cash order owes nothing."""
+    if order.get("payment_method") == "upi" and order.get("paid"):
+        return round(float(order.get("total") or 0))
+    return 0
+
+
 def _refund_note(order: dict) -> str:
-    # COD is never pre-charged; UPI orders paid upfront are owed the total.
+    refund = _refund_due(order)
+    if refund:
+        return f"Your UPI payment of ₹{refund} will be refunded."
     if order.get("payment_method") == "upi":
-        return f"Your UPI payment of ₹{round(float(order.get('total') or 0))} will be refunded."
+        # Paid but not yet marked by the kitchen: don't say "nothing charged".
+        return "If you already paid by UPI, reply here and we'll refund it in full."
     return "Nothing was charged, so there is nothing to refund."
 
 
@@ -76,9 +87,8 @@ def _status_attempts(order: dict, status: str) -> list[tuple]:
                 (T.DELIVERED, _params(name, oid), None),
                 ("order_delivered", _params(name, oid), None)]
     if status == "cancelled":
-        refund = round(float(order.get("total") or 0)) if order.get("payment_method") == "upi" else 0
         return [(T.CANCELLED, _params(name, oid, _refund_note(order)), None),
-                ("order_cancelled_1", _params(name, oid, refund), None)]
+                ("order_cancelled_1", _params(name, oid, _refund_due(order)), None)]
     return []
 
 
