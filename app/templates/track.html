@@ -176,6 +176,9 @@
       html += `<div class="row"><span>Left the kitchen</span><b>${fmtTime(o.dispatched_at) || "—"}</b></div>`;
     }
     html += `<div class="row"><span>Payment</span><b>${payLabel(o)}</b></div>`;
+    if (o.payment_method === "upi" && !o.paid && o.status !== CANCELED) {
+      html += `<a class="pr" style="display:block;margin-top:10px;background:#0E7A45;color:#fff;border-color:#0E7A45" href="/pay/${TRACKING_TOKEN}">Pay ₹${(+o.total).toFixed(0)} with UPI →</a>`;
+    }
     if (o.order_type === 'delivery' && o.delivery_address) html += `<div class="row"><span>Deliver to</span><b>${o.delivery_address.replace(/ \(Landmark:.*\)$/, "")}</b></div>`;
     html += '</div>';
 

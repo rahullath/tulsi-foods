@@ -379,11 +379,12 @@ def _place_order(sess: dict) -> list[dict]:
     _reset_checkout(sess)
     # The order confirmation itself is the tulsi_order_placed template that
     # orders.create_order sends; here only what that message can't do.
-    track = f"{SITE}/track/{result.get('tracking_token') or oid}"
     if paying_upi:
-        return [{"type": "cta", "text": f"Order #{oid} is with the kitchen. "
-                 f"Pay {money(result['total'])} by UPI to confirm it:",
-                 "label": f"Pay {money(result['total'])}", "url": track}]
+        pay = f"{SITE}/pay/{result.get('tracking_token') or oid}"
+        return [{"type": "cta", "text": f"Order #{oid} is with the kitchen ✅\n\n"
+                 f"Tap below to pay *{money(result['total'])}* with GPay, PhonePe, Paytm "
+                 "or any UPI app. It opens your UPI app with everything filled in.",
+                 "label": f"Pay {money(result['total'])}", "url": pay}]
     return [text(f"Order #{oid} is with the kitchen ✅ We'll message you at every step.")]
 
 

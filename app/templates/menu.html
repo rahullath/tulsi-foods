@@ -1113,9 +1113,9 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
 
             ${isUpi ? `
               <a class="checkout-place" id="upi-pay-now" style="text-decoration:none;display:inline-block;margin-bottom:10px"
-                 href="${upiLink(data.total, data.order_id)}">Pay ₹${data.total} with UPI →</a>
+                 href="/pay/${data.tracking_token}">Pay ₹${data.total} with UPI →</a>
               <p style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
-                Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Your UPI app will open pre-filled — your order starts once the kitchen accepts it.</p>
+                Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Opens GPay / PhonePe / Paytm pre-filled — your order starts once the kitchen accepts it.</p>
             ` : ""}
             <a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px" href="/track/${data.tracking_token}">Track my order ↳</a>
             <button class="checkout-place" id="checkout-continue">Continue browsing</button>
