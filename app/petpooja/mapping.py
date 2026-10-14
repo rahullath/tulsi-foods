@@ -293,7 +293,7 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
     if order_discount > 0:
         discount_lines.append({
             "id": "0",
-            "title": "Discount",
+            "title": order.get("discount_code") or "Discount",
             "type": order.get("discount_type", "F"),
             "price": f"{order_discount:.2f}",
         })

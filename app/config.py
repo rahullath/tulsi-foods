@@ -20,10 +20,12 @@ ADMIN_TOKEN = os.environ.get("TULSI_ADMIN_TOKEN", "tulsi")
 # inside the total, so the customer knows the price before ordering. The
 # kitchen pays the actual Porter fare and absorbs the difference; Mom's fare
 # reply is stored as courier_cost so the bands can be tuned from real data.
+# One minimum everywhere, set so a single Mini Thali (₹188) can be delivered.
+MIN_ORDER = 180
 DELIVERY_ZONES = [
-    {"name": "within 3 km", "max_km": 3.0, "fee": 49, "min_order": 250},
-    {"name": "3-5 km", "max_km": 5.0, "fee": 69, "min_order": 300},
-    {"name": "5-7 km", "max_km": 7.0, "fee": 89, "min_order": 350},
+    {"name": "within 3 km", "max_km": 3.0, "fee": 49, "min_order": MIN_ORDER},
+    {"name": "3-5 km", "max_km": 5.0, "fee": 69, "min_order": MIN_ORDER},
+    {"name": "5-7 km", "max_km": 7.0, "fee": 89, "min_order": MIN_ORDER},
 ]
 
 FREE_DELIVERY_ABOVE = 700  # optional: free delivery over this amount

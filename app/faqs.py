@@ -33,6 +33,8 @@ def _open_text() -> str:
 
 
 def _min_order_text(zones) -> str:
+    if len({z["min_order"] for z in zones}) == 1:
+        return f"₹{zones[0]['min_order']} of food, wherever you are in our area"
     return ", ".join(
         f"₹{z['min_order']} within {z['max_km']:.0f} km" for z in zones
     )

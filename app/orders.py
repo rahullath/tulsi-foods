@@ -296,7 +296,8 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                  # means WE collect the (estimated) fee and pay the rider
                  # ourselves instead, for customers who'd rather not deal
                  # with it at the door.
-                 pay_courier_direct: bool = False) -> dict:
+                 pay_courier_direct: bool = False,
+                 discount_code: str | None = None) -> dict:
     if order_type not in ("delivery", "pickup"):
         raise OrderError("Invalid order_type", 400)
     phone = _normalize_phone(phone)
@@ -340,11 +341,21 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
         else:
             raise OrderError("Delivery distance or pincode is required", 400)
 
+    # Discount codes come off the food subtotal, before packing and GST.
+    discount, applied_code = 0.0, None
+    if discount_code and discount_code.strip():
+        from .discounts import DiscountError, evaluate
+        try:
+            d = evaluate(discount_code, phone, subtotal)
+        except DiscountError as e:
+            raise OrderError(str(e), 400)
+        discount, applied_code = d["amount"], d["code"]
+
     packing_fee = packing_fee_for(subtotal)
-    gst_amount = gst_for(subtotal + packing_fee)
+    gst_amount = gst_for(subtotal - discount + packing_fee)
     # Delivery is a fixed fee by distance band, charged in the total. The
     # actual Porter fare is stored as courier_cost when Mom reports it.
-    total = subtotal + packing_fee + gst_amount + (delivery_fee or 0.0)
+    total = subtotal - discount + packing_fee + gst_amount + (delivery_fee or 0.0)
     flagged, flag_reason = check_address(address, pincode, lat, lng)
     cid = db.upsert_customer(phone, name, address, pincode)
     oid = db.create_order(cid, order_type, subtotal, delivery_fee, total,
@@ -356,7 +367,8 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
                           packing_fee=packing_fee, gst_amount=gst_amount,
                           tracking_token=tracking_token,
                           scheduled_window=scheduled_window,
-                          pay_courier_direct=pay_courier_direct)
+                          pay_courier_direct=pay_courier_direct,
+                          discount_total=discount, discount_code=applied_code)
     if order_type == "delivery" and address:
         base_address, landmark = _split_landmark(address)
         try:
@@ -412,6 +424,7 @@ def create_order(phone: str, name: str, order_type: str, items: list[dict],
     return {"order_id": oid, "status": "new", "subtotal": round(subtotal, 2),
             "packing_fee": packing_fee, "gst_amount": gst_amount,
             "delivery_fee": delivery_fee, "total": round(total, 2),
+            "discount": discount, "discount_code": applied_code,
             "tracking_token": tracking_token,
             "scheduled_window": scheduled_window, "pay_courier_direct": pay_courier_direct,
             "schedule_label": _window_label(scheduled_window, scheduled_at),
