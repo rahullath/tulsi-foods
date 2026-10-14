@@ -13,7 +13,7 @@ from fastapi.templating import Jinja2Templates
 from xml.sax.saxutils import escape as xml_escape
 from pydantic import BaseModel, Field
 
-from . import catalog, db, faqs, menu, orders, reviews, seo_aliases
+from . import catalog, db, faqs, menu, orders, reviews, seo_aliases, wa_link
 from .config import (
     ADMIN_TOKEN,
     DELIVERY_ZONES,
@@ -278,8 +278,31 @@ def facebook_domain_verification():
     return PlainTextResponse("mxt0vtchhifb4bxbj27i4aw1em76ra")
 
 
+@app.get("/o/{token}")
+def wa_order_link(token: str):
+    """The bot's *Order now* button: the menu, signed in with their number."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(f"/menu?wa={token}" if wa_link.verify(token) else "/menu", 302)
+
+
+def _wa_customer(token: str | None) -> dict | None:
+    phone = wa_link.verify(token)
+    if not phone:
+        return None
+    phone = orders._normalize_phone(phone)
+    name = (db.get_customer(phone) or {}).get("name") or ""
+    if not name:
+        try:
+            from .whatsapp import sessions
+            wa = phone if len(phone) > 10 else "91" + phone
+            name = sessions.load(wa)["ctx"].get("profile_name") or ""
+        except Exception:
+            name = ""
+    return {"phone": phone, "name": name}
+
+
 @app.get("/menu", response_class=HTMLResponse)
-def menu_page(request: Request):
+def menu_page(request: Request, wa: str | None = None):
     groups = menu.grouped()
     for g in groups:
         g["slug"] = _group_slug(g["group"])
@@ -296,6 +319,7 @@ def menu_page(request: Request):
          "upi_vpa": UPI_VPA, "upi_payee_name": UPI_PAYEE_NAME,
          "free_delivery_above": FREE_DELIVERY_ABOVE,
          "delivery_free_enabled": FREE_DELIVERY_ENABLED,
+         "wa_customer": _wa_customer(wa),
          "categories": all_categories()},
     )
 
@@ -726,6 +750,8 @@ def robots_txt():
         "Disallow: /api/",
         "Disallow: /f",
         "Disallow: /order-actions",
+        "Disallow: /o/",
+        "Disallow: /pay/",
         "",
         f"Sitemap: {SITE_URL}/sitemap.xml",
     ]

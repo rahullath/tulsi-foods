@@ -84,7 +84,7 @@
       </div>
       <a href="#checkout" id="cart-checkout" class="cart-btn">Checkout →</a>
     </div>
-    <div class="cart-wa">or <a href="{{ wa_order_link("Hi") }}" target="_blank">continue on WhatsApp</a></div>
+    {% if not wa_customer %}<div class="cart-wa">or <a href="{{ wa_order_link("Hi") }}" target="_blank">continue on WhatsApp</a></div>{% endif %}
   </div>
 
   </div>
@@ -287,6 +287,8 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   const cart = {};
   const PRICES = {};
   const NAMES = {};
+  // Opened from the WhatsApp bot's Order now button: number already known.
+  const WA_CUSTOMER = {{ wa_customer | tojson }};
   const cartBar = document.getElementById("cart-bar");
   const cartCount = document.getElementById("cart-count");
   const cartSubtotal = document.getElementById("cart-subtotal");
@@ -965,6 +967,12 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       const phoneEl = form.querySelector('[name=phone]'), nameEl = form.querySelector('[name=name]');
       if (me && !phoneEl.value) phoneEl.value = me.phone || "";
       if (me && !nameEl.value) nameEl.value = me.name || "";
+      if (WA_CUSTOMER) {
+        phoneEl.value = WA_CUSTOMER.phone;
+        phoneEl.readOnly = true;
+        phoneEl.nextElementSibling.textContent = "Your WhatsApp number. Order updates come there.";
+        if (!nameEl.value) nameEl.value = WA_CUSTOMER.name || "";
+      }
       if (phoneEl.value) phoneEl.dispatchEvent(new Event("input"));
     } catch (_) { /* storage unavailable */ }
 
@@ -1117,6 +1125,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
               <p style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
                 Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Opens GPay / PhonePe / Paytm pre-filled — your order starts once the kitchen accepts it.</p>
             ` : ""}
+            ${WA_CUSTOMER ? `<a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px;background:#25D366" href="https://wa.me/{{ wa_order_number }}">Back to WhatsApp</a>` : ""}
             <a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px" href="/track/${data.tracking_token}">Track my order ↳</a>
             <button class="checkout-place" id="checkout-continue">Continue browsing</button>
             <p class="confirm-state" style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
