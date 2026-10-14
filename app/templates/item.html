@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set hide_wa = true %}
 {% block meta %}
 <meta name="description" content="{{ item_description }}{% if aliases %} Also called {{ aliases[:3] | join(', ') }}.{% endif %} ₹{{ item.price }}, pure veg, cooked fresh near you in Mylapore, Alwarpet &amp; Teynampet, Chennai. Order online, no platform fees.">
 <title>{{ item.name }}{% if aliases %} ({{ aliases[0] }}){% endif %} Price ₹{{ item.price }} · Order Online in Chennai | Tulsi Foods</title>

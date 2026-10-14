@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set hide_wa = true %}
 {% block meta %}
 <meta name="description" content="Full menu, prices and daily availability for Tulsi Foods — pure vegetarian North Indian thalis, parathas, chaats, sabzi and more in Mylapore, Chennai. Order online for delivery or pickup.">
 <title>Tulsi Foods Menu &amp; Prices · Tulsi Restaurant, Alwarpet &amp; Mylapore, Chennai</title>
@@ -84,7 +85,6 @@
       </div>
       <a href="#checkout" id="cart-checkout" class="cart-btn">Checkout →</a>
     </div>
-    {% if not wa_customer %}<div class="cart-wa">or <a href="{{ wa_order_link("Hi") }}" target="_blank">continue on WhatsApp</a></div>{% endif %}
   </div>
 
   </div>
