@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% set hide_wa = true %}
 {% block meta %}
-<meta name="description" content="Full menu, prices and daily availability for Tulsi Foods — pure vegetarian North Indian thalis, parathas, chaats, sabzi and more in Mylapore, Chennai. Order online for delivery or pickup.">
+<meta name="description" content="Full menu, prices and daily availability for Tulsi Foods: pure vegetarian North Indian thalis, parathas, chaats, sabzi and more in Mylapore, Chennai. Order online for delivery or pickup.">
 <title>Tulsi Foods Menu &amp; Prices · Tulsi Restaurant, Alwarpet &amp; Mylapore, Chennai</title>
 {% endblock %}
 {% block canonical %}<link rel="canonical" href="https://tulsifoods.app/menu">{% endblock %}
@@ -228,7 +228,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
   const ZONES = {{ zones | tojson }};
   const FREE_DELIVERY_ABOVE = {{ free_delivery_above }};
   const FREE_DELIVERY_ENABLED = {{ 'true' if delivery_free_enabled else 'false' }};
-  const PICKUP_NOTE = "Pickup at 34 Murrays Gate Road, Alwarpet — ready in about 20\u201325 min.";
+  const PICKUP_NOTE = "Pickup at 34 Murrays Gate Road, Alwarpet. Usually ready in 20 to 25 minutes.";
   const GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
   const PACKING_FEE = {{ packing_fee }};
   const PACKING_FEE_LARGE = {{ packing_fee_large }};
@@ -427,7 +427,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         </div>
         <div class="checkout-nudge" id="checkout-nudge" hidden>
           <div class="checkout-nudge-title">One delivery, however much you order</div>
-          <div class="checkout-nudge-sub">The rider costs the same either way — worth adding a little.</div>
+          <div class="checkout-nudge-sub">The delivery fee is the same however much you order.</div>
           <div class="checkout-nudge-chips"></div>
         </div>
         <form id="checkout-form">
@@ -452,7 +452,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
               <button type="button" class="time-pill" data-preset="lunch">Lunch (12:00 – 2:30 PM)</button>
               <button type="button" class="time-pill" data-preset="dinner">Dinner (6:30 – 9:30 PM)</button>
             </div>
-            <div style="font-size:11px;color:#6F7468;margin-top:4px;">Pick a window — no exact minute needed. For today's orders "As soon as possible" means within the hour.</div>
+            <div style="font-size:11px;color:#6F7468;margin-top:4px;">Pick a window; no need for an exact time. For today's orders "As soon as possible" means within the hour.</div>
             <input type="hidden" name="scheduled_at" id="input-scheduled">
             <input type="hidden" name="scheduled_window" id="input-window">
           </div>
@@ -462,7 +462,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           </div>
           <div class="checkout-field" id="addr-field"><label>Address</label>
             {% if google_maps_api_key %}
-            <input type="text" name="address" id="address-input" placeholder="Flat / building, street — pick from the list" autocomplete="off" required>
+            <input type="text" name="address" id="address-input" placeholder="Flat, building and street, then pick from the list" autocomplete="off" required>
             <div class="checkout-hint">Pick a suggestion, or tap "Use my location" and drag the pin onto your door.</div>
             {% else %}
             <textarea name="address" rows="2" placeholder="Flat/house number, building, street" required></textarea>
@@ -616,7 +616,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
       if (isDelivery) {
         const eff = (liveQuote && liveQuote.serviceable) ? liveQuote : q;
         if (eff && eff.outside) {
-          deliveryRow = `<div class="checkout-row" style="color:#B3261E"><span>Delivery</span><span>Outside our area — pickup instead</span></div>`;
+          deliveryRow = `<div class="checkout-row" style="color:#B3261E"><span>Delivery</span><span>Too far for delivery. Choose pickup</span></div>`;
           deliveryNote = `<span style="color:#B3261E">We don't deliver ${eff.km ? Math.round(eff.km) + " km away" : "that far"}. Pickup is in Alwarpet.</span>`;
         } else if (eff) {
           deliveryFee = +eff.fee || 0;
@@ -652,7 +652,7 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         ` : "")
         + (deliveryRow ? deliveryRow : "")
         + `<div class="checkout-row total"><span>Total</span><span>₹${(currentSubtotal + packing + gst + deliveryFee).toFixed(2)}</span></div>
-           <div class="checkout-row-note">${deliveryNote || "No hidden charges — this is the final total."}</div>`;
+           <div class="checkout-row-note">${deliveryNote || "This is the final total. Nothing is added later."}</div>`;
       const grand = Math.round((currentSubtotal + packing + gst + deliveryFee) * 100) / 100;
       const placeBtn = overlay.querySelector("#place-btn");
       if (placeBtn && !placeBtn.disabled) placeBtn.textContent = currentSubtotal
@@ -1014,12 +1014,12 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
         if (q) {
           if (q.outside) {
             msg.style.color = "#B3261E";
-            msg.textContent = "We don't deliver that far — switch to pickup and we'll have it ready.";
+            msg.textContent = "We don't deliver that far yet. Switch to pickup and we'll have it ready for you.";
             return;
           }
           if (subtotal < q.min_order) {
             msg.style.color = "#B3261E";
-            msg.textContent = `Minimum order for ${q.zone} is ₹${q.min_order} — add a little more.`;
+            msg.textContent = `Minimum order for ${q.zone} is ₹${q.min_order}. Add a little more to continue.`;
             return;
           }
         }
@@ -1114,22 +1114,22 @@ main { flex: 1; padding: 14px; padding-bottom: 100px; }
           <button class="checkout-close" id="checkout-close-2">✕</button>
           <div class="checkout-success">
             <div class="checkout-success-icon">${isUpi ? "₹" : "✓"}</div>
-            <div class="checkout-title">${isUpi ? "Order placed — pay to confirm" : "Order placed — the kitchen has it"}</div>
+            <div class="checkout-title">${isUpi ? "Order placed. One last step: pay" : "Order placed. The kitchen has it"}</div>
             <p class="checkout-success-detail">Order #${data.order_id} · ₹${data.total}${data.delivery_fee ? ` including ₹${data.delivery_fee} delivery` : ""}.<br>
-              It's gone straight to the kitchen — no confirmation text needed.<br>
+              It's gone straight to the kitchen. You don't need to message us to confirm.<br>
               📲 Updates will come on WhatsApp from <b>Tulsi Foods ({{ wa_order_display }})</b>. Save the number so you don't miss them.</p>
 
             ${isUpi ? `
               <a class="checkout-place" id="upi-pay-now" style="text-decoration:none;display:inline-block;margin-bottom:10px"
                  href="/pay/${data.tracking_token}">Pay ₹${data.total} with UPI →</a>
               <p style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
-                Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Opens GPay / PhonePe / Paytm pre-filled — your order starts once the kitchen accepts it.</p>
+                Payee: <b>${UPI_PAYEE}</b> (${UPI_VPA})<br>Opens GPay, PhonePe or Paytm with the amount filled in. The kitchen starts cooking once it accepts your order.</p>
             ` : ""}
             ${WA_CUSTOMER ? `<a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px;background:#25D366" href="https://wa.me/{{ wa_order_number }}">Back to WhatsApp</a>` : ""}
             <a class="checkout-place" style="text-decoration:none;display:inline-block;margin-bottom:10px" href="/track/${data.tracking_token}">Track my order ↳</a>
             <button class="checkout-place" id="checkout-continue">Continue browsing</button>
             <p class="confirm-state" style="font-size:12px;color:#6F7468;line-height:1.5;margin:0 0 12px">
-              Have a query or a custom swap? <a id="wa-optional" href="${confirmHref}" target="_blank" rel="noopener" style="color:#25D366;font-weight:600">Message us on WhatsApp</a> — your order's already placed, nothing else to confirm.</p>
+              Have a query or a custom swap? <a id="wa-optional" href="${confirmHref}" target="_blank" rel="noopener" style="color:#25D366;font-weight:600">Message us on WhatsApp</a>. Your order is already placed.</p>
             ${isDelivery ? `<div class="edit-window" id="edit-window">
               <div class="edit-window-text">Wrong address? You have <span id="edit-countdown">3:00</span> to fix it.</div>
               <button type="button" class="edit-window-btn" id="edit-address-btn">Change the address</button>

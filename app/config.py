@@ -70,8 +70,8 @@ STORE_PICKUP_LINE = "34 Murrays Gate Road, Alwarpet"
 STORE_WHATSAPP = "+91 99406 21800"  # Mom's own number (calls + WhatsApp)
 # The ordering bot's number (Cloud API): website "Order on WhatsApp" and
 # order-question links open a chat with it; it relays questions to Mom.
-WHATSAPP_ORDER_NUMBER = os.environ.get("WHATSAPP_ORDER_NUMBER", "15553972507")
-WHATSAPP_ORDER_DISPLAY = os.environ.get("WHATSAPP_ORDER_DISPLAY", "+1 555-397-2507")
+WHATSAPP_ORDER_NUMBER = os.environ.get("WHATSAPP_ORDER_NUMBER", "919361394084")
+WHATSAPP_ORDER_DISPLAY = os.environ.get("WHATSAPP_ORDER_DISPLAY", "+91 93613 94084")
 OPENING_HOURS = {
     "mon_sat": ("09:00", "21:00"),
     "sunday": ("11:00", "21:00"),

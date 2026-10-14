@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% set hide_wa = true %}
 {% block meta %}
-<meta name="description" content="Track your Tulsi Foods order — live status, estimated arrival, payment and price breakdown.">
-<title>Tulsi Foods — Track Order #{{ order_id }}</title>
+<meta name="description" content="Track your Tulsi Foods order: live status, estimated arrival, payment and price breakdown.">
+<title>Order #{{ order_id }} · Tulsi Foods</title>
 {% endblock %}
 {% block body %}
 <style>
@@ -76,7 +76,7 @@
     <div id="content"></div>
     <div id="rate"></div>
   </div>
-  <p class="fresh">This page updates live — no app needed.<br>Questions? Call <a href="tel:+919940621800">99406 21800</a></p>
+  <p class="fresh">This page updates by itself, so you can keep it open.<br>Questions? Call <a href="tel:+919940621800">99406 21800</a></p>
 </div>
 <script>
   const STATUSES = [
@@ -110,8 +110,8 @@
   function eta(o) {
     if (o.status === "delivered" || o.status === CANCELED) return null;
     if (o.scheduled_at) return o.scheduled_window
-      ? `Scheduled for the ${o.scheduled_window === "lunch" ? "Lunch" : "Dinner"} window — the kitchen aims to have it out in that window.`
-      : "Scheduled — the kitchen aims to have it out at your chosen time.";
+      ? `Scheduled for the ${o.scheduled_window === "lunch" ? "Lunch" : "Dinner"} window. The kitchen will send it out during that window.`
+      : "Scheduled. The kitchen will send it out at your chosen time.";
     const pickup = o.order_type === "pickup";
     const table = {
       new: pickup ? "~20–25 min from now" : "~40–60 min from now",
@@ -123,7 +123,7 @@
   }
 
   function payLabel(o) {
-    if (o.payment_method === "upi") return o.paid ? "Paid by UPI ✓" : "UPI — awaiting confirmation";
+    if (o.payment_method === "upi") return o.paid ? "Paid by UPI ✓" : "UPI, waiting for the kitchen to confirm";
     return "Cash on delivery";
   }
 
@@ -270,8 +270,8 @@
         const r = await fetch(`/api/orders/${TRACKING_TOKEN}/review`, { method: "POST",
           headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ratings }) });
         if (!r.ok) throw new Error();
-        document.getElementById("rate-box").innerHTML = "<h3>Thank you! 🙏</h3><div class='sub'>Your ratings help other people choose — and tell the kitchen what to keep doing.</div>";
-      } catch (_) { e.target.disabled = false; e.target.textContent = "Couldn't send — try again"; }
+        document.getElementById("rate-box").innerHTML = "<h3>Thank you! 🙏</h3><div class='sub'>Your ratings help other people choose, and tell the kitchen what to keep doing.</div>";
+      } catch (_) { e.target.disabled = false; e.target.textContent = "Couldn't send. Try again"; }
     });
     if (location.hash === "#rate") box.scrollIntoView({ behavior: "smooth" });
   }

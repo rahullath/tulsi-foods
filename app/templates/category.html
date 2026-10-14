@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block meta %}
-<meta name="description" content="{% if keywords %}Order {{ keywords[:3] | join(', ') }} near you — {% endif %}every {{ group }} at Tulsi Foods, {{ count }} item{{ '' if count == 1 else 's' }} from ₹{{ price_low | int }}. Pure veg, home-style North Indian food delivered in Mylapore, Alwarpet &amp; Teynampet, Chennai.">
+<meta name="description" content="{% if keywords %}Order {{ keywords[:3] | join(', ') }} near you. {% endif %}every {{ group }} at Tulsi Foods, {{ count }} item{{ '' if count == 1 else 's' }} from ₹{{ price_low | int }}. Pure veg, home-style North Indian food delivered in Mylapore, Alwarpet &amp; Teynampet, Chennai.">
 <title>{{ group }}{% if keywords %}: {{ keywords[:2] | join(', ') | title }}{% endif %} Menu &amp; Prices | Tulsi Foods, Mylapore Chennai</title>
 {% endblock %}
 {% block canonical %}<link rel="canonical" href="https://tulsifoods.app/category/{{ slug }}">{% endblock %}
@@ -74,7 +74,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
   <div class="crumb"><a href="/">Home</a> &rarr; <a href="/menu">Menu</a> &rarr; {{ group }}</div>
   <div class="page-tag">Menu · Category</div>
   <h1>{{ group }}</h1>
-  <p class="page-sub">{{ blurb or ("Everything in this category at Tulsi Foods — pure vegetarian, home-style North Indian food cooked to order in Mylapore, Chennai. Prices are today's prices; delivery is confirmed on WhatsApp.") }}</p>
+  <p class="page-sub">{{ blurb or ("Everything in this category at Tulsi Foods: pure vegetarian, home-style North Indian food cooked to order in Mylapore, Chennai. Prices are today's prices; delivery is confirmed on WhatsApp.") }}</p>
   <div class="price-range">
     <span>{{ count }} item{{ '' if count == 1 else 's' }}</span>
     {% if price_low %}<span>from ₹{{ price_low }}</span>{% endif %}
@@ -109,7 +109,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
           {% if item.half %}<span class="half">half ₹{{ item.half }}</span>{% endif %}
         </div>
         {% set sw = swiggy_rating(item.id) %}{% if sw %}<div class="item-rating">★ {{ sw.rating }} · {{ sw.count_text }} on Swiggy</div>{% endif %}
-        {% if not item.available %}<div class="item-soldout">{{ item.status or "Finished for today" }} — order another day</div>{% endif %}
+        {% if not item.available %}<div class="item-soldout">{{ item.status or "Finished for today" }}. Try another day</div>{% endif %}
       </div>
     </a>
     {% endfor %}
