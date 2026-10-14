@@ -29,6 +29,7 @@ HEADER = [
     "age_group", "material", "pattern", "shipping", "shipping_weight",
     "offer_disclaimer", "offer_disclaimer_url", "video[0].url",
     "video[0].tag[0]", "gtin", "product_tags[0]", "product_tags[1]", "style[0]",
+    "product_type",  # the menu category: Meta product sets (WhatsApp collections) filter on it
 ]
 
 FILL_DESCRIPTIONS = {
@@ -113,6 +114,7 @@ def _row(item: dict, photos: set[str], cards: set[str], off_pos: frozenset,
         "price": f"{item['price']} INR", "google_product_category": GOOGLE_CAT,
         "item_group_id": base if has_half else "", "size": size,
         "product_tags[0]": item.get("group") or "", "product_tags[1]": "Pure veg",
+        "product_type": item.get("group") or "",
     }
     return [row.get(col, "") for col in HEADER]
 

@@ -99,6 +99,10 @@ META_BUSINESS_ID = os.environ.get("META_BUSINESS_ID", "714196232763226")
 # The "Menu" catalogue (fed hourly from /whatsapp-catalog.csv), linked to the
 # WABA of the ordering number; product_list messages name it explicitly.
 WHATSAPP_CATALOG_ID = os.environ.get("WHATSAPP_CATALOG_ID", "1768879374330631")
+# Published checkout Flow (app/whatsapp/flows/checkout.json) on the ordering
+# number's WABA. Empty: the bot checks out step by step with buttons instead.
+WHATSAPP_CHECKOUT_FLOW_ID = os.environ.get("WHATSAPP_CHECKOUT_FLOW_ID", "")
+WHATSAPP_FLOW_MODE = os.environ.get("WHATSAPP_FLOW_MODE", "")  # "draft" while testing
 WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN", "tulsi_verify")
 WHATSAPP_APP_SECRET = os.environ.get("WHATSAPP_APP_SECRET", "")
 WHATSAPP_GRAPH_VERSION = "v26.0"

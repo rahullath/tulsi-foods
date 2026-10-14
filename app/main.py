@@ -530,6 +530,54 @@ def track_page(request: Request, ref: str):
     return RedirectResponse(f"/track/{token}", status_code=301)
 
 
+def upi_links(amount: float, order_id: int) -> dict:
+    """UPI deep links for one payment: the generic upi:// intent (Android's
+    app chooser, and what the QR encodes) plus app-specific schemes that
+    also work on iPhone, where there is no generic chooser."""
+    from urllib.parse import urlencode
+    q = urlencode({"pa": UPI_VPA, "pn": UPI_PAYEE_NAME, "am": f"{amount:.2f}", "cu": "INR",
+                   "tn": f"Tulsi Foods order {order_id}", "tr": f"TF{order_id}"})
+    return {"any": f"upi://pay?{q}", "gpay_android": f"tez://upi/pay?{q}",
+            "gpay_ios": f"gpay://upi/pay?{q}", "phonepe": f"phonepe://pay?{q}",
+            "paytm": f"paytmmp://pay?{q}"}
+
+
+@app.get("/pay/{ref}", response_class=HTMLResponse)
+def pay_page(request: Request, ref: str):
+    """One-tap UPI payment for an order, by tracking token. The WhatsApp
+    'Pay' button lands here: it opens the UPI app (Android chooser, or
+    GPay / PhonePe / Paytm buttons), shows a QR for paying from another
+    phone, and says so plainly when the order is paid, cash or cancelled."""
+    o = db.get_order_by_token(ref) if not ref.isdigit() else None
+    if not o:
+        raise HTTPException(404, "Order not found")
+    amount = float(o.get("total") or 0)
+    if o.get("status") == "cancelled":
+        state = "cancelled"
+    elif o.get("paid"):
+        state = "paid"
+    elif (o.get("payment_method") or "cod") != "upi":
+        state = "cash"
+    elif not UPI_VPA:
+        state = "no_upi"
+    else:
+        state = "due"
+    items = [f"{int(i.get('qty') or 1)} × {i.get('name')}" for i in (o.get("items") or [])]
+    items_text = ", ".join(items[:3]) + (f" and {len(items) - 3} more" if len(items) > 3 else "")
+    links = upi_links(amount, o["id"])
+    qr_svg = ""
+    if state == "due":
+        try:
+            import segno
+            qr_svg = segno.make(links["any"], error="m").svg_inline(scale=5, border=2)
+        except Exception:
+            log.exception("UPI QR failed for order %s", o["id"])
+    return templates.TemplateResponse(request, "pay.html", {
+        "order": o, "state": state, "amount_text": f"{amount:.2f}".removesuffix(".00"), "qr_svg": qr_svg,
+        "payee": UPI_PAYEE_NAME, "vpa": UPI_VPA, "items_text": items_text or "your order",
+        "links": links, "hide_nav": True})
+
+
 @app.get("/about", response_class=HTMLResponse)
 def about_page(request: Request):
     return templates.TemplateResponse(
