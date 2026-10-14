@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set hide_wa = true %}
 {% block meta %}
 <meta name="description" content="{{ item_description }}{% if aliases %} Also called {{ aliases[:3] | join(', ') }}.{% endif %} ₹{{ item.price }}, pure veg, cooked fresh near you in Mylapore, Alwarpet &amp; Teynampet, Chennai. Order online, no platform fees.">
 <title>{{ item.name }}{% if aliases %} ({{ aliases[0] }}){% endif %} Price ₹{{ item.price }} · Order Online in Chennai | Tulsi Foods</title>
@@ -6,7 +7,7 @@
 <meta property="og:title" content="{{ item.name }} | Tulsi Foods, Mylapore">
 <meta property="og:description" content="{{ item_description }}">
 <meta property="og:url" content="{{ item_url }}">
-<meta property="og:image" content="{{ photo_url or 'https://tulsifoods.app/static/logo.png' }}">
+<meta property="og:image" content="{{ share_image }}">
 <meta property="og:locale" content="en_IN">
 <meta property="og:site_name" content="Tulsi Foods">
 <meta property="product:price:amount" content="{{ item.price }}">
@@ -14,7 +15,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ item.name }} | Tulsi Foods, Mylapore">
 <meta name="twitter:description" content="{{ item_description }}">
-<meta name="twitter:image" content="{{ photo_url or 'https://tulsifoods.app/static/logo.png' }}">
+<meta name="twitter:image" content="{{ share_image }}">
 {% endblock %}
 {% block canonical %}<link rel="canonical" href="{{ item_url }}">{% endblock %}
 {% block fonts %}
@@ -90,7 +91,7 @@
   <section class="about">
     <h2>About {{ item.name }}</h2>
     <p>{{ item_description }}</p>
-    <p class="facts">Made fresh to order at Tulsi Foods, a home-style pure vegetarian kitchen in Mylapore, Chennai — no aggregator, no platform fees.</p>
+    <p class="facts">Made fresh to order at Tulsi Foods, a home-style pure vegetarian kitchen in Mylapore, Chennai. No aggregator and no platform fees.</p>
   </section>
 
   <section class="near">
@@ -101,18 +102,18 @@
   <section class="thali" id="thali" hidden>
     <h2>What's in this {{ 'thali' if 'thali' in (item.group | lower) else 'dish' }}?</h2>
     <ul class="thali-pills" id="thali-pills" aria-label="Everything included"></ul>
-    <p class="facts">Every plate is assembled fresh when you order. Swaps and extras are easy — add a note during checkout, and we'll confirm on WhatsApp before cooking.</p>
+    <p class="facts">Every plate is assembled fresh when you order. Want a swap or an extra? Add a note at checkout. If it changes the price, the kitchen messages you on WhatsApp before cooking.</p>
   </section>
 
   <section class="ordering">
     <h2>Order {{ item.name }} today</h2>
     <ul>
-      <li><b>Online</b> — add it to your cart above and check out straight on this site.</li>
-      <li><b>WhatsApp</b> — message {{ ordering.whatsapp }} for help or a large / catering order.</li>
-      <li><b>By phone</b> — {{ ordering.phone }}.</li>
-      <li><b>Pickup</b> — {{ ordering.address }}.</li>
-      <li><b>Delivery</b> — {{ ordering.zones }}.</li>
-      <li><b>Hours</b> — {{ ordering.hours }}.</li>
+      <li><b>Online:</b> add it to your cart above and check out on this site. <a href="/how-to-order">How ordering works</a>.</li>
+      <li><b>WhatsApp:</b> send "hi" to {{ ordering.whatsapp }} to order, or for a large or catering order.</li>
+      <li><b>By phone:</b> {{ ordering.phone }}.</li>
+      <li><b>Pickup:</b> {{ ordering.address }}.</li>
+      <li><b>Delivery:</b> {{ ordering.zones }}.</li>
+      <li><b>Hours:</b> {{ ordering.hours }}.</li>
     </ul>
   </section>
 
@@ -144,7 +145,7 @@
   {% if related %}
   <section class="related">
     <h2>More {{ item.group|lower }} from the menu</h2>
-    <p class="related-note">These go well or cook the same way — order a couple together.</p>
+    <p class="related-note">These go well together, or are cooked the same way.</p>
     {% for r in related %}
     <div class="rel-card">
       <a class="rel-main" href="/menu/{{ r.id.split('__')[0] }}">
@@ -321,7 +322,7 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
     return;
   }
   if (cart[id] > 0) {
-    stateEl.innerHTML = 'In your cart' + (cart[id] > 1 ? '(<b>' + cart[id] + '</b>)' : '') + ' — <a href="/menu#checkout">checkout &amp; pay →</a>';
+    stateEl.innerHTML = 'In your cart' + (cart[id] > 1 ? '(<b>' + cart[id] + '</b>)' : '') + '. <a href="/menu#checkout">Go to checkout →</a>';
   }
 
   const save = () => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (_) {} };
@@ -364,7 +365,7 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
     addBtn.classList.add("done");
     addBtn.textContent = "✓ Added to cart";
     stateEl.style.color = "#16a34a";
-    stateEl.innerHTML = 'Added — <a href="/menu#checkout">checkout &amp; pay →</a>';
+    stateEl.innerHTML = 'Added. <a href="/menu#checkout">Go to checkout →</a>';
     setTimeout(() => { addBtn.classList.remove("done"); addBtn.textContent = "Add more"; }, 1800);
   });
 })();

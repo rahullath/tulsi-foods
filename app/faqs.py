@@ -4,7 +4,7 @@ Every answer is generated from live config / menu data (delivery zones, fees,
 minimums, opening hours, real menu prices) so the visible FAQ and the
 FAQPage JSON-LD can never drift from what the site actually does.
 """
-from .config import MONDAY_OPENS_AT, OPENING_HOURS, STORE_WHATSAPP
+from .config import MONDAY_OPENS_AT, OPENING_HOURS, STORE_WHATSAPP, WHATSAPP_ORDER_DISPLAY
 
 
 def _free_clause(free_above) -> str:
@@ -66,7 +66,7 @@ def delivery_faqs(zones, free_above) -> list[dict]:
             "q": "Does Tulsi Foods deliver to my area?",
             "a": (
                 f"Tulsi Foods delivers anywhere within {zones[-1]['max_km']:.0f} km of "
-                "the Murrays Gate Road kitchen in Alwarpet — covering Mylapore, "
+                "the Murrays Gate Road kitchen in Alwarpet. That covers Mylapore, "
                 "Alwarpet, Royapettah, Teynampet, Nandanam, R.A. Puram, Adyar, "
                 "T. Nagar and Egmore. Farther than that is pickup in Alwarpet or "
                 "catering by arrangement."
@@ -75,8 +75,8 @@ def delivery_faqs(zones, free_above) -> list[dict]:
         {
             "q": "How do I order ahead at Tulsi Foods?",
             "a": (
-                "Tell us a time and the food leaves the kitchen for it, up to two "
-                "weeks in advance. Lunch and dinner get busy, so an hour's notice "
+                "Pick a lunch or dinner window up to two weeks ahead and the food is "
+                "cooked for it. Lunch and dinner get busy, so an hour's notice "
                 "means it reaches you hot."
             ),
         },
@@ -90,7 +90,7 @@ def delivery_faqs(zones, free_above) -> list[dict]:
         {
             "q": "Is there a minimum order for delivery at Tulsi Foods?",
             "a": (
-                f"Yes — {_min_order_text(zones)}. The checkout shows what your "
+                f"Yes: {_min_order_text(zones)}. The checkout shows what your "
                 "area needs before you submit."
             ),
         },
@@ -105,7 +105,7 @@ def landing_faqs(zones, free_above, price_range, has_upi) -> list[dict]:
         {
             "q": "Is Tulsi Foods a pure vegetarian restaurant in Mylapore, Chennai?",
             "a": (
-                "Yes — Tulsi Foods is a 100% pure vegetarian, home-style North Indian "
+                "Yes. Tulsi Foods is a 100% pure vegetarian, home-style North Indian "
                 "kitchen in Mylapore, Chennai, run by Kavita Lath since 2015. Jain and "
                 "no-onion-garlic versions are cooked separately on request."
             ),
@@ -120,7 +120,7 @@ def landing_faqs(zones, free_above, price_range, has_upi) -> list[dict]:
         {
             "q": "Does Tulsi Foods deliver in Chennai, and what does it cost?",
             "a": (
-                "Yes — anywhere within 7 km of the kitchen in Alwarpet: Mylapore, "
+                "Yes, anywhere within 7 km of the kitchen in Alwarpet: Mylapore, "
                 "Alwarpet, Royapettah, Teynampet, R.A. Puram, Adyar, T. Nagar and "
                 f"Egmore. Delivery is a fixed fee by distance ({_fee_text(zones)}), "
                 f"included in the total you see at checkout.{_free_clause(free_above)}"
@@ -129,8 +129,8 @@ def landing_faqs(zones, free_above, price_range, has_upi) -> list[dict]:
         {
             "q": "How much does food at Tulsi Foods cost?",
             "a": (
-                f"Menu prices run from about ₹{price_range[0]} to ₹{price_range[1]} "
-                "— thalis and lunch plates sit in the middle, snacks, drinks and "
+                f"Menu prices run from about ₹{price_range[0]} to ₹{price_range[1]}"
+                ". Thalis and lunch plates sit in the middle; snacks, drinks and "
                 "small plates cost less. Halves of many sabzi and dal dishes are "
                 "available."
             ),
@@ -138,15 +138,16 @@ def landing_faqs(zones, free_above, price_range, has_upi) -> list[dict]:
         {
             "q": "How do I order from Tulsi Foods?",
             "a": (
-                "Pick your dishes from the menu on this site and check out, or message "
-                f"the kitchen on WhatsApp at {STORE_WHATSAPP}. Pay {repay}."
+                "Add dishes from the menu on this site and check out, or send \"hi\" "
+                f"on WhatsApp to {WHATSAPP_ORDER_DISPLAY}. Pay {repay}. Updates and a "
+                "tracking link come on WhatsApp."
             ),
         },
         {
             "q": "Does Tulsi Foods cook food fresh to order?",
             "a": (
                 "Yes. Thalis and parathas are cooked after you order, which is why "
-                "delivery takes 30 to 60 minutes — nothing is pre-made and reheated."
+                "delivery takes 30 to 60 minutes. Nothing is made ahead and reheated."
             ),
         },
     ]

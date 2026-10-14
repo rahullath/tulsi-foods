@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block meta %}
+<meta name="description" content="How to order from Tulsi Foods in Chennai: on the website or on WhatsApp, delivery or pickup, pay by UPI or cash, order ahead for lunch or dinner, and track your order.">
+<title>How to Order | Tulsi Foods, Mylapore</title>
+{% endblock %}
+{% block canonical %}<link rel="canonical" href="https://tulsifoods.app/how-to-order">{% endblock %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+{% endblock %}
+{% block styles %}{% endblock %}
+{% block body %}
+<style>
+:root { --g: #0E7A45; --sf: #E08A1E; --bg: #FBF8F2; --card: #fff; --border: #E7E1D6; --ink: #171A14; --sub: #6F7468; --line2: #EFEBE3; }
+* { box-sizing: border-box; margin: 0; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+
+.page { max-width: 880px; margin: 0 auto; padding: 48px 40px 64px; }
+.page-tag { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--g); letter-spacing: .05em; text-transform: uppercase; }
+.page h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(30px, 4vw, 42px); margin: 12px 0 0; line-height: 1.08; }
+.page-sub { margin: 16px 0 0; font-size: 16px; line-height: 1.65; color: #43483F; max-width: 620px; }
+
+.zone-table { margin-top: 26px; width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.zone-table th, .zone-table td { text-align: left; padding: 15px 18px; font-size: 15px; border-top: 1px solid #F3F0EA; }
+.zone-table thead th { background: #F5F1E8; font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--sub); letter-spacing: .05em; text-transform: uppercase; padding: 13px 18px; border-top: 0; }
+.zone-table td { color: #43483F; }
+.zone-table .zone-dist, .zone-table .zone-time { color: var(--sub); }
+.zone-fee { font-weight: 600; color: var(--ink); }
+.zone-note { padding: 14px 18px; border-top: 1px solid #F3F0EA; background: #EDF6E2; font-size: 14px; color: #2C5A1E; line-height: 1.6; }
+
+.snippet { margin-top: 26px; }
+.snippet h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; margin: 26px 0 8px; line-height: 1.25; }
+.snippet p { font-size: 15px; line-height: 1.7; color: #43483F; max-width: 720px; }
+
+.faq-list { max-width: 720px; }
+.faq-item { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-top: 14px; }
+.faq-item h2 { font-size: 16.5px; font-weight: 600; }
+.faq-item p { margin: 7px 0 0; font-size: 14.5px; line-height: 1.7; color: #43483F; }
+
+.faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.faq-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+.faq-title { font-size: 16px; font-weight: 600; }
+.faq-desc { margin: 8px 0 0; font-size: 14px; line-height: 1.65; color: #43483F; }
+
+.page-cta { margin-top: 40px; background: var(--g); color: #fff; border-radius: 16px; padding: 32px 34px; display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+.page-cta-text { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; }
+.page-cta a { background: #fff; color: var(--g); border-radius: 12px; padding: 14px 24px; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+
+@media (max-width: 768px) {
+  .page { padding: 32px 18px 48px; }
+  .zone-table th:first-child, .zone-table td:first-child { border-top-left-radius: 10px; }
+  .zone-table th, .zone-table td { display: block; border-top: 1px solid #F3F0EA; }
+  .zone-table thead { display: none; }
+  .zone-table tbody tr { display: block; padding: 0; }
+  .zone-table td::before { content: attr(data-label); display: block; font: 500 10px/1 'IBM Plex Mono', monospace; color: var(--sub); letter-spacing: .04em; margin-bottom: 5px; }
+  .page-cta { flex-direction: column; text-align: center; }
+}
+
+.steps { margin: 14px 0 0; padding: 0; list-style: none; counter-reset: s; max-width: 720px; display: grid; gap: 10px; }
+.steps li { counter-increment: s; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px 14px 56px; position: relative; font-size: 15px; line-height: 1.6; color: #43483F; }
+.steps li::before { content: counter(s); position: absolute; left: 16px; top: 13px; width: 26px; height: 26px; border-radius: 50%; background: var(--g); color: #fff; font: 600 13px/26px 'IBM Plex Mono', monospace; text-align: center; }
+.steps li b { color: var(--ink); }
+.page a:not(.jump a):not(.page-cta a) { color: var(--g); }
+.jump { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.jump a { font-size: 14px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); color: var(--ink); text-decoration: none; }
+.snippet ul { margin: 8px 0 0; padding-left: 20px; font-size: 15px; line-height: 1.7; color: #43483F; max-width: 720px; }
+</style>
+
+<div class="page">
+  <div class="page-tag">How to order</div>
+  <h1>How to order from Tulsi Foods</h1>
+  <p class="page-sub">You can order on this website or on WhatsApp. Either way the order goes straight to our kitchen in Alwarpet. There's no app to install and no account to create, and you pay exactly what the checkout shows.</p>
+
+  <nav class="jump" aria-label="On this page">
+    <a href="#website">On the website</a>
+    <a href="#whatsapp">On WhatsApp</a>
+    <a href="#paying">Paying</a>
+    <a href="#ahead">Ordering ahead</a>
+    <a href="#after">After you order</a>
+    <a href="#fees">Delivery fees</a>
+  </nav>
+
+  <div class="snippet" id="website">
+    <h2>Order on the website</h2>
+    <ol class="steps">
+      <li><b>Open the <a href="/menu">menu</a>.</b> Search for a dish, or tap a section like Thalis or Parathas.</li>
+      <li><b>Tap + to add dishes.</b> Most mains come as a full or half portion. Your cart stays saved if you leave the page.</li>
+      <li><b>Tap Checkout.</b> Enter your phone number and name. If you've ordered before, your saved address fills in.</li>
+      <li><b>Choose delivery or pickup, and when.</b> As soon as possible, or a lunch (12:00 to 2:30 PM) or dinner (6:30 to 9:30 PM) window on any day in the next two weeks.</li>
+      <li><b>For delivery, set your address.</b> Pick it from the suggestions, then drag the pin onto your door and add a landmark. The pin decides your delivery fee, so please place it carefully.</li>
+      <li><b>Choose UPI or cash, and place the order.</b> You'll get a WhatsApp message from us straight away with your order number and a tracking link.</li>
+    </ol>
+  </div>
+
+  <div class="snippet" id="whatsapp">
+    <h2>Order on WhatsApp</h2>
+    <ol class="steps">
+      <li><b>Send "hi" to {{ wa_order_display }}.</b> That's our ordering number. You can also tap the WhatsApp link on this site.</li>
+      <li><b>Tap Order now.</b> It opens our menu with your number already filled in, so checkout is quicker.</li>
+      <li><b>Or stay in WhatsApp.</b> Tap Order in WhatsApp to browse by section, or just type a dish name like "paneer" or "chaat". Add dishes and send the cart.</li>
+      <li><b>Fill in the short checkout form.</b> Delivery or pickup, address, time and payment, all on one screen. Check the summary and tap Place order.</li>
+    </ol>
+    <p style="margin-top:12px">Got a question instead? Type it in the same chat and it goes to the kitchen. They usually reply within a few minutes.</p>
+  </div>
+
+  <div class="snippet" id="paying">
+    <h2>Paying</h2>
+    <ul>
+      <li><b>UPI:</b> after you place the order, tap Pay. It opens GPay, PhonePe or Paytm with the amount filled in. You can also scan the QR code from another phone. The kitchen confirms your payment on WhatsApp.</li>
+      <li><b>Cash:</b> pay the rider, or pay at the counter if you're picking up.</li>
+      <li>Your total already includes packing (₹{{ packing_fee }}, or ₹{{ packing_fee_large }} on orders over ₹{{ "{:,}".format(packing_threshold) }}), 5% GST and the delivery fee. Nothing is added later.</li>
+    </ul>
+  </div>
+
+  <div class="snippet" id="ahead">
+    <h2>Ordering ahead</h2>
+    <ul>
+      <li>Pick the lunch or dinner window and a date up to 14 days ahead. The food is cooked for that window, not reheated.</li>
+      <li>We're open {{ hours_text }}. Outside those hours you can still order ahead for the next window.</li>
+      <li>On Mondays we take orders from 2 PM, so choose dinner.</li>
+    </ul>
+  </div>
+
+  <div class="snippet" id="after">
+    <h2>After you order</h2>
+    <ul>
+      <li><b>Updates come on WhatsApp</b> when the kitchen accepts your order, when it's ready and when the rider leaves, with a live rider link.</li>
+      <li><b>Track it any time</b> from the link in those messages, or on the <a href="/track">track page</a>.</li>
+      <li><b>Wrong address?</b> On the website you have 3 minutes after ordering to fix it. After that, call us.</li>
+      <li><b>Need to cancel?</b> Call {{ store_phone }} before we start cooking. If you've already paid by UPI, we refund it in full. See the <a href="/refund-cancellation-policy">refund policy</a>.</li>
+      <li><b>Picking up?</b> Collect it at {{ pickup }}. It's usually ready in about 20 minutes.</li>
+    </ul>
+  </div>
+
+  <div class="snippet" id="fees">
+    <h2>Delivery fees and minimum order</h2>
+    <ul>
+      {% for z in zones %}<li>{{ "Up to %d km" % z.max_km if loop.first else "%d to %d km" % (zones[loop.index0 - 1].max_km, z.max_km) }}: ₹{{ z.fee }} delivery, minimum order ₹{{ z.min_order }}</li>
+      {% endfor %}
+      <li>More than {{ "%d" % zones[-1].max_km }} km away? Choose pickup. See the <a href="/delivery">delivery page</a> for which areas fall where.</li>
+    </ul>
+  </div>
+
+  <div class="page-cta">
+    <div class="page-cta-text">Ready when you are</div>
+    <a href="/menu">Open the menu &rarr;</a>
+  </div>
+</div>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to order food from Tulsi Foods",
+  "description": "Order pure vegetarian North Indian food from Tulsi Foods, Mylapore, on the website or WhatsApp.",
+  "totalTime": "PT3M",
+  "step": [
+    {"@type": "HowToStep", "name": "Open the menu", "text": "Open tulsifoods.app/menu and search or browse by section.", "url": "https://tulsifoods.app/how-to-order#website"},
+    {"@type": "HowToStep", "name": "Add dishes", "text": "Tap + to add dishes, choosing full or half portions."},
+    {"@type": "HowToStep", "name": "Check out", "text": "Enter your phone number and name, choose delivery or pickup and a time."},
+    {"@type": "HowToStep", "name": "Set your address", "text": "Pick your address and drag the pin onto your door. The pin sets the delivery fee."},
+    {"@type": "HowToStep", "name": "Pay and place the order", "text": "Choose UPI or cash and place the order. Updates arrive on WhatsApp."}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+  {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tulsifoods.app/"},
+  {"@type": "ListItem", "position": 2, "name": "How to order", "item": "https://tulsifoods.app/how-to-order"}]}
+</script>
+{% endblock %}

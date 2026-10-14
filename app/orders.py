@@ -272,12 +272,12 @@ def _schedule_closed_reason(scheduled_at: str | None = None,
     closes = datetime.strptime(closes_at, "%H:%M").time()
     if when.time() < opens:
         if when.weekday() == 0 and scheduled_window == "lunch":
-            return "We're closed Monday mornings — the Lunch window is unavailable, choose Dinner instead"
-        return f"We're closed right now — back online at {_hhmm12(opens_at)}"
+            return "We're closed on Monday mornings, so the lunch window isn't available. Please choose dinner."
+        return f"We're closed right now. We open again at {_hhmm12(opens_at)}."
     if when.time() >= closes:
         if scheduled_at:
-            return "That time is outside our closing hours — choose a Lunch or Dinner window instead."
-        return "We're closed right now — order ahead for the next Lunch or Dinner window."
+            return "We're closed at that time. Please choose the lunch or dinner window instead."
+        return "We're closed right now. You can order ahead for the next lunch or dinner window."
     return None
 
 
@@ -428,7 +428,7 @@ def edit_address(order_id: int, address: str, pincode: str | None = None,
     if o["order_type"] != "delivery":
         raise OrderError("Only delivery orders have an address to change", 400)
     if o["status"] != "new":
-        raise OrderError("Too late — the kitchen has already started on this order", 400)
+        raise OrderError("Too late to change this. The kitchen has already started on your order.", 400)
     created = datetime.strptime(o["created_at"], "%Y-%m-%d %H:%M:%S")
     if datetime.utcnow() - created > ADDRESS_EDIT_WINDOW:
         raise OrderError("The 3-minute window to change the address has passed", 400)

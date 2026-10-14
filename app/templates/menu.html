@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% set hide_wa = true %}
 {% block meta %}
-<meta name="description" content="Full menu, prices and daily availability for Tulsi Foods — pure vegetarian North Indian thalis, parathas, chaats, sabzi and more in Mylapore, Chennai. Order online for delivery or pickup.">
+<meta name="description" content="Full menu, prices and daily availability for Tulsi Foods: pure vegetarian North Indian thalis, parathas, chaats, sabzi and more in Mylapore, Chennai. Order online for delivery or pickup.">
 <title>Tulsi Foods Menu &amp; Prices · Tulsi Restaurant, Alwarpet &amp; Mylapore, Chennai</title>
 {% endblock %}
 {% block canonical %}<link rel="canonical" href="https://tulsifoods.app/menu">{% endblock %}
@@ -88,7 +89,6 @@
       </div>
       <a href="#checkout" id="cart-checkout" class="cart-btn">Checkout →</a>
     </div>
-    {% if not wa_customer %}<div class="cart-wa">or <a href="{{ wa_order_link("Hi") }}" target="_blank">continue on WhatsApp</a></div>{% endif %}
   </div>
 
   </div>
@@ -357,7 +357,7 @@ main { padding: 8px 16px 130px; }
   const ZONES = {{ zones | tojson }};
   const FREE_DELIVERY_ABOVE = {{ free_delivery_above }};
   const FREE_DELIVERY_ENABLED = {{ 'true' if delivery_free_enabled else 'false' }};
-  const PICKUP_NOTE = "Pickup at 34 Murrays Gate Road, Alwarpet — ready in about 20\u201325 min.";
+  const PICKUP_NOTE = "Pickup at 34 Murrays Gate Road, Alwarpet. Usually ready in 20 to 25 minutes.";
   const GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
   const PACKING_FEE = {{ packing_fee }};
   const PACKING_FEE_LARGE = {{ packing_fee_large }};
@@ -607,7 +607,7 @@ main { padding: 8px 16px 130px; }
               <button type="button" class="time-pill" data-preset="lunch">Lunch (12:00 – 2:30 PM)</button>
               <button type="button" class="time-pill" data-preset="dinner">Dinner (6:30 – 9:30 PM)</button>
             </div>
-            <div style="font-size:11px;color:#6F7468;margin-top:4px;">Pick a window — no exact minute needed. For today's orders "As soon as possible" means within the hour.</div>
+            <div style="font-size:11px;color:#6F7468;margin-top:4px;">Pick a window; no need for an exact time. For today's orders "As soon as possible" means within the hour.</div>
             <input type="hidden" name="scheduled_at" id="input-scheduled">
             <input type="hidden" name="scheduled_window" id="input-window">
           </div>
@@ -624,7 +624,7 @@ main { padding: 8px 16px 130px; }
           </div>
           <div class="checkout-field" id="addr-field"><label>Address</label>
             {% if google_maps_api_key %}
-            <input type="text" name="address" id="address-input" placeholder="Flat / building, street — pick from the list" autocomplete="off" required>
+            <input type="text" name="address" id="address-input" placeholder="Flat, building and street, then pick from the list" autocomplete="off" required>
             <div class="checkout-hint">Pick a suggestion, or tap "Use my location" and drag the pin onto your door.</div>
             {% else %}
             <textarea name="address" rows="2" placeholder="Flat/house number, building, street" required></textarea>
@@ -660,7 +660,7 @@ main { padding: 8px 16px 130px; }
               <div class="checkout-summary"></div>
               <div class="checkout-nudge" id="checkout-nudge" hidden>
                 <div class="checkout-nudge-title">One delivery, however much you order</div>
-                <div class="checkout-nudge-sub">The rider costs the same either way — worth adding a little.</div>
+                <div class="checkout-nudge-sub">The delivery fee is the same however much you order.</div>
                 <div class="checkout-nudge-chips"></div>
               </div>
               <div class="co-label">Pay</div>
@@ -807,7 +807,7 @@ main { padding: 8px 16px 130px; }
       if (isDelivery) {
         const eff = (liveQuote && liveQuote.serviceable) ? liveQuote : q;
         if (eff && eff.outside) {
-          deliveryRow = `<div class="checkout-row" style="color:#B3261E"><span>Delivery</span><span>Outside our area — pickup instead</span></div>`;
+          deliveryRow = `<div class="checkout-row" style="color:#B3261E"><span>Delivery</span><span>Too far for delivery. Choose pickup</span></div>`;
           deliveryNote = `<span style="color:#B3261E">We don't deliver ${eff.km ? Math.round(eff.km) + " km away" : "that far"}. Pickup is in Alwarpet.</span>`;
         } else if (eff) {
           deliveryFee = +eff.fee || 0;
@@ -844,7 +844,7 @@ main { padding: 8px 16px 130px; }
         ` : "")
         + (deliveryRow ? deliveryRow : "")
         + `<div class="checkout-row total"><span>Total</span><span>₹${(currentSubtotal + packing + gst + deliveryFee).toFixed(2)}</span></div>
-           <div class="checkout-row-note">${deliveryNote || "No hidden charges — this is the final total."}</div>`;
+           <div class="checkout-row-note">${deliveryNote || "This is the final total. Nothing is added later."}</div>`;
       const grand = Math.round((currentSubtotal + packing + gst + deliveryFee) * 100) / 100;
       const placeBtn = overlay.querySelector("#place-btn");
       const totAmt = overlay.querySelector("#co-total-amt");
@@ -1305,12 +1305,12 @@ main { padding: 8px 16px 130px; }
         if (q) {
           if (q.outside) {
             msg.style.color = "#B3261E";
-            msg.textContent = "We don't deliver that far — switch to pickup and we'll have it ready.";
+            msg.textContent = "We don't deliver that far yet. Switch to pickup and we'll have it ready for you.";
             return;
           }
           if (subtotal < q.min_order) {
             msg.style.color = "#B3261E";
-            msg.textContent = `Minimum order for ${q.zone} is ₹${q.min_order} — add a little more.`;
+            msg.textContent = `Minimum order for ${q.zone} is ₹${q.min_order}. Add a little more to continue.`;
             return;
           }
         }
@@ -1407,7 +1407,7 @@ main { padding: 8px 16px 130px; }
           <div class="co-success">
             <div class="checkout-success-icon">✓</div>
             <div class="co-kicker">ORDER #${data.order_id}</div>
-            <h2 class="co-title">${isUpi ? "Placed — pay to confirm" : "Placed — the kitchen has it"}</h2>
+            <h2 class="co-title">${isUpi ? "Placed. Now pay to confirm" : "Placed. The kitchen has it"}</h2>
             <p class="checkout-success-detail" style="margin:10px 0 0">${when} · ₹${data.total}${data.delivery_fee ? ` incl. ₹${data.delivery_fee} delivery` : ""}<br>${placedItems.map(i => i.name).join(", ")}</p>
             <div style="align-self:stretch;margin-top:26px;display:flex;flex-direction:column;gap:10px;text-align:left">
               <div style="padding:14px 16px;border-radius:14px;background:#fff;border:1px solid #ECE6DA;font-size:14px;line-height:1.5"><b style="font-weight:600">Updates come on WhatsApp</b><br><span style="color:var(--sub)">from Tulsi Foods, {{ wa_order_display }}. Save the number.</span></div>

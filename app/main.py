@@ -27,7 +27,7 @@ from .config import (
     PACKING_FEE_LARGE_ORDER,
     PACKING_FEE_LARGE_ORDER_THRESHOLD,
 )
-from .config import UPI_PAYEE_NAME, UPI_VPA
+from .config import STORE_PICKUP_LINE, STORE_WHATSAPP, UPI_PAYEE_NAME, UPI_VPA
 from .delivery.config import PICKUP_LAT, PICKUP_LNG
 
 # uvicorn only configures its own loggers; without this every app-level
@@ -333,6 +333,18 @@ def delivery_page(request: Request):
     )
 
 
+@app.get("/how-to-order", response_class=HTMLResponse)
+def how_to_order_page(request: Request):
+    return templates.TemplateResponse(
+        request, "how-to-order.html",
+        {"zones": DELIVERY_ZONES, "packing_fee": PACKING_FEE,
+         "packing_fee_large": PACKING_FEE_LARGE_ORDER,
+         "packing_threshold": PACKING_FEE_LARGE_ORDER_THRESHOLD,
+         "hours_text": faqs._open_text(), "store_phone": STORE_WHATSAPP,
+         "pickup": STORE_PICKUP_LINE, "categories": all_categories()},
+    )
+
+
 @app.get("/menu/{item_id}", response_class=HTMLResponse)
 def menu_item_page(request: Request, item_id: str):
     """One page per dish — each WhatsApp catalog item links here instead of the
@@ -415,6 +427,7 @@ def menu_item_page(request: Request, item_id: str):
         ],
     }
 
+    schema = _item_product_schema(item, item_url, photo_url, desc, available, aliases)
     return templates.TemplateResponse(
         request,
         "item.html",
@@ -426,7 +439,8 @@ def menu_item_page(request: Request, item_id: str):
          "item_url": item_url, "item_description": desc, "ordering": ordering,
          "category_slug": _group_slug(item["group"]),
          "categories": all_categories(),
-         "item_schema": _item_product_schema(item, item_url, photo_url, desc, available, aliases),
+         "item_schema": schema,
+         "share_image": schema["image"],
          "breadcrumb_schema": breadcrumb,
          "dish_rating": db.dish_rating(base_id), "dish_reviews": db.dish_reviews(base_id)},
     )
@@ -762,34 +776,51 @@ def robots_txt():
 def llms_txt():
     menu_items = [m for m in menu.load_menu() if not m["id"].endswith(menu.HALF_SUFFIX)]
     popular = [m for m in menu_items if m.get("popular")][:8]
+    prices = [float(m["price"]) for m in menu_items if m.get("price")]
+    fees = "; ".join(f"₹{z['fee']} up to {z['max_km']:g} km (minimum order ₹{z['min_order']})"
+                     for z in DELIVERY_ZONES)
     lines = [
         "# Tulsi Foods",
         "",
-        "> Pure vegetarian, home-style North Indian restaurant in Mylapore, Chennai. "
-        "Run by Kavita Lath since 2015. Thalis, parathas, sabzi, dal and chaat, cooked "
-        "to order and delivered direct — no aggregator, no platform fees. 11 years old "
-        "as of September 2026.",
+        "> Pure vegetarian, home-style North Indian kitchen on Murrays Gate Road, Alwarpet "
+        "(Mylapore side), Chennai. Run by Kavita Lath since 2015. Thalis, parathas, sabzi, "
+        "dal and chaat, cooked to order and delivered direct, with no aggregator and no "
+        "platform fees.",
         "",
-        "- Cuisine: North Indian, pure vegetarian (Jain / no-onion-garlic on request)",
-        "- Also known as: Tulasi Foods, Thulasi Restaurant (common misspellings/mishearings of the same restaurant)",
-        "- Location: 34 Murrays Gate Road, Alwarpet, Chennai 600018, Tamil Nadu, India",
-        "- Hours: Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM",
-        "- Delivery: " + ", ".join(seo_aliases.NEARBY_AREAS) + " and nearby areas within ~7 km, by Borzo courier at live rates",
-        "- Order: on this website, or on WhatsApp at +1 555-397-2507. Kitchen: +91 99406 21800",
-        "- Phone: +91 99406 21800",
-        "- Prices: ₹45–₹400 per dish; most mains available as half portions",
+        "- Cuisine: North Indian, pure vegetarian. Jain and no-onion-garlic on request.",
+        "- Also known as: Tulsi Restaurant, Tulasi Foods, Thulasi Restaurant (same kitchen, different spellings)",
+        f"- Address: 34 Murrays Gate Road, Alwarpet, Chennai 600018, Tamil Nadu, India",
+        f"- Hours: {faqs._open_text()}. On Mondays, orders open at 2 PM.",
+        f"- Order online: {SITE_URL}/menu",
+        f"- Order on WhatsApp: {WHATSAPP_ORDER_DISPLAY} (send \"hi\")",
+        f"- Kitchen phone, for calls and questions: {STORE_WHATSAPP}",
+        f"- Delivery: fixed fee by distance from the kitchen: {fees}. Areas: "
+        + ", ".join(seo_aliases.NEARBY_AREAS) + ". Riders are booked with Porter.",
+        f"- Pickup: {STORE_PICKUP_LINE}, usually ready in about 20 minutes",
+        f"- Ordering ahead: lunch (12:00 to 2:30 PM) or dinner (6:30 to 9:30 PM) windows, up to 14 days ahead",
+        f"- Payment: UPI (GPay, PhonePe, Paytm) or cash on delivery or pickup. Totals include packing (₹{PACKING_FEE}) and 5% GST.",
+        f"- Prices: ₹{min(prices):g} to ₹{max(prices):g} per dish; most mains also come as half portions",
+        "",
+        "## How to order",
+        "",
+        f"1. Open {SITE_URL}/menu, search or browse by section, and add dishes.",
+        "2. Tap Checkout: phone number, name, delivery or pickup, and a time.",
+        "3. For delivery, pick the address and drag the map pin onto the door. The pin sets the fee.",
+        "4. Choose UPI or cash and place the order. A WhatsApp message follows with the order number and a tracking link.",
+        f"Full guide: {SITE_URL}/how-to-order",
         "",
         "## Pages",
         "",
-        f"- [Home]({SITE_URL}/): overview, story, how ordering works",
-        f"- [Menu]({SITE_URL}/menu): today's dishes, prices and availability, order online",
-        f"- Each dish has its own page, e.g. [Paneer Butter Masala]({SITE_URL}/menu/paneer-butter-masala) — any menu item id at {SITE_URL}/menu/&lt;id&gt;",
-        f"- [Track your order]({SITE_URL}/track): look up an order by tracking reference or phone",
+        f"- [Home]({SITE_URL}/): who we are, today's picks, ratings",
+        f"- [Menu]({SITE_URL}/menu): today's dishes, prices and availability; order online",
+        f"- [How to order]({SITE_URL}/how-to-order): website and WhatsApp ordering, payment, ordering ahead, cancelling",
+        f"- Each dish has its own page, e.g. [Paneer Butter Masala]({SITE_URL}/menu/paneer-butter-masala); any menu item id works at {SITE_URL}/menu/<id>",
         f"- [Delivery]({SITE_URL}/delivery): delivery areas, fees and timing",
-        f"- [About]({SITE_URL}/about): the kitchen's story, reviews, and frequently asked questions",
-        f"- [Kitchen updates]({SITE_URL}/updates): Instagram posts, WhatsApp statuses and kitchen announcements",
+        f"- [Track your order]({SITE_URL}/track): look up an order by tracking reference or phone",
+        f"- [About]({SITE_URL}/about): the kitchen's story, reviews and common questions",
+        f"- [Kitchen updates]({SITE_URL}/updates): Instagram posts and kitchen announcements",
         f"- [Privacy policy]({SITE_URL}/privacy-policy)",
-        f"- [Refund &amp; cancellation policy]({SITE_URL}/refund-cancellation-policy)",
+        f"- [Refund and cancellation policy]({SITE_URL}/refund-cancellation-policy)",
         "",
         "## Menu categories",
         "",
@@ -803,7 +834,7 @@ def llms_txt():
         "",
     ]
     for m in popular:
-        lines.append(f"- {m['name']} — ₹{m['price']}: {SITE_URL}/menu/{m['id']}")
+        lines.append(f"- {m['name']}, ₹{m['price']}: {SITE_URL}/menu/{m['id']}")
     lines += [
         "",
         "## Dish names people also search for",
@@ -813,7 +844,7 @@ def llms_txt():
     ]
     for m in menu_items:
         if aliases := seo_aliases.aliases_for(m["id"]):
-            lines.append(f"- {m['name']} (₹{m['price']}) — also: {', '.join(aliases)}: "
+            lines.append(f"- {m['name']} (₹{m['price']}), also called {', '.join(aliases)}: "
                          f"{SITE_URL}/menu/{m['id']}")
     return PlainTextResponse("\n".join(lines))
 
@@ -837,6 +868,7 @@ SITEMAP_TEMPLATES = {
     "/404": "404.html",
     "/updates": "updates.html",
     "/category": "categories.html",
+    "/how-to-order": "how-to-order.html",
 }
 
 
