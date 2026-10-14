@@ -130,7 +130,11 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
     payment_method = (order.get("payment_method") or "cod").lower()
 
     # Prorate order-level GST across items by price share (see module docstring).
-    taxable_base = subtotal + packing_fee
+    # Petpooja's default: an order discount comes off the items before tax,
+    # so the taxable base (and each item's share) is net of the discount.
+    order_discount = float(order.get("discount_total") or 0)
+    net_factor = (1 - order_discount / subtotal) if subtotal else 1
+    taxable_base = subtotal - order_discount + packing_fee
     from .catalog import map_order_items, tax_ids as catalog_tax_ids
     mapped_items = map_order_items(order["items"])
     tax_ids = catalog_tax_ids()
@@ -143,7 +147,7 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
     for it in mapped_items:
         unit_price = float(it["price"])
         line_total = unit_price * float(it["qty"])
-        share = (line_total / taxable_base) if taxable_base else 0
+        share = (line_total * net_factor / taxable_base) if taxable_base else 0
         item_gst = round(gst_amount * share, 2)
         # price/final_price are per single unit, even at qty > 1 — the
         # doc's worked example is explicit that quantity is NOT multiplied
@@ -199,7 +203,6 @@ def order_to_save_order_payload(order: dict, callback_url: str, gst_rate: float)
     # same way item_gst is prorated above — required field per the API
     # guide, previously hardcoded to "0" (docs/PETPOOJA_INTEGRATION.md §3.4).
     pc_tax_amount = round(gst_amount * (packing_fee / taxable_base), 2) if taxable_base else 0.0
-    order_discount = float(order.get("discount_total") or 0)
     # Per the API guide: "Total = Item Final Price [- Order level Discount]
     # + GST [if liable by restaurant] + Packing Charges. The 'Total' should
     # only include the amount due to the restaurant" — delivery_charges is
