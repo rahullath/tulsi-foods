@@ -32,6 +32,8 @@
   .pay-foot-in { max-width: 404px; margin: 0 auto; }
   .pay-ivepaid { display: flex; align-items: center; justify-content: center; min-height: 50px; border-radius: 14px; border: 1.5px solid #171A14; background: #FBF8F2; font-size: 15px; font-weight: 600; text-decoration: none; color: #171A14; }
   .pay-foot p { margin: 10px 0 0; font-size: 13px; color: #5C6157; }
+  .pay-paid { display: flex; justify-content: center; padding-top: 40px; }
+  .pay-tick { width: 56px; height: 56px; border-radius: 50%; background: #0E7A45; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px; }
   .pay-links { text-align: center; margin-top: 26px; font-size: 14.5px; }
   .pay-links a { color: #0E7A45; font-weight: 600; text-decoration: none; padding: 10px; display: inline-block; }
 </style>
@@ -39,8 +41,10 @@
   <div class="pay-card">
     <div class="pay-kicker"><img src="/static/logo.png" alt="">Tulsi Foods · order #{{ order.id }}</div>
     {% if state == "paid" %}
-      <div class="pay-amount">Paid ✅</div>
-      <p class="pay-sub">We've received ₹{{ amount_text }} for this order. Thank you!</p>
+      <div class="pay-paid"><div class="pay-tick">✓</div></div>
+      <div class="pay-amount" style="font-size:36px;margin-top:16px">₹{{ amount_text }} paid</div>
+      <p class="pay-sub">Order #{{ order.id }} · thank you. Updates come on WhatsApp.</p>
+      <a class="pay-btn primary" href="/track/{{ order.tracking_token }}" style="justify-content:center;margin-top:24px;background:#0E7A45;border-color:#0E7A45;color:#fff">Track order</a>
     {% elif state == "cash" %}
       <div class="pay-amount">₹{{ amount_text }}</div>
       <p class="pay-sub">This order is <b>cash {{ "at pickup" if order.order_type == "pickup" else "on delivery" }}</b>, nothing to pay now.</p>
@@ -67,7 +71,7 @@
           <div class="pay-vpa"><span id="vpa">{{ vpa }}</span><button type="button" id="copy-vpa">Copy</button></div></div>
       </div>
     {% endif %}
-    {% if state != "due" %}<div class="pay-links"><a href="/track/{{ order.tracking_token }}">Track your order →</a></div>{% endif %}
+    {% if state not in ("due", "paid") %}<div class="pay-links"><a href="/track/{{ order.tracking_token }}">Track your order →</a></div>{% endif %}
   </div>
 </div>
 {% if state == "due" %}

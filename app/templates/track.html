@@ -15,6 +15,11 @@
   .th h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; line-height: 1; font-weight: 700; margin: 22px 0 0; }
   .th-eta { margin-top: 8px; font-size: 16px; opacity: .92; }
   .th-btn { display: flex; align-items: center; justify-content: center; margin-top: 18px; min-height: 50px; border-radius: 13px; background: #fff; color: #0E7A45; font-size: 15.5px; font-weight: 600; text-decoration: none; }
+  .th.cx { background: #FBF8F2; color: #171A14; border-bottom: 1px solid #ECE6DA; }
+  .th.cx .th-top span { color: #9A3324; opacity: 1; }
+  .th.cx h1 { font-size: 26px; }
+  .stars button { min-width: 44px; min-height: 44px; font-size: 32px; }
+  .rate-dish { background: #fff; }
   .th-btn:empty, .th-btn[hidden] { display: none; }
   .card > h1, #status-note, #eta-line { display: none; }
   .card { border-radius: 16px; border-color: #ECE6DA; box-shadow: none; padding: 20px; }
@@ -166,12 +171,16 @@
       noteEl.textContent = statusDesc;
     }
     const TITLES = { new: "Order placed", preparing: "Being cooked", ready: o.order_type === "pickup" ? "Ready for pickup" : "Ready, rider coming", out_for_delivery: "On its way", delivered: "Delivered", cancelled: "Cancelled" };
-    document.getElementById("th-title").textContent = TITLES[st] || "Your order";
-    const etaShort = { new: o.order_type === "pickup" ? "Ready in about 20–25 min" : "Arriving in about 40–60 min", preparing: o.order_type === "pickup" ? "Ready in about 15–20 min" : "Arriving in about 30–45 min", ready: o.order_type === "pickup" ? "Come and collect it now" : "Arriving in about 20–30 min", out_for_delivery: "Arriving in about 15 min", delivered: "Enjoy your meal", cancelled: "Nothing to pay" };
+    const pickupReady = st === "ready" && o.order_type === "pickup";
+    document.getElementById("th-title").textContent = pickupReady ? "Ready to collect" : (TITLES[st] || "Your order");
+    document.querySelector(".th").classList.toggle("cx", st === CANCELED);
+    document.querySelector(".th-top span").textContent = "ORDER #" + ORDER_ID + (st === CANCELED ? " · CANCELLED" : o.order_type === "pickup" ? " · PICKUP" : "");
+    const etaShort = { new: o.order_type === "pickup" ? "Ready in about 20–25 min" : "Arriving in about 40–60 min", preparing: o.order_type === "pickup" ? "Ready in about 15–20 min" : "Arriving in about 30–45 min", ready: o.order_type === "pickup" ? "34 Murrays Gate Road, Alwarpet" : "Arriving in about 20–30 min", out_for_delivery: "Arriving in about 15 min", delivered: "Enjoy your meal", cancelled: o.paid ? "₹" + (+o.total).toFixed(2).replace(/\.00$/, "") + " goes back to your UPI account within 5–7 working days" : "Nothing to pay" };
     document.getElementById("th-eta").textContent = (o.scheduled_at && st === "new") ? "Scheduled — we'll have it out in your window" : (etaShort[st] || "");
     const thBtn = document.getElementById("th-btn"), liveUrl = o.sr_tracking_url || o.tracking_url;
-    thBtn.hidden = !(liveUrl && st === "out_for_delivery");
-    if (liveUrl) thBtn.href = liveUrl;
+    thBtn.hidden = !((liveUrl && st === "out_for_delivery") || pickupReady);
+    if (pickupReady) { thBtn.textContent = "Directions ↗"; thBtn.href = "https://maps.google.com/?q=34+Murrays+Gate+Road,+Alwarpet,+Chennai"; }
+    else { thBtn.textContent = "Follow the rider live ↗"; if (liveUrl) thBtn.href = liveUrl; }
     const etaText = eta(o);
     document.getElementById('eta-line')?.remove();
     if (etaText && st !== CANCELED) {
@@ -180,7 +189,7 @@
 
     let html = '';
     if (st === CANCELED) {
-      html += '<div class="err">This order was cancelled. If you were charged, we\'ll refund you right away.</div><div class="chip warn" style="margin-top:12px">Status: Cancelled</div>';
+      html += '<div class="err">This order was cancelled. If you were charged, we\'ll refund you right away.</div><a class="pr" style="margin-top:12px;color:#0E7A45" href="/menu">Order again</a>';
     } else {
       html += '<div class="stepper">';
       for (const [key, lbl, desc] of STATUSES) {

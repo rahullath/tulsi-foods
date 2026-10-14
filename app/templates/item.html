@@ -33,6 +33,13 @@
   </nav>
 
   <main>
+    {% if not has_photo %}
+    <div class="hero-card" aria-hidden="true">
+      <span class="hero-veg"><i></i></span>
+      <div class="hero-cat">{{ item.group | upper }}</div>
+      <div class="hero-name">{{ item.name }}</div>
+    </div>
+    {% endif %}
     {% if has_photo %}
     <div class="photo">
       <img src="{{ photo_url }}" alt="{{ item.name }}, pure vegetarian, Tulsi Foods Mylapore" width="400" height="300">
@@ -259,6 +266,25 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
 .rs-qty { font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; font-weight: 700; min-width: 20px; text-align: center; }
 .rel-all { display: inline-block; font: 600 13px 'IBM Plex Mono', monospace; color: var(--g); text-decoration: none; margin-top: 4px; }
 .rel-all:hover { text-decoration: underline; }
+
+
+/* Launch redesign: hero card when there is no photo, sticky add bar */
+.hero-card { position: relative; background: var(--g); border-radius: 22px; min-height: 190px; padding: 0 20px 20px; display: flex; flex-direction: column; justify-content: flex-end; margin-bottom: 16px; }
+.hero-cat { font: 600 11px/1 'IBM Plex Mono', monospace; color: #CFE6D8; letter-spacing: .06em; }
+.hero-name { margin-top: 6px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; line-height: 1; color: #FBF8F2; font-weight: 700; }
+.hero-veg { position: absolute; right: 18px; top: 18px; width: 22px; height: 22px; border: 2px solid #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.hero-veg i { width: 9px; height: 9px; border-radius: 50%; background: #fff; }
+.hero-card + .title-row { display: none; }
+.hero-card ~ .aka { margin-top: 0; }
+#item-app { padding-bottom: 120px; }
+.cartbar, .site-wa { display: none !important; }  /* the sticky add bar replaces both */
+.order-box { position: fixed; left: 0; right: 0; bottom: 0; margin: 0; z-index: 20; background: #fff; border-top: 1px solid var(--border); padding: 12px 18px calc(16px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; max-width: 720px; margin-left: auto; margin-right: auto; }
+.order-box .stepper { padding: 4px 6px; gap: 8px; }
+.order-box .cta.add { margin-top: 0; min-height: 54px; border-radius: 14px; font-size: 16px; }
+.order-box .add-state, .order-box .alt { grid-column: 1 / -1; margin: 0; min-height: 0; }
+.order-box .add-state:empty { display: none; }
+.step { min-width: 44px; min-height: 44px; }
+.price { font-size: 26px; }
 
 @media (min-width: 600px) {
   #item-app { max-width: 720px; }

@@ -71,12 +71,16 @@
     </section>
     {% endfor %}
 
-    <div id="no-results" class="no-results" hidden>
-      <div class="no-results-text">No dishes found</div>
-    </div>
+    <div id="no-results" class="no-results" hidden></div>
   </main>
 
   <div id="cart-bar" class="cart-bar hidden">
+    <div class="min-card" id="min-card" hidden>
+      <div class="min-top"><span id="min-text"></span><span class="m" id="min-m"></span></div>
+      <div class="min-bar"><div id="min-fill"></div></div>
+      <div class="min-chips" id="min-chips"></div>
+      <div class="min-note">Pickup has no minimum.</div>
+    </div>
     <div class="cart-inner">
       <div class="cart-info">
         <div class="cart-count"><span id="cart-count">0</span> items · <span id="cart-subtotal">₹0</span></div>
@@ -298,6 +302,36 @@ main { padding: 8px 16px 130px; }
 .co-links { display: flex; justify-content: center; gap: 28px; margin-top: 16px; font-size: 14.5px; font-weight: 600; }
 .co-links a, .co-links button { color: var(--g); text-decoration: none; background: none; border: none; font: inherit; cursor: pointer; padding: 10px 0; }
 
+
+/* Pass 2: states */
+.state-card { margin-top: 14px; padding: 18px; border-radius: 18px; background: #fff; border: 1px solid #ECE6DA; box-shadow: 0 10px 30px -14px rgba(23,26,20,.3); }
+.state-card[hidden] { display: none; }
+.state-kicker { font: 600 12px/1 'IBM Plex Mono', monospace; letter-spacing: .04em; }
+.state-card h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; line-height: 1.15; margin: 10px 0 0; }
+.state-card p { font-size: 14.5px; line-height: 1.5; color: #4A4F45; margin: 8px 0 0; }
+.state-btn { display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 14px; font-size: 15px; font-weight: 600; border: 1.5px solid var(--ink); background: #fff; color: var(--ink); cursor: pointer; width: 100%; }
+.state-btn.primary { background: var(--g); border-color: var(--g); color: #fff; }
+.state-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.state-link { display: block; text-align: center; margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--g); background: none; border: none; cursor: pointer; width: 100%; padding: 8px; }
+.min-card { margin: 0 0 10px; padding: 12px 14px; border-radius: 14px; background: #fff; border: 1px solid #ECE6DA; font-size: 13.5px; }
+.min-card[hidden] { display: none; }
+.min-top { display: flex; justify-content: space-between; gap: 10px; }
+.min-top .m { color: var(--sub); white-space: nowrap; }
+.min-bar { margin-top: 9px; height: 6px; border-radius: 3px; background: #EFEAE0; overflow: hidden; }
+.min-bar > div { height: 100%; background: #C27C0E; border-radius: 3px; transition: width .2s; }
+.min-chips { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+.min-chips button { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid #DED7C8; background: #fff; font-size: 13px; cursor: pointer; color: var(--ink); }
+.min-note { margin-top: 8px; font-size: 12.5px; color: var(--sub); }
+.time-pill.off { opacity: .55; pointer-events: none; background: #F6F3EC !important; color: #8A8F84 !important; }
+.time-pill .off-note { float: right; font-size: 12.5px; font-weight: 400; }
+.err-toast { margin-top: 10px; padding: 14px 16px; border-radius: 14px; background: var(--ink); color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: left; font-size: 14px; line-height: 1.45; }
+.err-toast span { opacity: .75; }
+.err-toast button { min-height: 40px; padding: 0 16px; border-radius: 10px; border: none; background: #fff; color: var(--ink); font-weight: 600; font-size: 14px; cursor: pointer; }
+.nr-list { margin-top: 12px; color: var(--ink); }
+.nr-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 1px solid #ECE6DA; font-size: 15px; font-weight: 600; }
+.nr-row:last-child { border-bottom: 1px solid #ECE6DA; }
+.nr-add { min-height: 40px; padding: 0 16px; border-radius: 10px; border: 1.5px solid var(--g); background: #fff; color: var(--g); font-weight: 600; font-size: 14px; cursor: pointer; }
+
 /* Responsive */
 @media (min-width: 600px) {
   #menu-app { max-width: 720px; }
@@ -441,6 +475,26 @@ main { padding: 8px 16px 130px; }
     cartCount.textContent = count;
     cartSubtotal.textContent = "₹" + subtotal;
     cartBar.classList.toggle("hidden", count === 0);
+    updateMinCard(subtotal);
+  }
+
+  // Delivery minimum: lowest zone minimum, shown as progress with cheap add-ons.
+  function updateMinCard(subtotal) {
+    const card = document.getElementById("min-card");
+    if (!card) return;
+    const min = Math.min(...ZONES.map(z => z.min_order));
+    if (!(subtotal > 0 && subtotal < min)) { card.hidden = true; return; }
+    const left = min - subtotal;
+    card.hidden = false;
+    document.getElementById("min-text").innerHTML = `Add <b style="font-weight:600">₹${left}</b> more for delivery`;
+    document.getElementById("min-m").textContent = "min ₹" + min;
+    document.getElementById("min-fill").style.width = Math.round(subtotal / min * 100) + "%";
+    const chips = ["masala-chai", "roasted-papad", "aloo-paratha"].filter(id => AVAILABLE[id] && PRICES[id] != null && !cart[id]).slice(0, 2);
+    document.getElementById("min-chips").innerHTML = chips.map(id => `<button type="button" data-id="${id}">+ ${NAMES[id]} ₹${PRICES[id]}</button>`).join("");
+    document.querySelectorAll("#min-chips button").forEach(b => b.addEventListener("click", () => {
+      const inc = document.querySelector(`.card-stepper[data-id="${b.dataset.id}"] [data-act=inc]`);
+      if (inc) inc.click();
+    }));
   }
 
   // Apply saved cart quantities to the stepper UI on load
@@ -473,6 +527,21 @@ main { padding: 8px 16px 130px; }
       totalVisible += visibleInGroup;
     });
     noResults.hidden = totalVisible > 0;
+    if (totalVisible === 0) {
+      const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+      const near = [...document.querySelectorAll(".menu-card:not(.off)")]
+        .filter(c => c.dataset.popular === "true").slice(0, 3);
+      noResults.innerHTML = `
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-size:21px;color:var(--ink);text-align:left;margin-top:8px">No ${esc(q)} on our menu</h3>
+        <p style="text-align:left;font-size:14px;color:#4A4F45;margin-top:6px">Closest dishes we make:</p>
+        <div class="nr-list">${near.map(c => `<div class="nr-row"><span>${esc(c.querySelector(".card-name").textContent)}</span><button type="button" class="nr-add" data-id="${esc(c.dataset.id)}">Add</button></div>`).join("")}</div>
+        <p style="text-align:left;font-size:14px;margin-top:14px;color:var(--ink)">Looking for something else? <a href="{{ wa_order_link("Hi, do you make " ) }}${encodeURIComponent(q)}" target="_blank" rel="noopener" style="color:var(--g);font-weight:600">Ask on WhatsApp</a></p>`;
+      noResults.querySelectorAll(".nr-add").forEach(b => b.addEventListener("click", () => {
+        const inc = document.querySelector(`.card-stepper[data-id="${b.dataset.id}"] button[data-act="inc"]`);
+        if (inc) inc.click();
+        b.textContent = "Added ✓";
+      }));
+    }
   }
   render();
 
@@ -562,6 +631,20 @@ main { padding: 8px 16px 130px; }
             {% endif %}
             <div id="map-pin" class="map-pin"></div>
             <div id="map-address-preview" class="map-address-preview"></div>
+            <div class="state-card" id="pin-check" hidden>
+              <div class="state-kicker" style="color:#B06A00" id="pin-check-k"></div>
+              <h3>Is the pin on your door?</h3>
+              <p id="pin-check-p">Riders follow the pin.</p>
+              <div class="state-row"><button type="button" class="state-btn" id="pin-move">Move the pin</button><button type="button" class="state-btn primary" id="pin-ok">Yes, it's right</button></div>
+            </div>
+            <div class="state-card" id="outside-card" hidden>
+              <div class="state-kicker" style="color:#9A3324" id="outside-k"></div>
+              <h3>We deliver up to 7 km</h3>
+              <p>Your cart is kept. Pick it up from the kitchen instead, ready at your chosen time.</p>
+              <button type="button" class="state-btn primary" id="outside-pickup" style="margin-top:18px">Switch to pickup</button>
+              <div style="margin-top:8px;font-size:12.5px;color:var(--sub);text-align:center">34 Murrays Gate Road, Alwarpet</div>
+              <button type="button" class="state-link" id="outside-retry">Try another address</button>
+            </div>
             <button type="button" id="gps-btn" style="margin-top:6px;font-size:12px;padding:5px 10px;border:1px solid #C9C4B8;border-radius:8px;background:#fff;cursor:pointer;color:#4A4F45;">📍 Use my location</button>
             <span id="gps-status" style="font-size:11px;color:#888;margin-left:6px;"></span>
             <input type="hidden" name="lat" id="input-lat">
@@ -814,7 +897,7 @@ main { padding: 8px 16px 130px; }
     const form = overlay.querySelector("#checkout-form");
     const inputLat = overlay.querySelector("#input-lat");
     const inputLng = overlay.querySelector("#input-lng");
-    let gMap = null, gMarker = null, gGeocoder = null;
+    let gMap = null, gMarker = null, gGeocoder = null, anchor = null;
     form.addEventListener("input", saveDetails);
     form.addEventListener("change", saveDetails);
 
@@ -908,6 +991,16 @@ main { padding: 8px 16px 130px; }
       gMarker.addListener("dragend", () => {
         const pos = gMarker.getPosition();
         applyPin(pos.lat(), pos.lng());
+        if (anchor) {
+          const m = Math.round(haversineKm(anchor.lat, anchor.lng, pos.lat(), pos.lng()) * 1000);
+          const card = overlay.querySelector("#pin-check");
+          if (m > 300) {
+            overlay.querySelector("#pin-check-k").textContent = m + " M APART";
+            overlay.querySelector("#pin-check-p").textContent = `The pin is ${m} m from "${anchor.text}". Riders follow the pin.`;
+            card.hidden = false;
+          } else { card.hidden = true; }
+        }
+        checkOutside();
       });
       applyPin(PICKUP_LAT, PICKUP_LNG, false);
 
@@ -929,6 +1022,9 @@ main { padding: 8px 16px 130px; }
           if (!place.geometry || !place.geometry.location) return;
           const loc = place.geometry.location;
           movePin(loc.lat(), loc.lng(), false);
+          anchor = { lat: loc.lat(), lng: loc.lng(), text: place.name || (place.formatted_address || "").split(",")[0] };
+          overlay.querySelector("#pin-check").hidden = true;
+          checkOutside();
           // Keep the building name: formatted_address drops it for
           // apartments/establishments, and it's what the rider looks for.
           const full = (place.formatted_address || "").replace(/, India$/, "");
@@ -1047,6 +1143,22 @@ main { padding: 8px 16px 130px; }
       updateScheduledAt();
     });
 
+    // Mondays: no lunch window.
+    function syncMonday() {
+      const d = new Date(); d.setDate(d.getDate() + Number(dateSelect.value));
+      const off = d.getDay() === 1;
+      lunchPill.classList.toggle("off", off);
+      lunchPill.disabled = off;
+      lunchPill.innerHTML = off ? 'Lunch (12:00 – 2:30 PM)<span class="off-note">No lunch on Mondays</span>' : "Lunch (12:00 – 2:30 PM)";
+      if (off && lunchPill.classList.contains("active")) {
+        lunchPill.classList.remove("active");
+        const dn = timePillsContainer.querySelector('[data-preset="dinner"]');
+        dn.classList.add("active");
+        updateScheduledAt();
+      }
+    }
+    dateSelect.addEventListener("change", syncMonday);
+
     // Scoped to #time-pills specifically, not the whole overlay — the
     // order-type and payment fields reuse this same .time-pill class for
     // visual consistency (see wireTapTiles above), and an overlay-wide
@@ -1072,6 +1184,7 @@ main { padding: 8px 16px 130px; }
     });
 
     restoreDetails();
+    syncMonday();
     // Returning customer: prefill name/phone from their last order, then run
     // the phone lookup so their saved address fills itself in.
     try {
@@ -1116,8 +1229,26 @@ main { padding: 8px 16px 130px; }
     const backBtn = overlay.querySelector("#co-back");
     const segs = [...overlay.querySelectorAll("#co-progress span")];
     const isDeliveryNow = () => typeSelect.value === "delivery";
+    function checkOutside() {
+      const card = overlay.querySelector("#outside-card");
+      if (!card || !isDeliveryNow()) return false;
+      const sub = Object.keys(cart).reduce((t, id) => t + (PRICES[id] || 0) * cart[id], 0);
+      const q = quoteDelivery(sub);
+      const out = !!(q && q.outside);
+      card.hidden = !out;
+      if (out) overlay.querySelector("#outside-k").textContent = q.km.toFixed(1) + " KM AWAY";
+      return out;
+    }
+    overlay.querySelector("#pin-move").addEventListener("click", () => { overlay.querySelector("#pin-check").hidden = true; overlay.querySelector("#map-pin").scrollIntoView({ behavior: "smooth", block: "center" }); });
+    overlay.querySelector("#pin-ok").addEventListener("click", () => { overlay.querySelector("#pin-check").hidden = true; anchor = null; });
+    overlay.querySelector("#outside-pickup").addEventListener("click", () => { overlay.querySelector('#order-type-tiles [data-value="pickup"]').click(); overlay.querySelector("#outside-card").hidden = true; showStep(3); });
+    overlay.querySelector("#outside-retry").addEventListener("click", () => { overlay.querySelector("#outside-card").hidden = true; const a = form.querySelector("[name=address]"); a.value = ""; a.focus(); });
     function validateStep(n) {
       const sec = stepEls[n - 1];
+      if (n === 2) {
+        if (checkOutside()) return false;
+        if (!overlay.querySelector("#pin-check").hidden) { overlay.querySelector("#pin-check").scrollIntoView({ behavior: "smooth", block: "center" }); return false; }
+      }
       for (const el of sec.querySelectorAll("input, textarea, select")) {
         if (el.type === "hidden" || el.disabled || !el.offsetParent) continue;
         if (!el.checkValidity()) { el.reportValidity(); return false; }
@@ -1352,10 +1483,16 @@ main { padding: 8px 16px 130px; }
           });
         }
       } catch (err) {
-        msg.style.color = "#B3261E";
-        msg.textContent = err.message;
         btn.disabled = false;
         refreshCheckoutSummary();
+        if (err instanceof TypeError) {
+          // fetch() itself failed: no connection. Nothing was lost; offer a retry.
+          msg.innerHTML = '<div class="err-toast"><div>Couldn\'t reach the kitchen.<br><span>Your cart and address are saved.</span></div><button type="button" id="retry-place">Retry</button></div>';
+          msg.querySelector("#retry-place").addEventListener("click", () => form.requestSubmit());
+        } else {
+          msg.style.color = "#B3261E";
+          msg.textContent = err.message;
+        }
       }
     });
   }
