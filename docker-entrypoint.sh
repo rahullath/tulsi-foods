@@ -16,4 +16,22 @@ mkdir -p /app/data
 # half_price fields silently go stale on every future release).
 cp /app/menu.json.bundled /app/data/menu.json
 
+# One-off order cleanup, driven by env vars so it can be done without a shell.
+#   PURGE_ORDERS_KEEP=46            -> dry run: logs what would be deleted, changes nothing
+#   PURGE_ORDERS_KEEP=46 PURGE_ORDERS_APPLY=1 -> backs up the DB, deletes, then drops a
+#                                    marker on the volume so a restart never repeats it.
+# Remove both variables once done. Failures never block the app from starting.
+if [ -n "$PURGE_ORDERS_KEEP" ]; then
+    MARKER="/app/data/.purged-orders-$(echo "$PURGE_ORDERS_KEEP" | tr ' ,' '__')"
+    if [ "$PURGE_ORDERS_APPLY" = "1" ] && [ ! -f "$MARKER" ]; then
+        echo "[purge] APPLY, keeping order(s): $PURGE_ORDERS_KEEP"
+        python scripts/purge_orders.py --keep $(echo "$PURGE_ORDERS_KEEP" | tr ',' ' ') --apply && touch "$MARKER" || echo "[purge] FAILED, nothing marked done"
+    elif [ -f "$MARKER" ]; then
+        echo "[purge] already applied for $PURGE_ORDERS_KEEP (marker present), skipping"
+    else
+        echo "[purge] DRY RUN, keeping order(s): $PURGE_ORDERS_KEEP"
+        python scripts/purge_orders.py --keep $(echo "$PURGE_ORDERS_KEEP" | tr ',' ' ') || echo "[purge] dry run failed"
+    fi
+fi
+
 exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}"
