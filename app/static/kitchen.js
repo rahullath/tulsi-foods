@@ -7,6 +7,8 @@
   const app = document.getElementById("app");
   let token = null, data = null, tab = "now", seen = null, soundOn = false, audio = null;
   const drafts = {};  // per-order Porter link/fare typed but not yet sent
+  // /kitchen/o/46 (the Open order button on Mom's WhatsApp alert) jumps to #46.
+  let focusId = +((/^\/kitchen\/o\/(\d+)/.exec(location.pathname) || [])[1]) || null;
 
   try { token = localStorage.getItem(TOKEN_KEY); soundOn = localStorage.getItem(SOUND_KEY) === "1"; } catch (_) {}
 
@@ -269,9 +271,20 @@
     const fresh = await api("/api/admin/kitchen");
     const ids = new Set(fresh.orders.map((o) => o.id));
     const newOnes = seen ? fresh.orders.filter((o) => !seen.has(o.id) && o.status === "new") : [];
+    const firstLoad = !seen;
     seen = ids; data = fresh;
+    if (firstLoad && focusId) {
+      const g = groups();
+      tab = g.later.some((o) => o.id === focusId) ? "later" : g.done.some((o) => o.id === focusId) ? "done" : "now";
+    }
     const typing = document.activeElement && document.activeElement.matches("input[data-draft]");
     if (!typing) render();
+    if (firstLoad && focusId) {
+      const el = document.getElementById("o-" + focusId);
+      if (el) { el.scrollIntoView({ block: "start" }); window.scrollBy(0, -150); el.classList.add("flash"); }
+      else toast(`Order #${focusId} isn't open any more.`);
+      focusId = null;
+    }
     if (newOnes.length) {
       ring(); tab = "now"; render();
       toast(newOnes.length === 1 ? `🔔 New order #${newOnes[0].id}` : `🔔 ${newOnes.length} new orders`, 6000);

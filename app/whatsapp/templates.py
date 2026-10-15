@@ -43,6 +43,9 @@ PAYMENT_RECEIVED = "tulsi_payment_received"
 # UTILITY (it re-filed the open-ended tulsi_kitchen_alert as MARKETING:
 # ~7x the price and subject to marketing caps). The generic one is a fallback.
 KITCHEN_RIDER = "tulsi_kitchen_book_rider"
+# Oct 2026: one short line per detail and an Open order button (the old one
+# packed the whole card into a single variable, which WhatsApp shows as one line).
+KITCHEN_RIDER_V2 = "tulsi_kitchen_rider_v2"
 KITCHEN_MESSAGE = "tulsi_kitchen_customer_message"
 # KITCHEN_WA_TEMPLATE may override the name, but only with a valid template
 # name (Railway once held the template's body text here, which Meta rejects).
@@ -136,6 +139,22 @@ DEFINITIONS = {
         "button": None,
         "footer": KITCHEN_FOOTER,
     },
+    KITCHEN_RIDER_V2: {
+        "used_for": "kitchen (Mom): delivery order needs a Porter rider",
+        "header": "Book a Porter rider",
+        "body": ("Order #{{1}}: {{2}}\n\n"
+                 "📍 {{3}}\n"
+                 "👤 {{4}}\n"
+                 "💰 {{5}}\n\n"
+                 "Tap Open order to copy the details into Porter and send the rider link."),
+        "example": ["142", "accepted, book the rider now",
+                    "12 Luz Church Road, Mylapore (near the temple tank)",
+                    "Asha · 98123 45678", "Paid by UPI. Rider collects nothing."],
+        "button": "Open order",
+        "button_url": SITE + "/kitchen/o/",
+        "button_example": SITE + "/kitchen/o/142",
+        "footer": "Or swipe right and send the Porter link and fare",
+    },
     KITCHEN_MESSAGE: {
         "used_for": "kitchen (Mom): a customer's question or file, to answer by replying",
         "header": "Customer message",
@@ -180,8 +199,8 @@ def components(name: str) -> list[dict]:
     comps.append({"type": "FOOTER", "text": (d.get("footer") or FOOTER)[:60]})
     if d.get("button"):
         comps.append({"type": "BUTTONS", "buttons": [{
-            "type": "URL", "text": d["button"][:25], "url": TRACK_URL + "{{1}}",
-            "example": [TRACK_EXAMPLE]}]})
+            "type": "URL", "text": d["button"][:25], "url": d.get("button_url", TRACK_URL) + "{{1}}",
+            "example": [d.get("button_example", TRACK_EXAMPLE)]}]})
     return comps
 
 

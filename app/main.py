@@ -755,6 +755,12 @@ def admin_mark_paid(order_id: int, x_admin_token: str | None = Header(None)):
     return {"ok": True}
 
 
+@app.get("/kitchen/o/{order_id}", response_class=HTMLResponse)
+def kitchen_order_page(request: Request, order_id: int):
+    """Open order button on Mom's WhatsApp alerts: the kitchen app, on that order."""
+    return kitchen_page(request)
+
+
 @app.get("/kitchen", response_class=HTMLResponse)
 def kitchen_page(request: Request):
     # Stripped-down, one-purpose order screen for a kitchen tablet — no tabs,
