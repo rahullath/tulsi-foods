@@ -792,7 +792,8 @@ main { padding: 8px 16px 130px; }
       if (paySelect) syncTapTiles("payment-tiles", paySelect.value);
       typeSelect.dispatchEvent(new Event("change"));
       if (paySelect) paySelect.dispatchEvent(new Event("change"));
-      if (saved.lat && saved.lng) movePin(saved.lat, saved.lng, false);
+      // Ignore a stored pin that is just the kitchen's own default from an older session.
+      if (saved.lat && saved.lng && haversineKm(+saved.lat, +saved.lng, PICKUP_LAT, PICKUP_LNG) > 0.1) movePin(saved.lat, saved.lng, false);
       if (saved.preset && saved.preset !== "asap") {
         const pill = overlay.querySelector(`.time-pill[data-preset="${saved.preset}"]`);
         if (pill && !pill.hidden) pill.click();
@@ -1077,7 +1078,7 @@ main { padding: 8px 16px 130px; }
         }
         checkOutside();
       });
-      applyPin(PICKUP_LAT, PICKUP_LNG, false);
+      // Deliberately no default pin: an unpicked address must not silently use the kitchen's coordinates.
 
       const addressInput = overlay.querySelector("#address-input");
       if (addressInput) {
@@ -1320,6 +1321,12 @@ main { padding: 8px 16px 130px; }
     overlay.querySelector("#outside-retry").addEventListener("click", () => { overlay.querySelector("#outside-card").hidden = true; const a = form.querySelector("[name=address]"); a.value = ""; a.focus(); });
     function validateStep(n) {
       const sec = stepEls[n - 1];
+      if (n === 2 && GOOGLE_MAPS_API_KEY && !inputLat.value) {
+        const m = overlay.querySelector("#checkout-msg");
+        m.style.color = "#B3261E";
+        m.textContent = "Pick your address from the suggestions, or tap Use my location, then drag the pin onto your door.";
+        return false;
+      }
       if (n === 2) {
         if (checkOutside()) return false;
         if (!overlay.querySelector("#pin-check").hidden) { overlay.querySelector("#pin-check").scrollIntoView({ behavior: "smooth", block: "center" }); return false; }
