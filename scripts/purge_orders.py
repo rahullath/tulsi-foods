@@ -23,13 +23,17 @@ from app.config import DB_FILE  # noqa: E402
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--keep", type=int, nargs="+", default=[46], help="order ids to keep")
+    ap.add_argument("--keep-latest", type=int, default=0, help="also keep the N most recent orders (highest ids)")
     ap.add_argument("--apply", action="store_true", help="actually delete (default: dry run)")
     ap.add_argument("--include-reviews", action="store_true", help="also delete dish_reviews of removed orders")
     ap.add_argument("--db", default=str(DB_FILE))
     a = ap.parse_args()
 
     conn = sqlite3.connect(a.db)
-    keep = a.keep
+    keep = list(a.keep)
+    if a.keep_latest:
+        keep += [r[0] for r in conn.execute("SELECT id FROM orders ORDER BY id DESC LIMIT ?", (a.keep_latest,))]
+        keep = sorted(set(keep))
     q = ",".join("?" * len(keep))
     present = [r[0] for r in conn.execute(f"SELECT id FROM orders WHERE id IN ({q})", keep)]
     missing = sorted(set(keep) - set(present))
