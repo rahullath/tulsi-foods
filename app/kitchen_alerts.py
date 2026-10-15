@@ -30,7 +30,7 @@ def _template_safe(text: str) -> str:
 
 
 def send(text: str, html_text: str | None = None, relay: dict | None = None,
-         template: tuple[str, list[str]] | None = None) -> list[str]:
+         template: tuple | None = None, fallback_template: tuple | None = None) -> list[str]:
     """Send `text` to the kitchen on every configured channel; returns the
     channels that accepted it. Never raises. `relay` ({"kind", "customer",
     "order_id"}) records what the WhatsApp alert was about, so when Mom
@@ -42,14 +42,17 @@ def send(text: str, html_text: str | None = None, relay: dict | None = None,
         result = None
         # Specific utility template first, then the generic alert, then free
         # text (reaches Mom only if she wrote to the bot in the last 24 h).
+        # A template tuple is (name, values) or (name, values, button_suffix).
         attempts = []
-        if template:
-            attempts.append((template[0], [_template_safe(v) for v in template[1]]))
-        attempts.append((KITCHEN_ALERT, [_template_safe(text)]))
-        for name, values in attempts:
+        for t in (template, fallback_template):
+            if t:
+                attempts.append((t[0], [_template_safe(v) for v in t[1]], t[2] if len(t) > 2 else None))
+        attempts.append((KITCHEN_ALERT, [_template_safe(text)], None))
+        for name, values, button in attempts:
             try:
                 result = client.send_template(ADMIN_PHONE, name, KITCHEN_WA_TEMPLATE_LANG,
-                                              [{"type": "text", "text": v} for v in values])
+                                              [{"type": "text", "text": v} for v in values],
+                                              button_url_suffix=button)
                 break
             except Exception as e:
                 log.warning("kitchen template %s failed (%s)", name, e)
@@ -165,18 +168,48 @@ def handle_admin_reply(text: str, context_wamid: str | None) -> str | None:
     return None
 
 
-def porter_card(order: dict, reason: str) -> list[str]:
-    """Send the Porter booking card for a delivery order."""
-    from .whatsapp.templates import KITCHEN_RIDER
+def _short(text: str, limit: int) -> str:
+    text = " ".join((text or "").split())
+    return text if len(text) <= limit else text[: limit - 1].rstrip(" ,") + "…"
+
+
+def porter_card(order: dict, status_line: str) -> list[str]:
+    """Ask Mom to book Porter for a delivery order: a short card with the drop,
+    the customer and what the rider collects, plus an Open order button to the
+    kitchen app (which has every detail with Copy buttons)."""
+    from .whatsapp.templates import KITCHEN_RIDER, KITCHEN_RIDER_V2
     from html import escape
     from .delivery import porter
-    card = porter.booking_text(order)
-    tail = ("\n\nBooked? Swipe right on this message and send the Porter link and the fare, "
-            "e.g. \"<link> ₹86\".")
-    return send(f"{reason}\n\n{card}{tail}",
-                f"{escape(reason)}\n\n<pre>{escape(card)}</pre>{escape(tail)}",
+    oid = str(order["id"])
+    addr = order.get("delivery_address") or ""
+    landmark = ""
+    if "(Landmark:" in addr:
+        addr, _, landmark = addr.partition("(Landmark:")
+        landmark = landmark.rstrip(") ").strip()
+    if landmark and not re.match(r"(?i)(near|next to|opp|opposite|behind|beside|above|below|in front)\b", landmark):
+        landmark = "near " + landmark
+    drop = _short(addr.strip().rstrip(","), 110) + (f" ({_short(landmark[:1].lower() + landmark[1:], 45)})" if landmark else "")
+    phone = "".join(c for c in (order.get("customer_phone") or "") if c.isdigit())
+    phone = f"{phone[:5]} {phone[5:]}" if len(phone) == 10 else ("+" + phone if phone else "")
+    who = f"{order.get('customer_name') or 'Customer'} · {phone}".strip(" ·")
+    total = float(order.get("total") or 0)
+    if (order.get("payment_method") or "").lower() == "cod":
+        money = f"Cash: rider collects ₹{total:.0f}."
+    elif order.get("paid"):
+        money = "Paid by UPI. Rider collects nothing."
+    else:
+        money = f"UPI ₹{total:.0f} not confirmed yet. Check before the rider leaves."
+    if order.get("address_flagged"):
+        status_line += ". ⚠ Pin and address don't match: call the customer first"
+    pin = porter.booking_details(order).get("drop_map") or ""
+    kitchen_link = f"https://tulsifoods.app/kitchen/o/{oid}"
+    text = (f"🛵 Book a Porter rider\nOrder #{oid}: {status_line}\n\n📍 {drop}\n"
+            + (f"Pin: {pin}\n" if pin else "") + f"👤 {who}\n💰 {money}\n\n"
+            f"Open the order: {kitchen_link}\nOr reply here with the Porter link and fare.")
+    return send(text, f"<pre>{escape(porter.booking_text(order))}</pre>",
                 relay={"kind": "order", "order_id": order["id"]},
-                template=(KITCHEN_RIDER, [str(order["id"]), f"{reason} {card}"]))
+                template=(KITCHEN_RIDER_V2, [oid, status_line, drop, who, money], oid),
+                fallback_template=(KITCHEN_RIDER, [oid, f"{status_line}. Drop: {drop}. {who}. {money}"]))
 
 
 _URL = re.compile(r"https?://\S+")

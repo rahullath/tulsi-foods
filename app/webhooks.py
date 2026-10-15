@@ -495,13 +495,13 @@ async def petpooja_order_callback(request: Request, t: str | None = Query(None))
     # for delivery orders (guarded — see _maybe_auto_dispatch).
     if mapped == "preparing" and previous == "new":
         # POS Accept: get the rider booking started while the food cooks.
-        _maybe_auto_dispatch(order_id, "✅ Order #{id} accepted — book a Porter 2-wheeler now (pickup in ~20 min).")
+        _maybe_auto_dispatch(order_id, "accepted, book a 2-wheeler now (food ready in about 20 min)")
     elif mapped == "ready":
-        _maybe_auto_dispatch(order_id, "🍱 Food is READY for order #{id} — no rider recorded yet. Book Porter now.")
+        _maybe_auto_dispatch(order_id, "food is READY and no rider is booked yet")
     return Response(status_code=200, media_type="application/json")
 
 
-def _maybe_auto_dispatch(order_id: int, reason: str = "Book Porter for order #{id}.") -> None:
+def _maybe_auto_dispatch(order_id: int, reason: str = "book a 2-wheeler now") -> None:
     """Rider booking, driven by the POS (Accept, then Food Ready).
 
     Porter API configured -> book it and notify the customer. Otherwise (the
@@ -523,8 +523,7 @@ def _maybe_auto_dispatch(order_id: int, reason: str = "Book Porter for order #{i
         # Still tell Mom (a silent skip meant nobody booked a rider), but
         # never auto-book: she checks the address with the customer first.
         from .kitchen_alerts import porter_card
-        porter_card(o, reason.format(id=order_id) + f"\n⚠️ Check the address with the customer first: "
-                    f"{o.get('address_flag_reason') or 'flagged'}")
+        porter_card(o, reason)
         return
     try:
         from .orders import dispatch_rider
@@ -534,7 +533,7 @@ def _maybe_auto_dispatch(order_id: int, reason: str = "Book Porter for order #{i
         return
     if result.get("manual"):
         from .kitchen_alerts import porter_card
-        sent = porter_card(db.get_order(order_id), reason.format(id=order_id))
+        sent = porter_card(db.get_order(order_id), reason)
         log.info("Order %s: Porter booking card -> %s", order_id, ", ".join(sent) or "NO CHANNEL (admin panel only)")
         return
     log.info("Order %s booked on Porter API on food-ready", order_id)

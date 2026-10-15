@@ -711,6 +711,56 @@ def admin_page(request: Request):
     )
 
 
+@app.get("/kitchen.webmanifest")
+def kitchen_manifest():
+    """Separate install for Mom's phone: opens straight to the kitchen screen."""
+    from fastapi.responses import JSONResponse
+    return JSONResponse({
+        "name": "Tulsi Kitchen", "short_name": "Kitchen", "id": "/kitchen",
+        "start_url": "/kitchen?source=pwa", "scope": "/kitchen", "display": "standalone",
+        "background_color": "#F6F3EC", "theme_color": "#0E7A45", "orientation": "portrait",
+        "icons": [{"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+                  {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png"}],
+    }, media_type="application/manifest+json")
+
+
+@app.get("/api/admin/kitchen")
+def admin_kitchen(x_admin_token: str | None = Header(None)):
+    """Kitchen screen feed: open orders, today's finished ones, and the
+    numbers Mom needs to book Porter and read the bill."""
+    _check_admin(x_admin_token)
+    from .delivery.config import PICKUP_ADDRESS, PICKUP_LAT, PICKUP_LNG, PICKUP_PHONE
+    out = []
+    for o in db.kitchen_orders():
+        o = {k: v for k, v in o.items() if k not in ("sr_awb",)}
+        o["track_url"] = f"{SITE_URL}/track/{o.get('tracking_token') or o['id']}"
+        o["pay_url"] = f"{SITE_URL}/pay/{o.get('tracking_token') or o['id']}"
+        out.append(o)
+    return {"orders": out, "kitchen": {
+        "address": PICKUP_ADDRESS, "phone": PICKUP_PHONE, "lat": PICKUP_LAT, "lng": PICKUP_LNG,
+        "zones": DELIVERY_ZONES}}
+
+
+@app.post("/api/admin/orders/{order_id}/paid")
+def admin_mark_paid(order_id: int, x_admin_token: str | None = Header(None)):
+    """The kitchen saw the UPI payment: mark it and tell the customer."""
+    _check_admin(x_admin_token)
+    o = db.get_order(order_id)
+    if not o:
+        raise HTTPException(404, "Order not found")
+    if not o.get("paid"):
+        db.mark_order_paid(order_id)
+        from .notify import notify_payment_received
+        notify_payment_received(db.get_order(order_id))
+    return {"ok": True}
+
+
+@app.get("/kitchen/o/{order_id}", response_class=HTMLResponse)
+def kitchen_order_page(request: Request, order_id: int):
+    """Open order button on Mom's WhatsApp alerts: the kitchen app, on that order."""
+    return kitchen_page(request)
+
+
 @app.get("/kitchen", response_class=HTMLResponse)
 def kitchen_page(request: Request):
     # Stripped-down, one-purpose order screen for a kitchen tablet — no tabs,
@@ -1154,6 +1204,14 @@ def admin_update_order_status(order_id: int, body: StatusIn,
         raise HTTPException(400, f"Cannot move from '{current}' to '{target}'. Allowed: {allowed}")
     db.update_order_status(order_id, target)
     _send_status_whatsapp(o, target)
+    if target == "cancelled":
+        # Keep the POS in step; its own cancel callback is then a no-op here.
+        try:
+            from .petpooja.client import cancel_order, is_configured
+            if is_configured():
+                cancel_order(order_id, "Cancelled from the kitchen screen")
+        except Exception:
+            log.exception("Petpooja cancel failed for order %s", order_id)
     return {"ok": True, "order_id": order_id, "from": current, "to": target}
 
 

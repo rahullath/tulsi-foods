@@ -39,7 +39,8 @@ def _maps_link(lat, lng) -> str:
 
 def booking_details(order: dict) -> dict:
     """Everything the Porter app asks for, in one place."""
-    cod = float(order.get("total") or 0) if (order.get("payment_method") or "").lower() == "cod" else 0.0
+    is_cod = (order.get("payment_method") or "").lower() == "cod"
+    cod = float(order.get("total") or 0) if is_cod else 0.0
     items = order.get("items") or []
     return {
         "order_id": order["id"],
@@ -53,6 +54,8 @@ def booking_details(order: dict) -> dict:
         "drop_phone": order.get("customer_phone") or "",
         "drop_map": _maps_link(order.get("delivery_lat"), order.get("delivery_lng")),
         "cash_to_collect": round(cod, 2),
+        # UPI the kitchen hasn't seen yet: not "prepaid" until it's confirmed.
+        "upi_unconfirmed": (not is_cod) and not order.get("paid"),
         "item_count": sum(int(i.get("qty") or 1) for i in items),
         "porter_url": PORTER_APP_URL,
     }
@@ -75,7 +78,13 @@ def booking_text(order: dict) -> str:
     ]
     if d["drop_map"]:
         lines.append(f"Pin: {d['drop_map']}")
-    lines += ["", f"COLLECT CASH: ₹{d['cash_to_collect']:.0f}" if d["cash_to_collect"] else "PREPAID — collect nothing"]
+    if d["cash_to_collect"]:
+        money = f"COLLECT CASH: ₹{d['cash_to_collect']:.0f}"
+    elif d["upi_unconfirmed"]:
+        money = f"UPI ₹{float(order.get('total') or 0):.0f} NOT CONFIRMED YET: check before the rider leaves"
+    else:
+        money = "PAID BY UPI: collect nothing"
+    lines += ["", money]
     return "\n".join(lines)
 
 

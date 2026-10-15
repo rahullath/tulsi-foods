@@ -680,6 +680,23 @@ def today_orders() -> list[dict]:
     return result
 
 
+def kitchen_orders() -> list[dict]:
+    """Everything the kitchen screen shows: every open order (whenever it was
+    placed or is due), plus today's finished ones. "Today" is the IST day."""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT o.*, c.name AS customer_name, c.phone AS customer_phone "
+        "FROM orders o LEFT JOIN customers c ON c.id=o.customer_id "
+        "WHERE o.status NOT IN ('delivered', 'cancelled') "
+        "   OR date(o.created_at, '+330 minutes') = date('now', '+330 minutes') "
+        "   OR (o.scheduled_at IS NOT NULL AND date(o.scheduled_at, '+330 minutes') = date('now', '+330 minutes')) "
+        "ORDER BY o.id DESC LIMIT 200"
+    ).fetchall()
+    result = _orders_with_items(rows)
+    conn.close()
+    return result
+
+
 def upcoming_scheduled_orders() -> list[dict]:
     """Every not-yet-fulfilled order with a scheduled time, regardless of
     which day it was placed on — the Scheduled tab's planning view. Without
