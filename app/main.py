@@ -64,6 +64,13 @@ templates.env.globals["wa_order_link"] = wa_order_link
 from .config import WHATSAPP_ORDER_DISPLAY, WHATSAPP_ORDER_NUMBER  # noqa: E402
 templates.env.globals["wa_order_number"] = WHATSAPP_ORDER_NUMBER
 templates.env.globals["wa_order_display"] = WHATSAPP_ORDER_DISPLAY
+def _promo():
+    from . import discounts
+    try:
+        return discounts.public_offer()
+    except Exception:
+        return None
+templates.env.globals["promo"] = _promo
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 DISH_PHOTO_DIR = Path("app/static/img/dishes")
@@ -393,14 +400,13 @@ def menu_item_page(request: Request, item_id: str):
     )
 
     status_text = "Available now" if available else (reason or "Finished for today")
+    fees = ", ".join(f"₹{z['fee']} up to {z['max_km']:.0f} km" for z in DELIVERY_ZONES)
+    min_order = min(z["min_order"] for z in DELIVERY_ZONES)
     ordering = {
-        "zones": ", ".join(
-            f"up to {z['max_km']:.0f} km — ₹{z['fee']} delivery"
-            for z in DELIVERY_ZONES
-        ),
+        "zones": f"a fixed fee by distance ({fees}), shown before you pay. Minimum order ₹{min_order:g} for delivery; pickup has no minimum",
         "hours": "Mon–Sat 9 AM – 9 PM, Sun 11 AM – 9 PM",
         "address": "34 Murrays Gate Road, Alwarpet, Chennai 600018",
-        "whatsapp": "+91 99406 21800",
+        "whatsapp": WHATSAPP_ORDER_DISPLAY,
         "phone": "+91 99406 21800",
     }
     breadcrumb = {
@@ -835,8 +841,7 @@ def llms_txt():
         "",
         "> Pure vegetarian, home-style North Indian kitchen on Murrays Gate Road, Alwarpet "
         "(Mylapore side), Chennai. Run by Kavita Lath since 2015. Thalis, parathas, sabzi, "
-        "dal and chaat, cooked to order and delivered direct, with no aggregator and no "
-        "platform fees.",
+        "dal and chaat, cooked to order and delivered direct from the kitchen.",
         "",
         "- Cuisine: North Indian, pure vegetarian. Jain and no-onion-garlic on request.",
         "- Also known as: Tulsi Restaurant, Tulasi Foods, Thulasi Restaurant (same kitchen, different spellings)",

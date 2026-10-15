@@ -6,6 +6,8 @@
   const SOUND_KEY = "tulsi_kitchen_sound";
   const app = document.getElementById("app");
   let token = null, data = null, tab = "now", seen = null, soundOn = false, audio = null;
+  let view = "home", focusOid = null, showMore = false;  // home | together | focus | later | done
+  const plated = new Set();  // "Cook together" ticks, kept until reload
   const drafts = {};  // per-order Porter link/fare typed but not yet sent
   // /kitchen/o/46 (the Open order button on Mom's WhatsApp alert) jumps to #46.
   let focusId = +((/^\/kitchen\/o\/(\d+)/.exec(location.pathname) || [])[1]) || null;
@@ -58,6 +60,7 @@
   }
 
   // ---------- grouping
+  const needsMoney = (o) => (o.payment_method === "upi" && !o.paid && o.status !== "cancelled" && o.status !== "delivered") ? 1 : 0;
   const OPEN = ["new", "preparing", "ready", "out_for_delivery"];
   function isLater(o) {
     if (!o.scheduled_at || o.status !== "new") return false;
@@ -70,7 +73,7 @@
     const later = all.filter((o) => OPEN.includes(o.status) && isLater(o));
     const done = all.filter((o) => !OPEN.includes(o.status) && istDay(utc(o.created_at)) === today);
     const rank = { new: 0, preparing: 1, ready: 2, out_for_delivery: 3 };
-    now.sort((a, b) => rank[a.status] - rank[b.status] || a.id - b.id);
+    now.sort((a, b) => (needsMoney(b) - needsMoney(a)) || rank[a.status] - rank[b.status] || a.id - b.id);
     later.sort((a, b) => (a.scheduled_at || "").localeCompare(b.scheduled_at || ""));
     return { now, later, done };
   }
@@ -99,24 +102,115 @@
     return `${todays.length} order${todays.length === 1 ? "" : "s"} today · ${rs(Math.round(sales))}` + (g.now.length ? ` · ${g.now.length} open` : "");
   }
 
+  // ---------- multi-order views
+  const clock = () => new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+  // The time something is due: the booked time, or placed time plus the usual wait.
+  function dueOf(o) {
+    if (o.scheduled_at) return utc(o.scheduled_at);
+    const placed = utc(o.created_at) || new Date();
+    return new Date(placed.getTime() + (o.order_type === "pickup" ? 25 : 45) * 60000);
+  }
+  const summaryItems = (o) => (o.items || []).map((i) => `${num(i.qty)} × ${i.name}`).join(", ");
+  const areaOf = (o) => { const [addr] = splitAddr(o.delivery_address); const parts = addr.split(",").map((x) => x.trim()).filter(Boolean); return parts.length > 2 ? parts[parts.length - 2] : (parts[1] || parts[0] || ""); };
+  const STATE_RANK = { new: 0, preparing: 1, ready: 2, out_for_delivery: 3 };
+  function queue() {
+    // Most urgent first: orders waiting to be accepted, then cooking, then the rest; by due time within each.
+    return groups().now.slice().sort((a, b) => (STATE_RANK[a.status] - STATE_RANK[b.status]) || (dueOf(a) - dueOf(b)) || a.id - b.id);
+  }
+  const rowSub = (o) => {
+    const st = { new: "New", preparing: "Cooking", ready: o.order_type === "pickup" ? "Ready for pickup" : "Ready, needs a rider", out_for_delivery: "On the way" }[o.status];
+    return `${st} · ${o.order_type === "pickup" ? "pickup" : "delivery"} ${time(dueOf(o))}${needsMoney(o) ? " · 💰 check payment" : ""}`;
+  };
+
+  function banner(q) {
+    const top = q[0];
+    const fresh = q.filter((o) => o.status === "new" && !(view === "home" && top && o.id === top.id));
+    if (!fresh.length) return "";
+    const o = fresh[fresh.length - 1];
+    return `<div class="newban" role="status"><div class="nb-t" data-open="${o.id}">
+        <div class="nb-k">NEW · #${o.id} · ${o.order_type === "pickup" ? "PICKUP" : "DELIVERY"} ${time(dueOf(o))}${fresh.length > 1 ? ` · +${fresh.length - 1} more` : ""}</div>
+        <div class="nb-i">${esc(summaryItems(o))}</div></div>
+      <button class="nb-b" data-accept="${o.id}">Accept</button></div>`;
+  }
+
+  function topbar(g, title, back) {
+    const n = g.now.length;
+    return `<header class="top"><div class="top-row">
+        ${back ? `<button class="back" id="back" aria-label="Back">‹</button>` : `<span class="clock" id="clock">${clock()}</span>`}
+        ${title ? `<span class="ttl">${title}</span>` : `<span class="on">${n} order${n === 1 ? "" : "s"} on</span>`}
+        <button class="sound ${soundOn ? "on" : "off"}" id="sound" aria-label="${soundOn ? "Sound on" : "Sound off"}">${soundOn ? "🔔" : "🔕 Sound off"}</button>
+      </div></header>`;
+  }
+
+  function nextUpCard(o) {
+    const note = (o.instructions || "").trim();
+    const itemNotes = (o.items || []).filter((i) => i.note).map((i) => `${esc(i.name)}: ${esc(i.note)}`);
+    const meta = [o.payment_method === "upi" ? (o.paid ? "Paid" : "UPI not confirmed") : "Cash", o.order_type === "delivery" ? areaOf(o) : "Pickup", `due ${time(dueOf(o))}`].filter(Boolean).join(" · ");
+    const color = o.status === "new" ? "#E8A33D" : o.status === "preparing" ? "#0E7A45" : "#1B5FA8";
+    return `<article class="nu" id="o-${o.id}" style="--ring:${color}">
+      <div class="nu-h" style="background:${color}"><span>#${o.id} · ${{ new: "NEW", preparing: "COOKING", ready: "READY", out_for_delivery: "ON THE WAY" }[o.status]}</span><span>${o.order_type === "pickup" ? "PICKUP" : "DELIVERY"}</span></div>
+      <div class="nu-b">
+        <div class="nu-items">${(o.items || []).map((i) => `${num(i.qty)} × ${esc(i.name)}`).join("<br>")}</div>
+        ${note || itemNotes.length ? `<div class="nu-note">${[esc(note), ...itemNotes].filter(Boolean).join("<br>")}</div>` : ""}
+        <div class="nu-meta">${esc(meta)}</div>
+        ${payNow(o)}
+        ${nextStep(o)}
+        <button class="more" data-open="${o.id}">All details${o.order_type === "delivery" && ["preparing", "ready"].includes(o.status) && !(o.sr_tracking_url || o.sr_courier) ? ": book the rider ›" : " ›"}</button>
+      </div></article>`;
+  }
+
+  function homeView(g) {
+    const q = queue(), top = q[0];
+    if (!top) return `${banner(q)}<main class="list"><div class="empty">No orders right now.<br>New ones appear here by themselves.</div></main>${bottomBar(g)}`;
+    const rest = q.slice(1), shown = showMore ? rest : rest.slice(0, 2);
+    const unpaid = rest.filter(needsMoney);
+    return `${banner(q)}<main class="home">
+      ${unpaid.length ? `<button class="paystrip" data-open="${unpaid[0].id}">💰 ${unpaid.length} other payment${unpaid.length > 1 ? "s" : ""} to check. Tap to open #${unpaid[0].id}.</button>` : ""}
+      <div class="lane">DO THIS NEXT</div>${nextUpCard(top)}
+      ${rest.length ? `<div class="lane dim">THEN</div><div class="rows">${shown.map((o) => `<button class="rowc" data-open="${o.id}">
+          <div><div class="rc-t">#${o.id} · ${esc(summaryItems(o))}</div><div class="rc-s">${esc(rowSub(o))}</div></div>
+          <span class="rc-time ${dueOf(o) - Date.now() < 15 * 60000 ? "soon" : ""}">${time(dueOf(o))}</span></button>`).join("")}
+        ${rest.length > shown.length ? `<button class="rowc more-rows" id="showmore">+ ${rest.length - shown.length} more</button>` : ""}</div>` : ""}
+      </main>${bottomBar(g)}`;
+  }
+  function bottomBar(g) {
+    return `<div class="bbar"><button data-view="together">Cook together</button><button data-view="later">Later (${g.later.length})</button><button data-view="done">Done (${g.done.length})</button></div>`;
+  }
+
+  // Same dish across every active order, as a prep list.
+  function togetherView(g) {
+    const act = queue().filter((o) => ["new", "preparing"].includes(o.status));
+    const map = new Map();
+    act.forEach((o) => (o.items || []).forEach((i) => {
+      const k = i.name; const e = map.get(k) || { name: k, qty: 0, chips: [] };
+      e.qty += num(i.qty); e.chips.push({ id: o.id, qty: num(i.qty), note: i.note || "" });
+      const on = (o.instructions || "").trim(); if (on && !e.chips.some((c) => c.id === o.id && c.order)) e.chips.push({ id: o.id, order: true, note: on });
+      map.set(k, e);
+    }));
+    const list = [...map.values()].sort((a, b) => b.qty - a.qty);
+    return `<main class="home"><div class="tg-h">Same dish across all active orders. Tap when plated.</div>
+      ${list.length ? list.map((e) => `<button class="tg ${plated.has(e.name) ? "done" : ""}" data-plate="${esc(e.name)}">
+        <div class="tg-top"><span class="tg-q">${e.qty} ×</span><span class="tg-n">${esc(e.name)}</span><span class="tg-c">${plated.has(e.name) ? "✓" : ""}</span></div>
+        <div class="tg-chips">${e.chips.map((c) => c.note ? `<span class="chip flagnote">#${c.id} ${esc(c.note)}</span>` : `<span class="chip">#${c.id} ×${c.qty}</span>`).join("")}</div></button>`).join("") : `<div class="empty">Nothing is being cooked right now.</div>`}
+      </main>`;
+  }
+
   function render() {
     const g = groups();
-    const list = g[tab];
     const keepScroll = window.scrollY;
-    app.innerHTML = `
-      <header class="top">
-        <div class="top-row">
-          <div><h1>Tulsi Kitchen</h1><div class="sum">${summary(g)}</div></div>
-          <button class="sound ${soundOn ? "on" : ""}" id="sound">${soundOn ? "🔔 Sound on" : "🔕 Sound off"}</button>
-        </div>
-        <nav class="tabs">
-          <button data-tab="now" class="${tab === "now" ? "on" : ""}">Now<span class="n">${g.now.length}</span></button>
-          <button data-tab="later" class="${tab === "later" ? "on" : ""}">Later<span class="n">${g.later.length}</span></button>
-          <button data-tab="done" class="${tab === "done" ? "on" : ""}">Done today<span class="n">${g.done.length}</span></button>
-        </nav>
-      </header>
-      ${!soundOn ? `<button class="banner" id="sound2">🔔 Tap here so the phone rings for new orders</button>` : ""}
-      <main class="list">${list.length ? list.map(card).join("") : `<div class="empty">${tab === "now" ? "No orders right now.<br>New ones appear here by themselves." : tab === "later" ? "No orders booked for later." : "Nothing finished yet today."}</div>`}</main>`;
+    let body;
+    if (view === "focus") {
+      const o = ((data && data.orders) || []).find((x) => x.id === focusOid);
+      if (!o) { view = "home"; return render(); }
+      const lbl = { new: "NEW", preparing: "COOKING", ready: "READY", out_for_delivery: "ON THE WAY", delivered: "DELIVERED", cancelled: "CANCELLED" }[o.status] || o.status;
+      body = topbar(g, `#${o.id} · ${lbl}`, true) + banner(queue()) + `<main class="list">${card(o)}</main>`;
+    } else if (view === "together") body = topbar(g, "Cook together", true) + banner(queue()) + togetherView(g);
+    else if (view === "later" || view === "done") {
+      const list = g[view];
+      body = topbar(g, view === "later" ? "Later" : "Done today", true) + banner(queue()) +
+        `<main class="list">${list.length ? list.map(card).join("") : `<div class="empty">${view === "later" ? "No orders booked for later." : "Nothing finished yet today."}</div>`}</main>`;
+    } else body = topbar(g, "", false) + homeView(g);
+    app.innerHTML = body;
     window.scrollTo(0, keepScroll);
     bind();
   }
@@ -137,7 +231,7 @@
     const kitchen = sub - disc + pack;
     let pay;
     if (o.payment_method === "upi" && o.paid) pay = `<div class="paybox ok">✓ Paid ${rs(total)} by UPI</div>`;
-    else if (o.payment_method === "upi") pay = `<div class="paybox wait">UPI ${rs(total)} not confirmed yet<small>Check your UPI app. When it's there, tap “I got the UPI payment” below.</small></div>`;
+    else if (o.payment_method === "upi") pay = `<div class="paybox wait">UPI ${rs(total)}: not confirmed yet</div>`;
     else pay = `<div class="paybox cash">Cash: collect ${rs(Math.ceil(total))}<small>${o.order_type === "pickup" ? "At the counter when they pick up." : "Tell the Porter rider to collect it, or ask the customer to pay by UPI."}</small></div>`;
     const cost = num(o.courier_cost);
     const porterBox = o.order_type === "delivery"
@@ -159,26 +253,33 @@
       </div></div>`;
   }
 
+  // Opens the Porter / Rapido app on Android (falls back to the Play Store page).
+  // Neither app accepts a pre-filled drop location from outside, so the flow is:
+  // copy the location here, open the app, paste it into the Drop box.
+  const appLink = (pkg) => `intent://#Intent;package=${pkg};S.browser_fallback_url=${encodeURIComponent("https://play.google.com/store/apps/details?id=" + pkg)};end`;
+  const PORTER_PKG = "in.porter.customerapp", RAPIDO_PKG = "com.rapido.passenger";
+
+  function mapsLinks(o, addr, landmark) {
+    const dlat = parseFloat(o.delivery_lat), dlng = parseFloat(o.delivery_lng);
+    const k = (data && data.kitchen) || {};
+    const klat = parseFloat(k.lat), klng = parseFloat(k.lng);
+    const nearKitchen = isFinite(klat) && isFinite(dlat) && Math.abs(klat - dlat) < 0.0012 && Math.abs(klng - dlng) < 0.0012;
+    const hasPin = isFinite(dlat) && isFinite(dlng) && !nearKitchen;
+    const text = (addr + (landmark ? ", " + landmark : "") + ", Chennai").trim();
+    return { hasPin, drop: hasPin ? `https://www.google.com/maps/search/?api=1&query=${dlat},${dlng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(text)}` };
+  }
+
   function porterSec(o) {
     if (o.order_type !== "delivery") return "";
     const [addr, landmark] = splitAddr(o.delivery_address);
     const k = (data && data.kitchen) || {};
-    // Directions from the kitchen to the drop, as a 2-wheeler, so the Maps app opens
-    // with the route and ride time. If the order has no pin (or the pin is still the
-    // kitchen's own default), fall back to searching the typed address instead.
-    const klat = parseFloat(k.lat), klng = parseFloat(k.lng);
-    const dlat = parseFloat(o.delivery_lat), dlng = parseFloat(o.delivery_lng);
-    const nearKitchen = isFinite(klat) && isFinite(dlat) && Math.abs(klat - dlat) < 0.0012 && Math.abs(klng - dlng) < 0.0012;
-    const hasPin = isFinite(dlat) && isFinite(dlng) && !nearKitchen;
-    const origin = isFinite(klat) ? `&origin=${klat},${klng}` : "";
-    const pin = hasPin
-      ? `https://www.google.com/maps/dir/?api=1${origin}&destination=${dlat},${dlng}&travelmode=two-wheeler`
-      : `https://www.google.com/maps/dir/?api=1${origin}&destination=${encodeURIComponent(addr + (landmark ? ", " + landmark : "") + ", Chennai")}&travelmode=two-wheeler`;
+    const m = mapsLinks(o, addr, landmark);
     const booked = o.sr_tracking_url || o.sr_courier;
-    const flag = o.address_flagged ? `<div class="flag">⚠ ${esc(o.address_flag_reason || "Check this address.")} Open the pin below and, if it looks wrong, call the customer before booking.</div>` : "";
+    const flag = o.address_flagged ? `<div class="flag">⚠ ${esc(o.address_flag_reason || "Check this address.")} If it looks wrong, call the customer before booking.</div>` : "";
+    const noPin = m.hasPin ? "" : `<div class="flag">⚠ The customer did not drop an exact pin. Check the landmark or call before booking.</div>`;
     const head = `<div class="sec"><h3>Deliver to</h3><div class="addr">${esc(addr)}</div>
       ${landmark ? `<div class="hint">Landmark: ${esc(landmark)}</div>` : ""}
-      <a class="maplink" href="${pin}" target="_blank" rel="noopener">${hasPin ? "🧭 Directions to the customer's pin" : "🧭 Directions (no exact pin, using address)"}</a>${hasPin ? "" : `<div class="hint">The customer did not drop a pin. Check the landmark or call before booking.</div>`}${flag}`;
+      <a class="maplink" href="${m.drop}" target="_blank" rel="noopener">See it on the map</a>${noPin}${flag}`;
     if (booked) {
       return head + `<div class="rider" style="margin-top:10px">🛵 ${esc(o.sr_courier || "Rider booked")}${o.sr_tracking_url ? ` · <a href="${esc(o.sr_tracking_url)}" target="_blank" rel="noopener">rider link</a>` : ""}</div></div>`;
     }
@@ -187,37 +288,77 @@
       : o.payment_method === "upi" ? `UPI not confirmed yet. Check before the rider leaves.`
       : `Rider collects ${rs(Math.ceil(num(o.total)))} cash.`;
     const d = drafts[o.id] || {};
-    return head + `</div><div class="sec porter"><h3>Book Porter</h3><ol>
-        <li>Open the Porter app and choose <b>2 Wheeler</b>.</li>
-        <li>Pickup<div class="copyrow"><span>${esc(k.address || "34 Murrays Gate Road, Alwarpet")}</span><button class="copy" data-copy="${esc(k.address || "")}">Copy</button></div></li>
-        <li>Drop<div class="copyrow"><span>${esc(addr)}${landmark ? " (" + esc(landmark) + ")" : ""}</span><button class="copy" data-copy="${esc(addr + (landmark ? " (Landmark: " + landmark + ")" : ""))}">Copy</button></div></li>
-        <li>Receiver<div class="copyrow"><span>${esc(o.customer_name || "Customer")} · ${prettyPhone(o.customer_phone)}</span><button class="copy" data-copy="${esc(phone10(o.customer_phone).slice(-10))}">Copy number</button></div></li>
-        <li>Tell the rider: <b>${cashNote}</b></li>
-        <li>After booking, tap Share in Porter, copy the tracking link and paste it here.</li>
-      </ol>
-      <div class="field"><label for="link-${o.id}">Porter tracking link</label>
-        <input id="link-${o.id}" data-draft="link" data-id="${o.id}" inputmode="url" placeholder="https://porter.in/..." value="${esc(d.link || "")}"></div>
-      <div class="field"><label for="fare-${o.id}">What Porter charged (₹)</label>
+    const dropText = addr + (landmark ? " (Landmark: " + landmark + ")" : "");
+    const row = (label, value, copyText, btn) => `<div class="step-row"><div class="sr-l">${label}</div><div class="sr-v">${esc(value)}</div>
+      <button class="copy" data-copy="${esc(copyText)}">${btn}</button></div>`;
+    return head + `</div><div class="sec porter"><h3>Book a rider</h3>
+      <div class="how"><b>How:</b> tap each green <b>Copy</b> button, open the app, and paste it in the matching box.</div>
+      <div class="openapps">
+        <a class="openapp" href="${appLink(PORTER_PKG)}">Open Porter</a>
+        <a class="openapp" href="${appLink(RAPIDO_PKG)}">Open Rapido</a>
+      </div>
+      ${row("1 · Pickup (kitchen)", k.address || "34 Murrays Gate Road, Alwarpet", k.address || "", "Copy pickup")}
+      ${row("2 · Drop (customer)", dropText, m.hasPin ? m.drop : dropText, m.hasPin ? "Copy map location" : "Copy drop address")}
+      ${m.hasPin ? row("   or the address as text", dropText, dropText, "Copy address") : ""}
+      ${row("3 · Receiver", (o.customer_name || "Customer") + " · " + prettyPhone(o.customer_phone), phone10(o.customer_phone).slice(-10), "Copy number")}
+      <div class="how" style="margin-top:12px"><b>Tell the rider:</b> ${cashNote}</div>
+      <div class="how">After booking, tap <b>Share</b> in the app, copy the tracking link and paste it below.</div>
+      <div class="field"><label for="link-${o.id}">Rider tracking link</label>
+        <input id="link-${o.id}" data-draft="link" data-id="${o.id}" inputmode="url" placeholder="https://..." value="${esc(d.link || "")}"></div>
+      <div class="field"><label for="fare-${o.id}">What the rider app charged (₹)</label>
         <input id="fare-${o.id}" data-draft="fare" data-id="${o.id}" inputmode="decimal" placeholder="e.g. 62" value="${esc(d.fare || "")}">
         <div class="hint">Only for our accounts. The customer already paid ${rs(o.delivery_fee)} for delivery and is not charged again.</div></div>
+      <button class="big blue" data-dispatch="${o.id}" style="margin-top:12px">I booked the rider: send link to customer</button>
+      <div class="tells">The customer gets: “Your order is on its way” with the rider's live link.</div>
     </div>`;
   }
 
+  // Steps shown as a strip so it is obvious where the order is.
+  function steps(o) {
+    const del = o.order_type === "delivery";
+    const names = del ? ["Accepted", "Cooking", "Rider on the way", "Delivered"] : ["Accepted", "Cooking", "Ready", "Picked up"];
+    const idx = { new: 0, preparing: 1, ready: del ? 1 : 2, out_for_delivery: 2, delivered: 4 }[o.status];
+    if (idx === undefined) return "";
+    return `<div class="steps">${names.map((n, i) => `<div class="stp ${i < idx ? "done" : i === idx ? "now" : ""}"><i>${i < idx ? "✓" : i + 1}</i><span>${n}</span></div>`).join("")}</div>`;
+  }
+
+  // Money first: the one thing that blocks Mom.
+  function payNow(o) {
+    if (!needsMoney(o)) return "";
+    const total = rs(o.total);
+    return `<div class="paynow"><div class="pn-k">💰 CHECK THE MONEY FIRST</div>
+      <div class="pn-t">Did ${esc(o.customer_name || "the customer")} pay ${total}?</div>
+      <div class="pn-s">Open your UPI app (GPay / PhonePe). Look for <b>${total}</b>. Tap the green button only when you can see it.</div>
+      <button class="big pay" data-paid="${o.id}" data-confirm="Tap again to confirm. The customer is told you got ${total}.">Yes, I got ${total}</button>
+      <div class="pn-s" style="margin-top:8px">Not there after a few minutes? <a href="tel:+${waNum(o.customer_phone)}"><b>Call ${prettyPhone(o.customer_phone)}</b></a></div></div>`;
+  }
+
+  // One plain-language "what to do now" block with the single main button.
+  function nextStep(o) {
+    const del = o.order_type === "delivery";
+    const btn = (st, label, cls) => `<button class="big ${cls || ""}" data-do="${st}" data-id="${o.id}">${label}</button>`;
+    let k, t, b = "", warn = false;
+    if (o.status === "new") {
+      k = "NEXT"; t = "Accept this order and start cooking"; b = btn("preparing", "Accept order") + `<div class="tells">The customer gets: “The kitchen has accepted your order.”</div>`;
+    } else if (o.status === "preparing") {
+      k = "NEXT"; t = del ? "Cook it and pack it. Then tap below." : "Cook it. Tap below when it is packed.";
+      b = btn("ready", del ? "Food is packed and ready" : "Food is ready for pickup") + `<div class="tells">${del ? "The customer gets: “Packed and ready. We're booking your rider.”" : "The customer gets: “Your order is ready to collect.”"}</div>`;
+    } else if (o.status === "ready" && !del) {
+      k = "WAITING"; t = "Waiting for the customer to come and collect it."; b = btn("delivered", "Customer has collected it ✓", "blue");
+    } else if (o.status === "ready" && del) {
+      k = "NEXT"; t = (o.sr_tracking_url || o.sr_courier) ? "Rider is booked. Waiting for pickup." : "Book a rider. Steps are in “Book a rider” below ⬇"; 
+    } else if (o.status === "out_for_delivery") {
+      k = "ON THE WAY"; warn = true; t = "The rider has the food. It has NOT reached the customer yet.";
+      b = `<div class="warn">Tap the button below only AFTER the customer has the food in their hand.</div>` + btn("delivered", "Customer has received the food ✓", "blue") + `<div class="tells">Tapping this tells the customer “Delivered” and asks them to rate. You cannot undo it.</div>`;
+    } else return "";
+    return `<div class="next ${warn ? "warnbox" : ""}"><div class="nx-k">${k}</div><div class="nx-t">${t}</div>${b}</div>`;
+  }
+
   function actions(o) {
-    const a = [];
-    const tells = (t) => `<div class="tells">${t}</div>`;
-    if (o.status === "new") a.push(`<button class="big" data-do="preparing" data-id="${o.id}">Accept order</button>`, tells("The customer gets: “The kitchen has accepted your order.”"));
-    else if (o.status === "preparing") a.push(`<button class="big" data-do="ready" data-id="${o.id}">Food is ready</button>`, tells(o.order_type === "pickup" ? "The customer gets: “Your order is ready to collect.”" : "The customer gets: “Packed and ready. We're booking your rider.”"));
-    else if (o.status === "ready" && o.order_type === "pickup") a.push(`<button class="big" data-do="delivered" data-id="${o.id}">Customer picked it up</button>`);
-    else if (o.status === "out_for_delivery") a.push(`<button class="big" data-do="delivered" data-id="${o.id}">Delivered</button>`, tells("The customer gets a thank-you and a link to rate the food."));
-    if (o.order_type === "delivery" && ["preparing", "ready"].includes(o.status) && !(o.sr_tracking_url || o.sr_courier)) {
-      a.push(`<button class="big blue" data-dispatch="${o.id}">Rider booked: send link to customer</button>`, tells("The customer gets: “Your order is on its way” with the rider's live link."));
-    }
-    if (o.payment_method === "upi" && !o.paid && o.status !== "cancelled") a.push(`<button class="ghost" data-paid="${o.id}">I got the UPI payment (${rs(o.total)})</button>`);
     const minor = [`<a href="${esc(o.track_url)}" target="_blank" rel="noopener">Customer's tracking page</a>`];
-    if (o.status === "ready" && o.order_type === "delivery") minor.push(`<button data-do="delivered" data-id="${o.id}" data-confirm="Mark delivered without a Porter link?">Delivered without Porter</button>`);
+    if (o.status === "ready" && o.order_type === "delivery") minor.push(`<button data-do="delivered" data-id="${o.id}" data-confirm="Mark delivered without a rider?">Delivered without a rider</button>`);
     if (["new", "preparing"].includes(o.status)) minor.push(`<button class="danger" data-do="cancelled" data-id="${o.id}" data-confirm="Cancel order #${o.id}? The customer is told.">Cancel order</button>`);
-    return `<div class="act">${a.join("")}<div class="minor">${minor.join("")}</div></div>`;
+    return `<div class="act"><div class="minor">${minor.join("")}</div></div>`;
   }
 
   function card(o) {
@@ -227,6 +368,7 @@
     return `<article class="card s-${o.status}" id="o-${o.id}">
       <div class="sec"><div class="head"><div><div class="oid">#${o.id}</div>${whenLine(o)}</div>
         <div class="pills"><span class="pill p-${o.status}">${label}</span><span class="pill p-type">${o.order_type === "pickup" ? "PICKUP" : "DELIVERY"}</span></div></div></div>
+      ${OPEN.includes(o.status) ? `<div class="sec nx-wrap">${steps(o)}${payNow(o)}${nextStep(o)}</div>` : ""}
       <div class="sec cust"><div><b>${esc(o.customer_name || "Customer")}</b><div class="ph">${prettyPhone(o.customer_phone)}</div></div>
         <div class="cbtns"><a href="tel:+${waNum(o.customer_phone)}">📞 Call</a><a href="https://wa.me/${waNum(o.customer_phone)}" target="_blank" rel="noopener">WhatsApp</a></div></div>
       <div class="sec"><ul class="items">${(o.items || []).map((i) => `<li><span class="q">${num(i.qty)}×</span><span>${esc(i.name)}</span></li>`).join("")}</ul>
@@ -241,26 +383,44 @@
   // ---------- actions
   const pendingConfirm = {};
   function bind() {
-    app.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { tab = b.dataset.tab; render(); window.scrollTo(0, 0); });
+    const pa = document.getElementById("payalert");
+    if (pa) pa.onclick = () => { const o = groups().now.find(needsMoney); const el = o && document.getElementById("o-" + o.id); if (el) { el.scrollIntoView({ block: "start", behavior: "smooth" }); window.scrollBy(0, -150); el.classList.add("flash"); } };
+    const go = (v, id) => { view = v; focusOid = id || null; render(); window.scrollTo(0, 0); };
+    const bk = document.getElementById("back"); if (bk) bk.onclick = () => go("home");
+    app.querySelectorAll("[data-view]").forEach((b) => b.onclick = () => go(b.dataset.view));
+    app.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => go("focus", +b.dataset.open));
+    const sm = document.getElementById("showmore"); if (sm) sm.onclick = () => { showMore = true; render(); };
+    app.querySelectorAll("[data-plate]").forEach((b) => b.onclick = () => { const k = b.dataset.plate; plated.has(k) ? plated.delete(k) : plated.add(k); render(); });
+    app.querySelectorAll("[data-accept]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); const id = b.dataset.accept;
+      act(b, () => api(`/api/admin/orders/${id}/status`, { method: "POST", body: JSON.stringify({ status: "preparing" }) }), `Order #${id} accepted. Customer told.`); });
     const toggle = () => { soundOn = !soundOn; try { localStorage.setItem(SOUND_KEY, soundOn ? "1" : "0"); } catch (_) {} unlockSound(); if (soundOn) ring(); render(); };
     const s1 = document.getElementById("sound"), s2 = document.getElementById("sound2");
     if (s1) s1.onclick = toggle; if (s2) s2.onclick = toggle;
     app.querySelectorAll("[data-copy]").forEach((b) => b.onclick = async () => {
-      try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Copied ✓"; b.classList.add("done"); }
+      try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Copied ✓"; b.classList.add("done"); toast("Copied. Now open the app and paste it."); }
       catch (_) { toast("Couldn't copy. Press and hold the text instead."); }
     });
     app.querySelectorAll("[data-draft]").forEach((i) => i.oninput = () => { (drafts[i.dataset.id] = drafts[i.dataset.id] || {})[i.dataset.draft] = i.value; });
+    app.querySelectorAll('[data-do="delivered"]').forEach((b) => { if (!b.dataset.confirm) b.dataset.confirm = "1"; });
     app.querySelectorAll("[data-do]").forEach((b) => b.onclick = () => {
       const id = b.dataset.id, st = b.dataset.do;
       if (b.dataset.confirm && pendingConfirm[id + st] !== true) {
-        pendingConfirm[id + st] = true; b.textContent = "Tap again to confirm"; b.style.fontWeight = "700";
+        pendingConfirm[id + st] = true; b.textContent = "Tap again to confirm"; b.classList.add("sure");
         setTimeout(() => { delete pendingConfirm[id + st]; }, 5000); return;
       }
       delete pendingConfirm[id + st];
       act(b, () => api(`/api/admin/orders/${id}/status`, { method: "POST", body: JSON.stringify({ status: st }) }),
         { preparing: `Order #${id} accepted. Customer told.`, ready: `#${id} marked ready. Customer told.`, delivered: `#${id} done 🎉`, cancelled: `#${id} cancelled. Customer told.` }[st]);
     });
-    app.querySelectorAll("[data-paid]").forEach((b) => b.onclick = () => act(b, () => api(`/api/admin/orders/${b.dataset.paid}/paid`, { method: "POST" }), "Payment noted. Customer thanked."));
+    app.querySelectorAll("[data-paid]").forEach((b) => b.onclick = () => {
+      const id = b.dataset.paid;
+      if (b.dataset.confirm && pendingConfirm[id + "paid"] !== true) {
+        pendingConfirm[id + "paid"] = true; b.dataset.label = b.textContent; b.textContent = "Tap again to confirm"; b.classList.add("sure");
+        setTimeout(() => { delete pendingConfirm[id + "paid"]; if (b.isConnected) { b.textContent = b.dataset.label; b.classList.remove("sure"); } }, 5000); return;
+      }
+      delete pendingConfirm[id + "paid"];
+      act(b, () => api(`/api/admin/orders/${id}/paid`, { method: "POST" }), "Payment noted. Customer thanked.");
+    });
     app.querySelectorAll("[data-dispatch]").forEach((b) => b.onclick = () => {
       const id = b.dataset.dispatch, d = drafts[id] || {};
       const link = (d.link || "").trim(), fare = parseFloat(d.fare);
@@ -285,24 +445,19 @@
     const firstLoad = !seen;
     seen = ids; data = fresh;
     if (firstLoad && focusId) {
-      const g = groups();
-      tab = g.later.some((o) => o.id === focusId) ? "later" : g.done.some((o) => o.id === focusId) ? "done" : "now";
-    }
-    const typing = document.activeElement && document.activeElement.matches("input[data-draft]");
-    if (!typing) render();
-    if (firstLoad && focusId) {
-      const el = document.getElementById("o-" + focusId);
-      if (el) { el.scrollIntoView({ block: "start" }); window.scrollBy(0, -150); el.classList.add("flash"); }
+      if (fresh.orders.some((o) => o.id === focusId)) { view = "focus"; focusOid = focusId; }
       else toast(`Order #${focusId} isn't open any more.`);
       focusId = null;
     }
+    const typing = document.activeElement && document.activeElement.matches("input[data-draft]");
+    if (!typing) render();
     if (newOnes.length) {
-      ring(); tab = "now"; render();
-      toast(newOnes.length === 1 ? `🔔 New order #${newOnes[0].id}` : `🔔 ${newOnes.length} new orders`, 6000);
-      newOnes.forEach((o) => document.getElementById("o-" + o.id)?.classList.add("flash"));
+      // One chime. The banner (render) shows the order; nothing takes over the screen.
+      ring();
       document.title = "🔔 New order · Kitchen"; setTimeout(() => { document.title = "Tulsi Kitchen"; }, 15000);
     }
   }
+  setInterval(() => { const c = document.getElementById("clock"); if (c) c.textContent = clock(); }, 20000);
   let timer = null;
   function start() {
     app.innerHTML = `<div class="empty">Loading orders…</div>`;
