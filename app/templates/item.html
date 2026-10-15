@@ -91,7 +91,7 @@
   <section class="about">
     <h2>About {{ item.name }}</h2>
     <p>{{ item_description }}</p>
-    <p class="facts">Made fresh to order at Tulsi Foods, a home-style pure vegetarian kitchen in Mylapore, Chennai. No aggregator and no platform fees.</p>
+    <p class="facts">Made fresh to order at Tulsi Foods, a home-style pure vegetarian kitchen in Mylapore, Chennai.</p>
   </section>
 
   <section class="near">
@@ -107,14 +107,22 @@
 
   <section class="ordering">
     <h2>Order {{ item.name }} today</h2>
+    {% set pr = promo() %}
+    {% if pr %}<a class="promo-chip" href="/menu?code={{ pr.code }}"><b>{{ pr.code }}</b> <span>{{ pr.headline }}{% if pr.detail %}, {{ pr.detail }}{% endif %}. Tap to save it for checkout.</span></a>{% endif %}
     <ul>
       <li><b>Online:</b> add it to your cart above and check out on this site. <a href="/how-to-order">How ordering works</a>.</li>
       <li><b>WhatsApp:</b> send "hi" to {{ ordering.whatsapp }} to order, or for a large or catering order.</li>
       <li><b>By phone:</b> {{ ordering.phone }}.</li>
-      <li><b>Pickup:</b> {{ ordering.address }}.</li>
+      <li><b>Pickup:</b> {{ ordering.address }}. <a href="/delivery">Delivery areas</a>.</li>
       <li><b>Delivery:</b> {{ ordering.zones }}.</li>
       <li><b>Hours:</b> {{ ordering.hours }}.</li>
     </ul>
+    <div class="quick-links">
+      <a href="/category/{{ category_slug }}">More {{ item.group | lower }}</a>
+      <a href="/menu">Full menu</a>
+      <a href="/delivery">Delivery</a>
+      <a href="/track">Track an order</a>
+    </div>
   </section>
 
   {% if dish_rating.count %}
@@ -235,6 +243,10 @@ section h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; ma
 .thali-pills li { font: 500 13px/1.2 'IBM Plex Mono', monospace; color: #2C5A1E; background: #EDF6E2; border: 1px solid #DDE4CC; border-radius: 999px; padding: 8px 13px; }
 .thali .facts { font-size: 13px; color: var(--sub); margin-top: 12px; }
 
+.promo-chip { display: block; text-decoration: none; background: #EDF6E2; border: 1px dashed var(--g); border-radius: 12px; padding: 12px 14px; margin: 4px 0 12px; font-size: 14px; line-height: 1.4; color: #2C5A1E; }
+.promo-chip b { font-family: 'IBM Plex Mono', monospace; background: #fff; border-radius: 6px; padding: 2px 7px; margin-right: 4px; }
+.quick-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.quick-links a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid var(--border); border-radius: 999px; background: #fff; color: var(--g); font-weight: 600; font-size: 14px; text-decoration: none; }
 .ordering ul { list-style: none; padding: 0; }
 .ordering li { font-size: 14px; line-height: 1.55; color: #3C4137; padding: 6px 0 6px 18px; position: relative; border-bottom: 1px dashed var(--line2); }
 .ordering li::before { content: ''; position: absolute; left: 0; top: 12px; width: 7px; height: 7px; border-radius: 50%; background: var(--g2); }

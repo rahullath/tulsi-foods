@@ -55,6 +55,18 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 .rec-name { font-size: 13px; font-weight: 600; line-height: 1.3; }
 .rec-price { font-size: 13px; color: var(--sub); margin-top: 3px; }
 
+.rec-card { display: block; text-decoration: none; color: inherit; transition: transform .15s ease, box-shadow .15s ease; }
+.rec-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(23,26,20,.08); }
+.bio-link { display: inline-block; margin-top: 12px; font-weight: 600; font-size: 14px; color: var(--g); text-decoration: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); color: var(--ink); font-size: 14px; font-weight: 600; text-decoration: none; }
+.bio-offer { border: 2px solid var(--g); }
+.bio-offer .code { font-family: 'IBM Plex Mono', monospace; background: #EDF6E2; color: #2C5A1E; padding: 1px 8px; border-radius: 6px; }
+.bio-offer .bio-cta { margin-top: 14px; }
+.bio-links { display: grid; gap: 0; margin-top: 8px; }
+.bio-links a { display: flex; flex-direction: column; gap: 2px; padding: 13px 0; border-top: 1px solid var(--line2); text-decoration: none; color: var(--ink); min-height: 56px; }
+.bio-links a:first-child { border-top: 0; }
+.bio-links b { font-size: 15px; } .bio-links span { font-size: 13px; color: var(--sub); }
 /* Instagram */
 .bio-ig { text-align: center; }
 .bio-ig-count { font-size: 13px; color: var(--sub); margin-top: 6px; }
@@ -100,7 +112,8 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
     <div class="bio-card-tag">Our story</div>
     <h2>Run by Kavita Lath, since 2015</h2>
     <p>Tulsi Foods started in Mylapore with a simple idea: cook the same food we'd make at home, and serve it to people tired of eating junk.</p>
-    <p>Every dish is 100% pure vegetarian, cooked fresh the same day. We're moving to direct ordering so customers avoid aggregator price hikes — and the kitchen keeps what it earns.</p>
+    <p>Every dish is 100% pure vegetarian, cooked fresh the same day. Order straight from the kitchen on this site, with live tracking from the moment it is placed.</p>
+    <a class="bio-link" href="/about">Read our story &rarr;</a>
   </section>
 
   <div class="rec-head">
@@ -109,7 +122,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
   </div>
   <div class="rec-grid">
     {% for d in recommendations %}
-    <div class="rec-card">
+    <a class="rec-card" href="/menu/{{ d.id }}">
       <div class="rec-photo">
         {% if d.has_photo %}<img src="/static/img/dishes/{{ d.id }}.jpg" alt="{{ d.name }}" loading="lazy">{% endif %}
         {% if d.tag %}<span class="rec-badge">{{ d.tag }}</span>{% endif %}
@@ -118,9 +131,18 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
         <div class="rec-name">{{ d.name }}</div>
         <div class="rec-price">₹{{ d.price }}</div>
       </div>
-    </div>
+    </a>
     {% endfor %}
   </div>
+  <a class="bio-cta-ghost" href="/menu">See the full menu</a>
+
+  {% if categories %}
+  <section class="bio-card">
+    <div class="bio-card-tag">Browse</div>
+    <h2>What are you craving?</h2>
+    <div class="chips">{% for c in categories %}<a href="/category/{{ c.slug }}">{{ c.name }}</a>{% endfor %}</div>
+  </section>
+  {% endif %}
 
   <section class="bio-card bio-ig">
     <div class="bio-card-tag">Follow along</div>
@@ -129,11 +151,30 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
     <a class="bio-cta-ghost" href="https://www.instagram.com/tulsi.foods_chennai/" target="_blank" rel="noopener">Follow now</a>
   </section>
 
+  {% set pr = promo() %}
+  <section class="bio-card bio-offer">
+    <div class="bio-card-tag">{{ "First order?" if pr else "Place your order" }}</div>
+    {% if pr %}
+    <h2>{{ pr.headline }} with <span class="code">{{ pr.code }}</span></h2>
+    <p>{% if pr.detail %}{{ pr.detail | capitalize }}. {% endif %}Tap below and the code is saved on this phone. It is applied when you check out.</p>
+    <a class="bio-cta" href="/menu?code={{ pr.code }}">Order online and save {{ pr.code }}</a>
+    {% else %}
+    <h2>Order straight from the kitchen</h2>
+    <p>Fresh food, quick replies and live tracking, with the full bill shown before you pay.</p>
+    <a class="bio-cta" href="/menu">Order online</a>
+    {% endif %}
+    <a class="bio-cta-ghost" href="{{ wa_order_link("Hi") }}" target="_blank" rel="noopener">Or order on WhatsApp</a>
+  </section>
+
   <section class="bio-card">
-    <div class="bio-card-tag">Place your order</div>
-    <h2>Mention "DIRECT10" when you message us</h2>
-    <p>Ordering direct instead of through an aggregator means fresher food, faster replies, and no platform markup on your bill.</p>
-    <a class="bio-cta" href="{{ wa_order_link("Hi") }}" target="_blank" rel="noopener">Order on WhatsApp</a>
+    <div class="bio-card-tag">Good to know</div>
+    <div class="bio-links">
+      <a href="/how-to-order"><b>How to order</b><span>Website, WhatsApp, paying, ordering ahead</span></a>
+      <a href="/delivery"><b>Delivery areas and fees</b><span>Up to 7 km from Alwarpet</span></a>
+      <a href="/track"><b>Track your order</b><span>Your orders on this phone</span></a>
+      <a href="/updates"><b>Kitchen updates</b><span>New dishes and announcements</span></a>
+      <a href="/about#contact"><b>Contact</b><span>Call or message the kitchen</span></a>
+    </div>
   </section>
 
   <section class="bio-card">
