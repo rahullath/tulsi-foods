@@ -22,15 +22,15 @@ cp /app/menu.json.bundled /app/data/menu.json
 #                                    marker on the volume so a restart never repeats it.
 # Remove both variables once done. Failures never block the app from starting.
 if [ -n "$PURGE_ORDERS_KEEP" ]; then
-    MARKER="/app/data/.purged-orders-$(echo "$PURGE_ORDERS_KEEP" | tr ' ,' '__')"
+    MARKER="/app/data/.purged-orders-$(echo "$PURGE_ORDERS_KEEP" | tr ' ,' '__')-latest${PURGE_ORDERS_KEEP_LATEST:-0}"
     if [ "$PURGE_ORDERS_APPLY" = "1" ] && [ ! -f "$MARKER" ]; then
         echo "[purge] APPLY, keeping order(s): $PURGE_ORDERS_KEEP"
-        python scripts/purge_orders.py --keep $(echo "$PURGE_ORDERS_KEEP" | tr ',' ' ') --apply && touch "$MARKER" || echo "[purge] FAILED, nothing marked done"
+        python scripts/purge_orders.py --keep $(echo "$PURGE_ORDERS_KEEP" | tr ',' ' ') --keep-latest "${PURGE_ORDERS_KEEP_LATEST:-0}" --apply && touch "$MARKER" || echo "[purge] FAILED, nothing marked done"
     elif [ -f "$MARKER" ]; then
         echo "[purge] already applied for $PURGE_ORDERS_KEEP (marker present), skipping"
     else
         echo "[purge] DRY RUN, keeping order(s): $PURGE_ORDERS_KEEP"
-        python scripts/purge_orders.py --keep $(echo "$PURGE_ORDERS_KEEP" | tr ',' ' ') || echo "[purge] dry run failed"
+        python scripts/purge_orders.py --keep $(echo "$PURGE_ORDERS_KEEP" | tr ',' ' ') --keep-latest "${PURGE_ORDERS_KEEP_LATEST:-0}" || echo "[purge] dry run failed"
     fi
 fi
 
