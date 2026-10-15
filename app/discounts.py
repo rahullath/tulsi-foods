@@ -45,6 +45,30 @@ def seed() -> None:
     conn.close()
 
 
+def public_offer() -> dict | None:
+    """The one active, unexpired code worth advertising on the site (newest first),
+    e.g. {'code': 'TRIAL15', 'headline': '15% off your first order', 'detail': 'up to ₹100'}.
+    None when no code is live, so pages simply show nothing."""
+    now = datetime.now(IST).isoformat()
+    conn = db.get_conn()
+    rows = conn.execute("SELECT * FROM discount_codes WHERE active=1 ORDER BY created_at DESC").fetchall()
+    conn.close()
+    for r in rows:
+        r = dict(r)
+        if r.get("expires_at") and str(r["expires_at"]) < now[:len(str(r["expires_at"]))]:
+            continue
+        if r.get("max_uses") and _uses(r["code"]) >= r["max_uses"]:
+            continue
+        v = int(r["value"]) if float(r["value"]).is_integer() else r["value"]
+        head = f"{v}% off" if r["kind"] == "percent" else f"₹{v} off"
+        if r.get("once_per_customer"):
+            head += ", once per customer"
+        detail = f"up to ₹{int(r['max_discount'])}" if r.get("max_discount") else ""
+        return {"code": r["code"], "headline": head, "detail": detail,
+                "text": f"Use code {r['code']} for {head}" + (f" ({detail})" if detail else "")}
+    return None
+
+
 def get(code: str) -> dict | None:
     conn = db.get_conn()
     row = conn.execute("SELECT * FROM discount_codes WHERE code=?", (_norm(code),)).fetchone()

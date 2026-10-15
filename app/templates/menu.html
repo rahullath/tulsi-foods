@@ -29,6 +29,10 @@
     {% for g in groups %}<a href="#g-{{ loop.index }}" class="chip" data-group="{{ loop.index }}">{{ g["group"] }}</a>{% endfor %}
   </nav>
 
+  <div class="promo-strip" id="promo-strip" hidden>
+    <span>🎟️ <b id="promo-code"></b> saved. It is applied when you check out.</span>
+    <button type="button" id="promo-x" aria-label="Remove the saved code">✕</button>
+  </div>
   <main id="menu-main">
     {% for g in groups %}
     <section class="group" id="g-{{ loop.index }}">
@@ -339,6 +343,12 @@ main { padding: 8px 16px 130px; }
 .nr-row:last-child { border-bottom: 1px solid #ECE6DA; }
 .nr-add { min-height: 40px; padding: 0 16px; border-radius: 10px; border: 1.5px solid var(--g); background: #fff; color: var(--g); font-weight: 600; font-size: 14px; cursor: pointer; }
 
+.promo-strip { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 16px 0; padding: 10px 14px; border-radius: 12px; background: #EDF6E2; color: #2C5A1E; font-size: 14px; }
+.promo-strip[hidden] { display: none; }
+.promo-strip b { font-family: 'IBM Plex Mono', monospace; }
+.promo-strip button { border: 0; background: none; font-size: 18px; min-width: 44px; min-height: 44px; color: #2C5A1E; cursor: pointer; }
+.co-code[open] summary { margin-bottom: 8px; }
+.co-code summary { min-height: 44px; display: flex; align-items: center; font-weight: 600; color: var(--g); cursor: pointer; }
 /* Responsive */
 @media (min-width: 600px) {
   #menu-app { max-width: 720px; }
@@ -443,6 +453,20 @@ main { padding: 8px 16px 130px; }
     NAMES[id] = card.querySelector(".card-name")?.textContent || card.dataset.name;
     AVAILABLE[id] = !card.classList.contains("off");
   });
+
+  // Deep link: /menu?code=TRIAL15 saves the code on this phone; checkout applies it.
+  const PROMO_KEY = "tulsi_promo_code";
+  try {
+    const q = new URLSearchParams(location.search).get("code");
+    if (q && /^[A-Za-z0-9]{1,20}$/.test(q)) localStorage.setItem(PROMO_KEY, q.toUpperCase());
+  } catch (_) { /* storage unavailable */ }
+  const savedPromo = () => { try { return localStorage.getItem(PROMO_KEY) || ""; } catch (_) { return ""; } };
+  (function showPromoStrip() {
+    const strip = document.getElementById("promo-strip"), code = savedPromo();
+    if (!strip || !code) return;
+    document.getElementById("promo-code").textContent = code; strip.hidden = false;
+    document.getElementById("promo-x").onclick = () => { try { localStorage.removeItem(PROMO_KEY); } catch (_) {} strip.hidden = true; };
+  })();
 
   // Restore cart from a previous visit
   try {
@@ -732,6 +756,8 @@ main { padding: 8px 16px 130px; }
       refreshCheckoutSummary();
     }
     overlay.querySelector("#code-apply").addEventListener("click", applyCode);
+    // A code saved from a link or the bio page is filled in and checked straight away.
+    { const sp = savedPromo(); if (sp) { codeInput.value = sp; overlay.querySelector("#co-code").open = true; applyCode(); } }
     codeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); applyCode(); } });
     codeInput.addEventListener("input", () => { if (appliedCode) { appliedCode = null; codeMsg.textContent = ""; refreshCheckoutSummary(); } });
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
@@ -1399,6 +1425,7 @@ main { padding: 8px 16px 130px; }
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Order failed");
+        try { if (appliedCode) localStorage.removeItem(PROMO_KEY); } catch (_) {}
         const placedItems = ids
           .map(id => ({ item_id: id, name: NAMES[id], price: PRICES[id], qty: cart[id] }))
           .filter(i => i.qty > 0);

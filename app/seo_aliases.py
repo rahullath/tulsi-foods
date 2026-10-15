@@ -199,8 +199,8 @@ def item_faqs(name: str, aliases: list[str], price, group: str) -> list[dict]:
         },
         {
             "q": f"How much is {name} at Tulsi Foods?",
-            "a": (f"{name} is ₹{price} on the Tulsi Foods menu ({group}). Ordering direct on "
-                  f"tulsifoods.app means no aggregator markup or platform fee."),
+            "a": (f"{name} is ₹{price} on the Tulsi Foods menu ({group}). Delivery is a fixed fee "
+                  f"by distance, shown at checkout before you pay; pickup has no delivery fee."),
         },
         {
             "q": f"Is Tulsi Foods' {name} pure vegetarian?",
