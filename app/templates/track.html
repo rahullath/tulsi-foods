@@ -121,7 +121,7 @@
     <div id="content"></div>
     <div id="rate"></div>
   </div>
-  <p class="fresh">This page updates by itself, so you can keep it open.<br>Questions? Call <a href="tel:+919940621800">99406 21800</a></p>
+  <p class="fresh">This page updates by itself, so you can keep it open.<br>Questions? Call <a href="tel:{{ biz.phone_e164 }}">{{ biz.phone_local }}</a></p>
 </div>
 <script>
   const STATUSES = [
@@ -193,11 +193,11 @@
     document.getElementById("th-title").textContent = pickupReady ? "Ready to collect" : (TITLES[st] || "Your order");
     document.querySelector(".th").classList.toggle("cx", st === CANCELED);
     document.querySelector(".th-top span").textContent = "ORDER #" + ORDER_ID + (st === CANCELED ? " · CANCELLED" : o.order_type === "pickup" ? " · PICKUP" : "");
-    const etaShort = { new: o.order_type === "pickup" ? "Ready in about 20–25 min" : "Arriving in about 40–60 min", preparing: o.order_type === "pickup" ? "Ready in about 15–20 min" : "Arriving in about 30–45 min", ready: o.order_type === "pickup" ? "34 Murrays Gate Road, Alwarpet" : "Arriving in about 20–30 min", out_for_delivery: "Arriving in about 15 min", delivered: "Enjoy your meal", cancelled: o.paid ? "₹" + (+o.total).toFixed(2).replace(/\.00$/, "") + " goes back to your UPI account within 5–7 working days" : "Nothing to pay" };
+    const etaShort = { new: o.order_type === "pickup" ? "Ready in about 20–25 min" : "Arriving in about 40–60 min", preparing: o.order_type === "pickup" ? "Ready in about 15–20 min" : "Arriving in about 30–45 min", ready: o.order_type === "pickup" ? "{{ biz.pickup_line }}" : "Arriving in about 20–30 min", out_for_delivery: "Arriving in about 15 min", delivered: "Enjoy your meal", cancelled: o.paid ? "₹" + (+o.total).toFixed(2).replace(/\.00$/, "") + " goes back to your UPI account within 5–7 working days" : "Nothing to pay" };
     document.getElementById("th-eta").textContent = (o.scheduled_at && st === "new") ? "Scheduled. We'll send it out in your window" : (etaShort[st] || "");
     const thBtn = document.getElementById("th-btn"), liveUrl = o.sr_tracking_url || o.tracking_url;
     thBtn.hidden = !((liveUrl && st === "out_for_delivery") || pickupReady);
-    if (pickupReady) { thBtn.textContent = "Directions ↗"; thBtn.href = "https://maps.google.com/?q=34+Murrays+Gate+Road,+Alwarpet,+Chennai"; }
+    if (pickupReady) { thBtn.textContent = "Directions ↗"; thBtn.href = "https://maps.google.com/?q={{ (biz.pickup_line ~ ', ' ~ biz.city) | replace(' ', '+') }}"; }
     else { thBtn.textContent = "Follow the rider live ↗"; if (liveUrl) thBtn.href = liveUrl; }
     const etaText = eta(o);
     document.getElementById('eta-line')?.remove();
@@ -220,11 +220,11 @@
     }
 
     html += '<div class="meta">';
-    html += `<div class="row"><span>Order type</span><b>${o.order_type === 'pickup' ? 'Pickup · Alwarpet' : 'Delivery'}</b></div>`;
+    html += `<div class="row"><span>Order type</span><b>${o.order_type === 'pickup' ? 'Pickup · {{ biz.locality }}' : 'Delivery'}</b></div>`;
     if (o.scheduled_at) {
       const d = toDate(o.scheduled_at);
-      const windowText = o.scheduled_window === "lunch" ? "Lunch window (12:00 – 2:30 PM)"
-        : o.scheduled_window === "dinner" ? "Dinner window (6:30 – 9:30 PM)" : null;
+      const windowText = o.scheduled_window === "lunch" ? "Lunch window ({{ win.lunch.text }})"
+        : o.scheduled_window === "dinner" ? "Dinner window ({{ win.dinner.text }})" : null;
       html += `<div class="row"><span>Scheduled for</span><b>${windowText ? windowText + " · " + fmtDay(o.scheduled_at) : (d ? d.toLocaleString("en-IN", fullFmt) : fmtDay(o.scheduled_at))}</b></div>`;
     } else {
       html += `<div class="row"><span>Placed at</span><b>${fmtTime(o.created_at)}</b></div>`;
@@ -285,7 +285,7 @@
     }
     html += `<a class="pr wa" href="https://wa.me/{{ wa_order_number }}?text=${encodeURIComponent('Hi Tulsi Foods, I have a question about order #' + ORDER_ID)}" target="_blank" rel="noopener">Message us on WhatsApp</a>`;
     if (o.order_type === "pickup") {
-      html += '<div class="empty" style="margin-top:2px">Pickup: 34 Murrays Gate Road, Alwarpet</div>';
+      html += '<div class="empty" style="margin-top:2px">Pickup: {{ biz.pickup_line }}</div>';
     }
     html += '</div>';
 

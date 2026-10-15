@@ -21,13 +21,15 @@ import logging
 import os
 import re
 
+from ..business import business
+
 log = logging.getLogger("whatsapp.templates")
 
 LANGUAGE = "en"
 SITE = "https://tulsifoods.app"
 TRACK_URL = SITE + "/track/"
 TRACK_EXAMPLE = TRACK_URL + "K3X9P2QA"
-FOOTER = "Tulsi Foods · pure veg · Alwarpet, Chennai"
+FOOTER = f"{business.name} · pure veg · {business.locality}, {business.city}"
 KITCHEN_FOOTER = "Swipe right on this message to reply"
 
 ORDER_PLACED = "tulsi_order_placed"
@@ -90,7 +92,7 @@ DEFINITIONS = {
         "header": "Ready for pickup",
         "body": ("Hi {{1}}, your *order #{{2}}* is ready to collect 🛍️\n\n"
                  "📍 {{3}}\n\nJust show this message at the counter."),
-        "example": ["Asha", "142", "34 Murrays Gate Road, Alwarpet"],
+        "example": ["Asha", "142", business.pickup_line],
         "button": "Track your order",
     },
     RIDER_ON_THE_WAY: {

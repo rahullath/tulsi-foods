@@ -13,6 +13,9 @@ Rules (see docs/SEO_PLAYBOOK.md §6):
   neighbourhoods we deliver to (NEARBY_AREAS) next to the dish.
 """
 
+from .business import business
+
+
 # Neighbourhoods the kitchen actually serves (mirrors the /delivery table).
 NEARBY_AREAS = [
     "Mylapore", "Alwarpet", "Teynampet", "Royapettah", "Mandaveli",
@@ -193,8 +196,8 @@ def item_faqs(name: str, aliases: list[str], price, group: str) -> list[dict]:
     return [
         {
             "q": f"Where can I order {name} near Mylapore, Chennai?",
-            "a": (f"Tulsi Foods cooks {name}{aka} fresh to order at 34 Murrays Gate Road, "
-                  f"Alwarpet, Chennai 600018 — a few minutes from Mylapore. Order online on "
+            "a": (f"Tulsi Foods cooks {name}{aka} fresh to order at {business.address} "
+                  f"— a few minutes from Mylapore. Order online on "
                   f"tulsifoods.app for delivery to {areas}, or pick it up from the kitchen."),
         },
         {

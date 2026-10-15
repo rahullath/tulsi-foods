@@ -374,7 +374,7 @@ main { padding: 8px 16px 130px; }
   const ZONES = {{ zones | tojson }};
   const FREE_DELIVERY_ABOVE = {{ free_delivery_above }};
   const FREE_DELIVERY_ENABLED = {{ 'true' if delivery_free_enabled else 'false' }};
-  const PICKUP_NOTE = "Pickup at 34 Murrays Gate Road, Alwarpet. Usually ready in 20 to 25 minutes.";
+  const PICKUP_NOTE = "Pickup at {{ biz.pickup_line }}. Usually ready in 20 to 25 minutes.";
   const GOOGLE_MAPS_API_KEY = "{{ google_maps_api_key }}";
   const PACKING_FEE = {{ packing_fee }};
   const PACKING_FEE_LARGE = {{ packing_fee_large }};
@@ -635,8 +635,8 @@ main { padding: 8px 16px 130px; }
             <select id="schedule-date" class="schedule-date-select"></select>
             <div class="time-pills" id="time-pills">
               <button type="button" class="time-pill active" data-preset="asap">As soon as possible</button>
-              <button type="button" class="time-pill" data-preset="lunch">Lunch (12:00 – 2:30 PM)</button>
-              <button type="button" class="time-pill" data-preset="dinner">Dinner (6:30 – 9:30 PM)</button>
+              <button type="button" class="time-pill" data-preset="lunch">Lunch ({{ win.lunch.text }})</button>
+              <button type="button" class="time-pill" data-preset="dinner">Dinner ({{ win.dinner.text }})</button>
             </div>
             <div style="font-size:11px;color:#6F7468;margin-top:4px;">Pick a window; no need for an exact time. For today's orders "As soon as possible" means within the hour.</div>
             <input type="hidden" name="scheduled_at" id="input-scheduled">
@@ -670,10 +670,10 @@ main { padding: 8px 16px 130px; }
             </div>
             <div class="state-card" id="outside-card" hidden>
               <div class="state-kicker" style="color:#9A3324" id="outside-k"></div>
-              <h3>We deliver up to 7 km</h3>
+              <h3>We deliver up to {{ radius_km }} km</h3>
               <p>Your cart is kept. Pick it up from the kitchen instead, ready at your chosen time.</p>
               <button type="button" class="state-btn primary" id="outside-pickup" style="margin-top:18px">Switch to pickup</button>
-              <div style="margin-top:8px;font-size:12.5px;color:var(--sub);text-align:center">34 Murrays Gate Road, Alwarpet</div>
+              <div style="margin-top:8px;font-size:12.5px;color:var(--sub);text-align:center">{{ biz.pickup_line }}</div>
               <button type="button" class="state-link" id="outside-retry">Try another address</button>
             </div>
             <button type="button" id="gps-btn" style="margin-top:6px;font-size:12px;padding:5px 10px;border:1px solid #C9C4B8;border-radius:8px;background:#fff;cursor:pointer;color:#4A4F45;">📍 Use my location</button>
@@ -883,7 +883,7 @@ main { padding: 8px 16px 130px; }
         const eff = (liveQuote && liveQuote.serviceable) ? liveQuote : q;
         if (eff && eff.outside) {
           deliveryRow = `<div class="checkout-row" style="color:#B3261E"><span>Delivery</span><span>Too far for delivery. Choose pickup</span></div>`;
-          deliveryNote = `<span style="color:#B3261E">We don't deliver ${eff.km ? Math.round(eff.km) + " km away" : "that far"}. Pickup is in Alwarpet.</span>`;
+          deliveryNote = `<span style="color:#B3261E">We don't deliver ${eff.km ? Math.round(eff.km) + " km away" : "that far"}. Pickup is in {{ biz.locality }}.</span>`;
         } else if (eff) {
           deliveryFee = +eff.fee || 0;
           footText = `<span>${eff.km ? "<b>" + eff.km.toFixed(1) + " km</b> · " : ""}Delivery ₹${deliveryFee}</span>` + (eff.min_order ? `<span style="color:${currentSubtotal >= eff.min_order ? "var(--g)" : "#B3261E"};font-weight:600">Min ₹${eff.min_order}${currentSubtotal >= eff.min_order ? " ✓" : ""}</span>` : "");
@@ -1225,7 +1225,7 @@ main { padding: 8px 16px 130px; }
       const off = d.getDay() === 1;
       lunchPill.classList.toggle("off", off);
       lunchPill.disabled = off;
-      lunchPill.innerHTML = off ? 'Lunch (12:00 – 2:30 PM)<span class="off-note">No lunch on Mondays</span>' : "Lunch (12:00 – 2:30 PM)";
+      lunchPill.innerHTML = off ? 'Lunch ({{ win.lunch.text }})<span class="off-note">No lunch on Mondays</span>' : "Lunch ({{ win.lunch.text }})";
       if (off && lunchPill.classList.contains("active")) {
         lunchPill.classList.remove("active");
         const dn = timePillsContainer.querySelector('[data-preset="dinner"]');
@@ -1474,7 +1474,7 @@ main { padding: 8px 16px 130px; }
           ...(data.delivery_fee ? [`Delivery ₹${data.delivery_fee}`] : []),
           `Total: ₹${data.total}`,
           "",
-          isDelivery ? `Deliver to: ${payload.address}` : "Pickup at 34 Murrays Gate Road, Alwarpet",
+          isDelivery ? `Deliver to: ${payload.address}` : "Pickup at {{ biz.pickup_line }}",
           `Name: ${payload.name} · ${payload.phone}`,
           `When: ${when}`,
           `Payment: ${payload.payment_method === "upi" ? "UPI" : "Cash on delivery"}`,

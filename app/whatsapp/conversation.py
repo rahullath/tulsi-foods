@@ -29,6 +29,8 @@ Message dicts:
 from datetime import datetime, timedelta, timezone
 
 from .. import db, menu, orders
+from ..business import business
+from ..config import DELIVERY_RADIUS_KM, DELIVERY_ZONES
 from . import sessions
 
 SITE = "https://tulsifoods.app"
@@ -132,7 +134,7 @@ def _closed_now() -> bool:
         return False
 
 
-KITCHEN_PHONE = "99406 21800"
+KITCHEN_PHONE = business.phone_local
 CHECKOUT_STATES = {"type", "checkout_flow", "address", "location", "when", "payment", "confirm"}
 
 
@@ -416,7 +418,7 @@ def _ask_location(sess: dict) -> list[dict]:
     sess["state"] = "location"
     return [{"type": "location_request",
              "text": "Now share your location pin so the rider finds you. "
-                     "It also sets your delivery fee (₹49–₹89 by distance)."}]
+                     f"It also sets your delivery fee (₹{min(z['fee'] for z in DELIVERY_ZONES)}–₹{max(z['fee'] for z in DELIVERY_ZONES)} by distance)."}]
 
 
 def _set_location(sess: dict, lat: str, lng: str) -> list[dict]:
@@ -426,7 +428,7 @@ def _set_location(sess: dict, lat: str, lng: str) -> list[dict]:
     q = estimate(float(lat), float(lng), subtotal)
     if q.get("serviceable") is False:
         sess["state"] = "type"
-        return [buttons(f"That pin is {q['km']:.1f} km away, outside our 7 km delivery area. "
+        return [buttons(f"That pin is {q['km']:.1f} km away, outside our {DELIVERY_RADIUS_KM:g} km delivery area. "
                         "You can pick it up from Alwarpet instead.",
                         [("PICKUP", "Pickup instead"), ("CANCEL", "Cancel order")])]
     ctx.update(lat=str(lat), lng=str(lng), fee=q["fee"], km=round(q["km"], 1))
@@ -537,7 +539,7 @@ def _summary(sess: dict) -> list[dict]:
     if ctx.get("order_type") == "delivery":
         lines.append(f"📍 {ctx.get('address', '')}")
     else:
-        lines.append("📍 Pickup: 34 Murrays Gate Road, Alwarpet")
+        lines.append(f"📍 Pickup: {business.pickup_line}")
     lines.append(f"🕒 {ctx.get('when')}")
     lines.append(f"💳 {'UPI' if ctx.get('payment') == 'UPI' else 'Cash'}")
     if ctx.get("note"):

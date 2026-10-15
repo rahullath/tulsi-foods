@@ -373,10 +373,10 @@ section[id] { scroll-margin-top: 76px; }
   "alternateName": ["Tulsi Restaurant", "Tulsi Veg Restaurant", "Tulsi Pure Veg Restaurant", "Thulasi Restaurant", "Thulsi Restaurant", "Tulasi Restaurant", "Tulasi Foods", "Thulasi Foods", "Tulsi Restaurant Chennai", "Tulsi Alwarpet"],
   "url": "https://tulsifoods.app/",
   "image": ["https://tulsifoods.app/static/img/landing-hero.jpg"],
-  "telephone": "+919940621800",
+  "telephone": "{{ biz.phone_e164 }}",
   "contactPoint": [
-    {"@type": "ContactPoint", "telephone": "+919940621800", "contactType": "customer service", "availableLanguage": ["English", "Hindi", "Tamil"]},
-    {"@type": "ContactPoint", "telephone": "+919940062840", "contactType": "WhatsApp"}
+    {"@type": "ContactPoint", "telephone": "{{ biz.phone_e164 }}", "contactType": "customer service", "availableLanguage": ["English", "Hindi", "Tamil"]},
+    {"@type": "ContactPoint", "telephone": "{{ biz.contact_whatsapp_e164 }}", "contactType": "WhatsApp"}
   ],
   "priceRange": "₹₹",
   "servesCuisine": ["North Indian", "Vegetarian", "Pure Veg", "Punjabi", "Rajasthani", "Street Food", "Chaat"],
@@ -384,7 +384,7 @@ section[id] { scroll-margin-top: 76px; }
   "menu": "https://tulsifoods.app/menu",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "34, Murrays Gate Road, Alwarpet",
+    "streetAddress": "{{ biz.street_address }}",
     "addressLocality": "Chennai",
     "addressRegion": "Tamil Nadu",
     "postalCode": "600018",

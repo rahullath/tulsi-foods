@@ -90,16 +90,16 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
       <a href="https://www.instagram.com/tulsi.foods_chennai/" target="_blank" rel="noopener" aria-label="Instagram">
         <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
       </a>
-      <a href="https://api.whatsapp.com/send?phone=919940621800" target="_blank" rel="noopener" aria-label="WhatsApp">
+      <a href="https://api.whatsapp.com/send?phone={{ biz.phone_digits }}" target="_blank" rel="noopener" aria-label="WhatsApp">
         <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.14h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.26-8.24 2.21 0 4.28.86 5.84 2.42a8.2 8.2 0 0 1 2.41 5.83c0 4.55-3.7 8.25-8.25 8.25zm4.52-6.17c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.97-.14.16-.29.18-.53.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.24-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43-.14-.01-.31-.01-.47-.01a.9.9 0 0 0-.65.31c-.23.24-.86.85-.86 2.06 0 1.22.88 2.4 1 2.56.12.16 1.73 2.64 4.19 3.7.59.25 1.04.4 1.4.52.59.19 1.12.16 1.54.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.08.14-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
       </a>
       <a href="https://www.facebook.com/tulsifoodservices" target="_blank" rel="noopener" aria-label="Facebook">
         <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V8c0-.9.25-1.5 1.55-1.5H16.7V3.7c-.28-.04-1.25-.12-2.38-.12-2.35 0-3.96 1.43-3.96 4.06V9.9H7.6V13h2.76v8h3.14z"/></svg>
       </a>
-      <a href="tel:+919940621800" aria-label="Call">
+      <a href="tel:{{ biz.phone_e164 }}" aria-label="Call">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
       </a>
-      <a href="mailto:tulsifoodsco@gmail.com" aria-label="Email">
+      <a href="mailto:{{ biz.email }}" aria-label="Email">
         <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
       </a>
     </div>
@@ -170,7 +170,7 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
     <div class="bio-card-tag">Good to know</div>
     <div class="bio-links">
       <a href="/how-to-order"><b>How to order</b><span>Website, WhatsApp, paying, ordering ahead</span></a>
-      <a href="/delivery"><b>Delivery areas and fees</b><span>Up to 7 km from Alwarpet</span></a>
+      <a href="/delivery"><b>Delivery areas and fees</b><span>Up to {{ radius_km }} km from {{ biz.locality }}</span></a>
       <a href="/track"><b>Track your order</b><span>Your orders on this phone</span></a>
       <a href="/updates"><b>Kitchen updates</b><span>New dishes and announcements</span></a>
       <a href="/about#contact"><b>Contact</b><span>Call or message the kitchen</span></a>
@@ -183,21 +183,21 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
       <span class="visit-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
       <div>
         <div class="visit-label">Phone</div>
-        <div class="visit-value"><a href="tel:+919940621800">+91 99406 21800</a></div>
+        <div class="visit-value"><a href="tel:{{ biz.phone_e164 }}">{{ biz.phone_display }}</a></div>
       </div>
     </div>
     <div class="visit-row">
       <span class="visit-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span>
       <div>
         <div class="visit-label">Email</div>
-        <div class="visit-value"><a href="mailto:tulsifoodsco@gmail.com">tulsifoodsco@gmail.com</a></div>
+        <div class="visit-value"><a href="mailto:{{ biz.email }}">{{ biz.email }}</a></div>
       </div>
     </div>
     <div class="visit-row">
       <span class="visit-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
       <div>
         <div class="visit-label">Location</div>
-        <div class="visit-value"><a href="https://www.google.com/maps/search/?api=1&query=34%2C+Murrays+Gate+Road%2C+Alwarpet%2C+Chennai+600018" target="_blank" rel="noopener">34, Murrays Gate Road, Alwarpet, Chennai</a></div>
+        <div class="visit-value"><a href="https://www.google.com/maps/search/?api=1&query=34%2C+Murrays+Gate+Road%2C+Alwarpet%2C+Chennai+600018" target="_blank" rel="noopener">{{ biz.address_commas_short }}</a></div>
       </div>
     </div>
   </section>
