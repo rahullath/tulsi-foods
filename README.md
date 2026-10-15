@@ -33,8 +33,8 @@ app/
     conversation.py    bot state machine (pure logic, no network)
     client.py          Graph API send_text/send_buttons/send_outbound; dry-run log mode
     sessions.py        per-customer conversation state in SQLite (wa_sessions)
-  templates/           base.html, index.html (ordering), admin.html (menu/orders)
-  static/              style.css, app.js, admin.js
+  templates/           base.html, landing.html, menu.html (ordering), kitchen.html, admin.html
+  static/              style.css, admin.js, kitchen.js
 data/
   menu.json            140 items / 10 groups / 49 popular (prices are APPROXIMATE)
   tulsi.db             SQLite DB (created on startup; gitignored)
