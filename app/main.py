@@ -66,6 +66,12 @@ templates.env.globals["wa_order_number"] = WHATSAPP_ORDER_NUMBER
 templates.env.globals["wa_order_display"] = WHATSAPP_ORDER_DISPLAY
 from .business import business as biz  # noqa: E402
 templates.env.globals["biz"] = biz
+from .config import DELIVERY_RADIUS_KM, DELIVERY_WINDOWS  # noqa: E402
+templates.env.globals["radius_km"] = f"{DELIVERY_RADIUS_KM:g}"
+# {"lunch": {"text": "12:00 – 2:30 PM", "to": "12:00 to 2:30 PM"}, ...}
+templates.env.globals["win"] = {
+    w["id"]: {"text": w["text"], "to": w["text"].replace(" – ", " to ")} for w in DELIVERY_WINDOWS
+}
 def _promo():
     from . import discounts
     try:
@@ -332,11 +338,28 @@ def menu_page(request: Request, wa: str | None = None):
          "categories": all_categories()},
     )
 
+def _zone_rows() -> list[dict]:
+    """One row per delivery band for the /delivery table."""
+    from .config import ZONE_COPY
+    rows, prev = [], None
+    for i, z in enumerate(DELIVERY_ZONES):
+        copy = ZONE_COPY[i] if i < len(ZONE_COPY) else {}
+        km = f"{z['max_km']:g}"
+        rows.append({
+            "areas": z.get("areas") or copy.get("areas", ""),
+            "ride": z.get("ride") or copy.get("ride", ""),
+            "distance": f"Up to {km} km" if prev is None else f"{prev} to {km} km",
+            "fee": z["fee"],
+        })
+        prev = km
+    return rows
+
+
 @app.get("/delivery", response_class=HTMLResponse)
 def delivery_page(request: Request):
     return templates.TemplateResponse(
         request, "delivery.html",
-        {"zones": DELIVERY_ZONES,
+        {"zones": DELIVERY_ZONES, "rows": _zone_rows(),
          "faqs": faqs.delivery_faqs(DELIVERY_ZONES, FREE_DELIVERY_ABOVE),
          "categories": all_categories()},
     )
@@ -838,6 +861,7 @@ def llms_txt():
     prices = [float(m["price"]) for m in menu_items if m.get("price")]
     fees = "; ".join(f"₹{z['fee']} up to {z['max_km']:g} km (minimum order ₹{z['min_order']})"
                      for z in DELIVERY_ZONES)
+    _win = templates.env.globals["win"]
     lines = [
         f"# {biz.name}",
         "",
@@ -855,8 +879,8 @@ def llms_txt():
         f"- Delivery: fixed fee by distance from the kitchen: {fees}. Areas: "
         + ", ".join(seo_aliases.NEARBY_AREAS) + ". Riders are booked with Porter.",
         f"- Pickup: {STORE_PICKUP_LINE}, usually ready in about 20 minutes",
-        f"- Ordering ahead: lunch (12:00 to 2:30 PM) or dinner (6:30 to 9:30 PM) windows, up to 14 days ahead",
-        f"- Payment: UPI (GPay, PhonePe, Paytm) or cash on delivery or pickup. Totals include packing (₹{PACKING_FEE}) and 5% GST.",
+        f"- Ordering ahead: lunch ({_win['lunch']['to']}) or dinner ({_win['dinner']['to']}) windows, up to 14 days ahead",
+        f"- Payment: UPI (GPay, PhonePe, Paytm) or cash on delivery or pickup. Totals include packing (₹{PACKING_FEE}) and {GST_RATE * 100:g}% GST.",
         f"- Prices: ₹{min(prices):g} to ₹{max(prices):g} per dish; most mains also come as half portions",
         "",
         "## How to order",

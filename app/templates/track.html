@@ -223,8 +223,8 @@
     html += `<div class="row"><span>Order type</span><b>${o.order_type === 'pickup' ? 'Pickup · {{ biz.locality }}' : 'Delivery'}</b></div>`;
     if (o.scheduled_at) {
       const d = toDate(o.scheduled_at);
-      const windowText = o.scheduled_window === "lunch" ? "Lunch window (12:00 – 2:30 PM)"
-        : o.scheduled_window === "dinner" ? "Dinner window (6:30 – 9:30 PM)" : null;
+      const windowText = o.scheduled_window === "lunch" ? "Lunch window ({{ win.lunch.text }})"
+        : o.scheduled_window === "dinner" ? "Dinner window ({{ win.dinner.text }})" : null;
       html += `<div class="row"><span>Scheduled for</span><b>${windowText ? windowText + " · " + fmtDay(o.scheduled_at) : (d ? d.toLocaleString("en-IN", fullFmt) : fmtDay(o.scheduled_at))}</b></div>`;
     } else {
       html += `<div class="row"><span>Placed at</span><b>${fmtTime(o.created_at)}</b></div>`;

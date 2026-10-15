@@ -122,7 +122,7 @@ def landing_faqs(zones, free_above, price_range, has_upi) -> list[dict]:
         {
             "q": "Does Tulsi Foods deliver in Chennai, and what does it cost?",
             "a": (
-                "Yes, anywhere within 7 km of the kitchen in Alwarpet: Mylapore, "
+                f"Yes, anywhere within {zones[-1]['max_km']:g} km of the kitchen in Alwarpet: Mylapore, "
                 "Alwarpet, Royapettah, Teynampet, R.A. Puram, Adyar, T. Nagar and "
                 f"Egmore. Delivery is a fixed fee by distance ({_fee_text(zones)}), "
                 f"included in the total you see at checkout.{_free_clause(free_above)}"

@@ -21,12 +21,30 @@ ADMIN_TOKEN = os.environ.get("TULSI_ADMIN_TOKEN", "tulsi")
 # kitchen pays the actual Porter fare and absorbs the difference; Mom's fare
 # reply is stored as courier_cost so the bands can be tuned from real data.
 # One minimum everywhere, set so a single Mini Thali (₹188) can be delivered.
-MIN_ORDER = 180
+MIN_ORDER = int(os.environ.get("MIN_ORDER", "180"))
 DELIVERY_ZONES = [
     {"name": "within 3 km", "max_km": 3.0, "fee": 49, "min_order": MIN_ORDER},
     {"name": "3-5 km", "max_km": 5.0, "fee": 69, "min_order": MIN_ORDER},
     {"name": "5-7 km", "max_km": 7.0, "fee": 89, "min_order": MIN_ORDER},
 ]
+# Set DELIVERY_ZONES_JSON to replace the bands without a code change, e.g.
+# '[{"name":"within 4 km","max_km":4,"fee":40},{"name":"4-8 km","max_km":8,"fee":80}]'.
+# Bands must be listed nearest first; min_order defaults to MIN_ORDER.
+if os.environ.get("DELIVERY_ZONES_JSON"):
+    import json as _json
+    DELIVERY_ZONES = [
+        {"min_order": MIN_ORDER, **z, "max_km": float(z["max_km"])}
+        for z in _json.loads(os.environ["DELIVERY_ZONES_JSON"])
+    ]
+# What the delivery page says about each band, by position in DELIVERY_ZONES.
+# A band given in DELIVERY_ZONES_JSON can carry its own "areas" and "ride" keys instead.
+ZONE_COPY = [
+    {"areas": "Mylapore, Alwarpet, Royapettah", "ride": "15–25 min ride"},
+    {"areas": "Teynampet, Nandanam, R.A. Puram", "ride": "20–30 min ride"},
+    {"areas": "Adyar, T. Nagar, Egmore", "ride": "30–40 min ride"},
+]
+# Outer edge of the delivery area, derived so copy never disagrees with the bands.
+DELIVERY_RADIUS_KM = DELIVERY_ZONES[-1]["max_km"]
 
 FREE_DELIVERY_ABOVE = 700  # optional: free delivery over this amount
 # Free-delivery promo is PAUSED for now (per owner). When re-enabled, zone
@@ -46,15 +64,15 @@ DELIVERY_WINDOWS = [
 # remit that themselves under Section 9(5), which doesn't cover direct sales,
 # so this app has to collect it itself. Confirm the rate/registration status
 # with your CA before changing — this mirrors observed data, not tax advice.
-GST_RATE = 0.05
-GST_ENABLED = True
+GST_RATE = float(os.environ.get("GST_RATE", "0.05"))
+GST_ENABLED = os.environ.get("GST_ENABLED", "1") not in ("0", "false", "False")
 
 # Packing charge for direct orders — flat, with a step up for large orders.
 # Mirrors the existing "Container Charge" already used elsewhere in the
 # business; retune these two numbers freely, they're a starting estimate.
-PACKING_FEE = 20
-PACKING_FEE_LARGE_ORDER_THRESHOLD = 1000
-PACKING_FEE_LARGE_ORDER = 40
+PACKING_FEE = int(os.environ.get("PACKING_FEE", "20"))
+PACKING_FEE_LARGE_ORDER_THRESHOLD = int(os.environ.get("PACKING_FEE_LARGE_ORDER_THRESHOLD", "1000"))
+PACKING_FEE_LARGE_ORDER = int(os.environ.get("PACKING_FEE_LARGE_ORDER", "40"))
 
 # GSTIN — shown on order confirmations/receipts once set. Blank until filled in.
 GSTIN = os.environ.get("GSTIN", "")
