@@ -37,6 +37,12 @@ READY_PICKUP = "tulsi_order_ready_pickup"
 RIDER_ON_THE_WAY = "tulsi_rider_on_the_way"
 DELIVERED = "tulsi_order_delivered"
 DELIVERED_RATE = "tulsi_order_delivered_rate"
+# Delivered + one-tap feedback (quick replies send FB:<good|ok|bad>:<order id>).
+FEEDBACK = "tulsi_order_feedback"
+FEEDBACK_CHOICES = [("good", "😋 Loved it"), ("ok", "🙂 It was okay"), ("bad", "😕 Not great")]
+# Our templates Meta has put in a paid category other than UTILITY (it did this
+# to tulsi_kitchen_alert). Filled by sync(); notify skips these for customers.
+NOT_UTILITY: set[str] = set()
 CANCELLED = "tulsi_order_cancelled"
 PAYMENT_RECEIVED = "tulsi_payment_received"
 # Kitchen alerts tied to one order / one customer message, so Meta keeps them
@@ -103,6 +109,15 @@ DEFINITIONS = {
                  "If anything wasn't right, just reply here and we'll fix it."),
         "example": ["Asha", "142"],
         "button": None,
+    },
+    FEEDBACK: {
+        "used_for": "customer, delivered, with one-tap feedback buttons",
+        "header": "Delivered",
+        "body": ("Hi {{1}}, your *order #{{2}}* has been delivered. Enjoy your meal! 🍛\n\n"
+                 "How was it? One tap tells the kitchen."),
+        "example": ["Asha", "142"],
+        "button": None,
+        "quick_replies": [label for _, label in FEEDBACK_CHOICES],
     },
     DELIVERED_RATE: {
         "used_for": "customer, delivered, with a button to rate each dish",
@@ -197,7 +212,10 @@ def components(name: str) -> list[dict]:
         comps.append({"type": "HEADER", "format": "TEXT", "text": d["header"][:60]})
     comps.append({"type": "BODY", "text": d["body"], "example": {"body_text": [d["example"]]}})
     comps.append({"type": "FOOTER", "text": (d.get("footer") or FOOTER)[:60]})
-    if d.get("button"):
+    if d.get("quick_replies"):
+        comps.append({"type": "BUTTONS", "buttons": [
+            {"type": "QUICK_REPLY", "text": t[:25]} for t in d["quick_replies"]]})
+    elif d.get("button"):
         comps.append({"type": "BUTTONS", "buttons": [{
             "type": "URL", "text": d["button"][:25], "url": d.get("button_url", TRACK_URL) + "{{1}}",
             "example": [d.get("button_example", TRACK_EXAMPLE)]}]})
@@ -270,6 +288,9 @@ def sync() -> dict:
             return result
         result["waba_id"] = waba
         have = {t.get("name"): t for t in client.list_templates(waba) if t.get("language") == LANGUAGE}
+        NOT_UTILITY.clear()
+        NOT_UTILITY.update(n for n, t in have.items() if n in DEFINITIONS and t.get("category") != "UTILITY")
+        result["not_utility"] = sorted(NOT_UTILITY)
         for name in DEFINITIONS:
             try:
                 meta = have.get(name)

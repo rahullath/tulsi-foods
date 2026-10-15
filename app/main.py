@@ -735,6 +735,7 @@ def admin_kitchen(x_admin_token: str | None = Header(None)):
         o = {k: v for k, v in o.items() if k not in ("sr_awb",)}
         o["track_url"] = f"{SITE_URL}/track/{o.get('tracking_token') or o['id']}"
         o["pay_url"] = f"{SITE_URL}/pay/{o.get('tracking_token') or o['id']}"
+        o["feedback"] = db.get_feedback(o["id"])
         out.append(o)
     return {"orders": out, "kitchen": {
         "address": PICKUP_ADDRESS, "phone": PICKUP_PHONE, "lat": PICKUP_LAT, "lng": PICKUP_LNG,
@@ -1665,6 +1666,17 @@ def admin_whatsapp_templates(x_admin_token: str | None = Header(None)):
     return {"ok": all(r["ok"] for r in rows), "waba_id": waba, "templates": rows,
             "last_sync": templates.last_sync(),
             "on_meta_but_unused": sorted({t["name"] for t in meta} - set(templates.EXPECTED))}
+
+
+@app.get("/api/admin/whatsapp/spend")
+def admin_whatsapp_spend(days: int = 30, x_admin_token: str | None = Header(None)):
+    """What Meta charged for WhatsApp messages, from its pricing analytics."""
+    _check_admin(x_admin_token)
+    from .whatsapp import client
+    try:
+        return client.spend(min(max(days, 1), 90))
+    except Exception as e:
+        raise HTTPException(502, f"Meta pricing analytics failed: {e}")
 
 
 @app.post("/api/admin/whatsapp/templates/sync")

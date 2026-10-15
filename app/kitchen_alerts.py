@@ -40,27 +40,33 @@ def send(text: str, html_text: str | None = None, relay: dict | None = None,
         from .whatsapp import client
         from .whatsapp.templates import KITCHEN_ALERT
         result = None
-        # Specific utility template first, then the generic alert, then free
-        # text (reaches Mom only if she wrote to the bot in the last 24 h).
+        # Cheapest first: the specific UTILITY templates (₹0.115, free while
+        # Mom's 24 h window is open), then free text (free, but only reaches
+        # her if she wrote to the bot in the last 24 h), and only then the
+        # generic alert, which Meta bills as MARKETING (~₹0.8).
         # A template tuple is (name, values) or (name, values, button_suffix).
-        attempts = []
-        for t in (template, fallback_template):
-            if t:
-                attempts.append((t[0], [_template_safe(v) for v in t[1]], t[2] if len(t) > 2 else None))
-        attempts.append((KITCHEN_ALERT, [_template_safe(text)], None))
-        for name, values, button in attempts:
+        from .whatsapp.templates import NOT_UTILITY
+
+        def _try(name, values, button=None):
             try:
-                result = client.send_template(ADMIN_PHONE, name, KITCHEN_WA_TEMPLATE_LANG,
-                                              [{"type": "text", "text": v} for v in values],
-                                              button_url_suffix=button)
-                break
+                return client.send_template(ADMIN_PHONE, name, KITCHEN_WA_TEMPLATE_LANG,
+                                            [{"type": "text", "text": v} for v in values],
+                                            button_url_suffix=button)
             except Exception as e:
                 log.warning("kitchen template %s failed (%s)", name, e)
+                return None
+        for t in (template, fallback_template):
+            if t and result is None and t[0] not in NOT_UTILITY:
+                result = _try(t[0], [_template_safe(v) for v in t[1]], t[2] if len(t) > 2 else None)
         if result is None:
             try:
                 result = client.send_text(ADMIN_PHONE, text)
-            except Exception:
-                log.exception("kitchen WhatsApp alert failed")
+            except Exception as e:
+                log.warning("kitchen free-text alert failed (%s)", e)
+        if result is None:
+            result = _try(KITCHEN_ALERT, [_template_safe(text)])
+        if result is None:
+            log.error("kitchen WhatsApp alert failed on every route")
         if result is not None:
             sent.append("whatsapp")
             if relay:

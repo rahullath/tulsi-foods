@@ -39,7 +39,22 @@ def is_admin_command(text: str) -> bool:
         t.endswith(" back"),
         t.startswith("special "),
         t in ("all on", "all available", "everything on"),
+        t in ("spend", "bill", "whatsapp bill"),
     ])
+
+
+def _spend() -> str:
+    from . import client
+    try:
+        s = client.spend(30)
+    except Exception:
+        return "Couldn't fetch the WhatsApp bill right now. Try again later."
+    paid = [r for r in s["rows"] if r["cost"]]
+    free = sum(r["volume"] for r in s["rows"] if not r["cost"])
+    lines = [f"💸 WhatsApp, last 30 days: ₹{s['total']:.2f}"]
+    lines += [f"• {r['volume']} {r['category'].lower()} to {r['country']}: ₹{r['cost']:.2f}" for r in paid[:6]]
+    lines.append(f"• {free} free messages")
+    return "\n".join(lines)
 
 
 def handle_admin_command(text: str) -> str:
@@ -48,6 +63,8 @@ def handle_admin_command(text: str) -> str:
 
     if t in ("orders", "today", "list"):
         return _orders_today()
+    if t in ("spend", "bill", "whatsapp bill"):
+        return _spend()
 
     m_paid = re.fullmatch(r"paid\s*#?(\d+)", t)
     if m_paid:

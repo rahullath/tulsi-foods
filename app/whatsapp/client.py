@@ -213,7 +213,8 @@ def _post(payload: dict) -> dict:
 
 def send_template(to: str, name: str, language: str = "en",
                   params: list[dict] | None = None,
-                  button_url_suffix: str | None = None) -> dict:
+                  button_url_suffix: str | None = None,
+                  quick_reply_payloads: list[str] | None = None) -> dict:
     """Send a pre-approved template message.
 
     Each param is {"type": "text", "text": "value"}. `button_url_suffix`
@@ -225,6 +226,9 @@ def send_template(to: str, name: str, language: str = "en",
     if button_url_suffix:
         components.append({"type": "button", "sub_type": "url", "index": "0",
                            "parameters": [{"type": "text", "text": button_url_suffix}]})
+    for i, payload in enumerate(quick_reply_payloads or []):
+        components.append({"type": "button", "sub_type": "quick_reply", "index": str(i),
+                           "parameters": [{"type": "payload", "payload": payload}]})
     langs = [_lang_that_worked.get(name, language)]
     langs += [l for l in (language, *_ENGLISH) if l not in langs]
     last_err = None
@@ -270,6 +274,34 @@ def list_templates(waba_id: str) -> list[dict]:
 
 
 _waba_cache: list[str] = []
+
+
+def spend(days: int = 30) -> dict:
+    """What Meta has charged for messages over the last `days` days, from its
+    pricing analytics: {"currency", "total", "rows": [{category, type, country, volume, cost}]}."""
+    import json as _json
+    import time as _time
+    waba = waba_id()
+    end = int(_time.time())
+    start = end - days * 86400
+    dims = _json.dumps(["PRICING_CATEGORY", "PRICING_TYPE", "COUNTRY"])
+    field = f"pricing_analytics.start({start}).end({end}).granularity(DAILY).dimensions({dims})"
+    with httpx.Client(timeout=20) as c:
+        r = c.get(f"{WHATSAPP_GRAPH_URL}/{WHATSAPP_GRAPH_VERSION}/{waba}",
+                  headers={"Authorization": f"Bearer {WHATSAPP_TOKEN}"},
+                  params={"fields": f"currency,{field}"})
+        r.raise_for_status()
+        data = r.json()
+    rows: dict = {}
+    for block in data.get("pricing_analytics", {}).get("data", []):
+        for p in block.get("data_points", []):
+            k = (p.get("pricing_category"), p.get("pricing_type"), p.get("country"))
+            row = rows.setdefault(k, {"category": k[0], "type": k[1], "country": k[2], "volume": 0, "cost": 0.0})
+            row["volume"] += p.get("volume") or 0
+            row["cost"] += p.get("cost") or 0
+    out = sorted(rows.values(), key=lambda r: -r["cost"])
+    return {"currency": data.get("currency", "INR"), "days": days,
+            "total": round(sum(r["cost"] for r in out), 2), "rows": out}
 
 
 def waba_id() -> str:

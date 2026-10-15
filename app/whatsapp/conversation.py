@@ -567,6 +567,46 @@ def _try_code(sess: dict, raw: str) -> list[dict] | None:
     return [text(f"🎉 {d['code']} applied: {d['label']}.")] + _summary(sess)
 
 
+FEEDBACK_LABEL = {"GOOD": "😋 Loved it", "OK": "🙂 It was okay", "BAD": "😕 Not great"}
+
+
+def _on_feedback_tap(sess: dict, t: str) -> list[dict]:
+    from ..config import GOOGLE_REVIEW_LINK
+    parts = t.split(":")
+    rating = parts[1] if len(parts) > 1 else ""
+    oid = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0
+    o = db.get_order(oid) if oid else None
+    if rating not in FEEDBACK_LABEL or not o or \
+            orders._normalize_phone(o.get("customer_phone") or "") != orders._normalize_phone(sess["wa_id"]):
+        return [text("Thank you! 🙏")]
+    db.set_feedback(oid, rating.lower())
+    if rating == "GOOD":
+        sess["state"] = "root"
+        return [text("That made the kitchen's day, thank you! 🙏"),
+                {"type": "cta", "text": "If you have 20 seconds, a Google review helps a small family "
+                                        "kitchen more than anything.",
+                 "label": "Write a review", "url": GOOGLE_REVIEW_LINK}]
+    sess["state"] = "feedback"
+    sess["ctx"]["feedback_order"] = oid
+    out = [text("Thanks for telling us. What could have been better? A few words is plenty.")]
+    if rating == "BAD":  # Mom hears straight away, even if no words follow
+        out.insert(0, {"type": "relay", "text": f"Order #{oid}: the customer tapped “😕 Not great”."})
+    return out
+
+
+def _feedback_comment(sess: dict, raw: str) -> list[dict]:
+    oid = sess["ctx"].pop("feedback_order", None)
+    sess["state"] = "root"
+    if oid:
+        db.set_feedback(oid, comment=raw[:1000])
+        fb = db.get_feedback(oid) or {}
+        label = FEEDBACK_LABEL.get((fb.get("rating") or "").upper(), "")
+        relay = {"type": "relay", "text": f"Feedback on order #{oid} ({label}): {raw}"}
+    else:
+        relay = {"type": "relay", "text": raw}
+    return [relay, text("Thank you. The kitchen has your note and may reply right here.")]
+
+
 def _place_order(sess: dict) -> list[dict]:
     ctx = sess["ctx"]
     items = [{"item_id": i, "qty": q} for i, q in sess["cart"].items()]
@@ -695,6 +735,9 @@ def _route(sess: dict, incoming: str) -> list[dict]:
              "/KITCHEN": "KITCHEN"}.get(t.split()[0], t[1:])
     state = sess["state"]
 
+    if t.startswith("FB:"):  # one-tap feedback button on the delivered message
+        return _on_feedback_tap(sess, t)
+
     # Commands that work from anywhere
     if t in ("CANCEL", "CLEAR"):
         _reset_checkout(sess)
@@ -737,6 +780,8 @@ def _route(sess: dict, incoming: str) -> list[dict]:
         return _resume(sess)
     if state == "ask_kitchen":
         return _relay(sess, raw)
+    if state == "feedback" and len(raw) >= 2 and not raw.startswith("["):
+        return _feedback_comment(sess, raw)
     if t in THANKS and state not in CHECKOUT_STATES:
         return [text("You're welcome! 🙏 Send *menu* any time to order again.")]
 
