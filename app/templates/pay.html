@@ -4,9 +4,16 @@
 <meta name="robots" content="noindex">
 <title>Pay for order #{{ order.id }} · Tulsi Foods</title>
 {% endblock %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+{% endblock %}
+{% block styles %}{% endblock %}
 {% block body %}
 <style>
-  body { background: #FBF8F2; }
+  body { background: #FBF8F2; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  .pay-foot, .pay-ivepaid, .pay-btn, button { font-family: inherit; }
   .site-wa { display: none !important; }
   .pay-wrap { max-width: 440px; margin: 0 auto; padding: 22px 18px 150px; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #171A14; }
   .pay-card { background: none; border: none; padding: 0; }

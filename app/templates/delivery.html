@@ -49,11 +49,18 @@ body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg
 
 @media (max-width: 768px) {
   .page { padding: 32px 18px 48px; }
-  .zone-table th:first-child, .zone-table td:first-child { border-top-left-radius: 10px; }
-  .zone-table th, .zone-table td { display: block; border-top: 1px solid #F3F0EA; }
+  .zone-table { background: none; border: none; border-radius: 0; }
   .zone-table thead { display: none; }
-  .zone-table tbody tr { display: block; padding: 0; }
-  .zone-table td::before { content: attr(data-label); display: block; font: 500 10px/1 'IBM Plex Mono', monospace; color: var(--sub); letter-spacing: .04em; margin-bottom: 5px; }
+  .zone-table, .zone-table tbody { display: block; }
+  .zone-table tbody tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; }
+  .zone-table td { display: block; padding: 0; border: 0; font-size: 13.5px; }
+  .zone-table td::before { display: none; }
+  .zone-table td[data-label="Area"] { grid-column: 1; font-size: 16px; font-weight: 600; color: var(--ink); }
+  .zone-table td[data-label="Delivery fee"] { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+  .zone-table .zone-fee { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; }
+  .zone-table td[data-label="Distance"] { grid-column: 1; }
+  .zone-table td[data-label="Typical delivery"] { grid-column: 1; }
+  .zone-note { border-radius: 14px; border: 0; }
   .page-cta { flex-direction: column; text-align: center; }
 }
 </style>
