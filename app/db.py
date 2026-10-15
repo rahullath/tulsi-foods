@@ -210,6 +210,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
         note TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now')))""")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_orders_discount_code ON orders(discount_code)")
+    conn.execute("""CREATE TABLE IF NOT EXISTS order_feedback (
+        order_id INTEGER PRIMARY KEY,
+        rating TEXT NOT NULL,            -- good | ok | bad
+        comment TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')))""")
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_tracking_token ON orders(tracking_token)")
     # Backfill a token for any older orders that predate this column, so every
     # order — new and old — gets a guess-proof tracking reference.
@@ -678,6 +683,25 @@ def today_orders() -> list[dict]:
     result = _orders_with_items(rows)
     conn.close()
     return result
+
+
+def set_feedback(order_id: int, rating: str | None = None, comment: str | None = None) -> None:
+    """Record a customer's one-tap rating, then optionally their words."""
+    conn = get_conn()
+    if rating:
+        conn.execute("INSERT INTO order_feedback(order_id, rating) VALUES(?, ?) "
+                     "ON CONFLICT(order_id) DO UPDATE SET rating=excluded.rating", (order_id, rating))
+    if comment:
+        conn.execute("UPDATE order_feedback SET comment=? WHERE order_id=?", (comment[:1000], order_id))
+    conn.commit()
+    conn.close()
+
+
+def get_feedback(order_id: int) -> dict | None:
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM order_feedback WHERE order_id=?", (order_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
 
 
 def kitchen_orders() -> list[dict]:

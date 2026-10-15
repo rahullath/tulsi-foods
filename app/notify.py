@@ -28,12 +28,18 @@ def _token(order: dict) -> str:
 
 
 def _send_wa(phone: str, attempts: list[tuple], fallback_text: str | None, order_id) -> bool:
-    """Try each (template, params, button_suffix) in turn, then free text.
+    """Try each (template, params, button_suffix[, quick_reply_payloads]) in
+    turn, then free text. Templates Meta has moved out of UTILITY are skipped,
+    so a recategorised template never quietly costs marketing rates.
     Returns True if WhatsApp accepted any of them."""
     from . import whatsapp
-    for name, params, button in attempts:
+    for name, params, button, *rest in attempts:
+        if name in T.NOT_UTILITY:
+            log.warning("skipping template %s: Meta no longer lists it as UTILITY", name)
+            continue
         try:
-            whatsapp.client.send_template(phone, name, "en", params, button_url_suffix=button)
+            whatsapp.client.send_template(phone, name, "en", params, button_url_suffix=button,
+                                          quick_reply_payloads=rest[0] if rest else None)
             return True
         except Exception as e:
             log.warning("template %s failed for order %s: %s", name, order_id, e)
@@ -83,7 +89,9 @@ def _status_attempts(order: dict, status: str) -> list[tuple]:
         return [(T.RIDER_ON_THE_WAY, _params(name, oid, link), tok),
                 ("delivery_confirmation_1", _params(name, oid), None)]
     if status == "delivered":
-        return [(T.DELIVERED_RATE, _params(name, oid), tok),
+        return [(T.FEEDBACK, _params(name, oid), None,
+                 [f"FB:{key}:{oid}" for key, _ in T.FEEDBACK_CHOICES]),
+                (T.DELIVERED_RATE, _params(name, oid), tok),
                 (T.DELIVERED, _params(name, oid), None),
                 ("order_delivered", _params(name, oid), None)]
     if status == "cancelled":
