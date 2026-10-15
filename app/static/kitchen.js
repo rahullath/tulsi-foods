@@ -6,6 +6,8 @@
   const SOUND_KEY = "tulsi_kitchen_sound";
   const app = document.getElementById("app");
   let token = null, data = null, tab = "now", seen = null, soundOn = false, audio = null;
+  let view = "home", focusOid = null, showMore = false;  // home | together | focus | later | done
+  const plated = new Set();  // "Cook together" ticks, kept until reload
   const drafts = {};  // per-order Porter link/fare typed but not yet sent
   // /kitchen/o/46 (the Open order button on Mom's WhatsApp alert) jumps to #46.
   let focusId = +((/^\/kitchen\/o\/(\d+)/.exec(location.pathname) || [])[1]) || null;
@@ -100,25 +102,115 @@
     return `${todays.length} order${todays.length === 1 ? "" : "s"} today · ${rs(Math.round(sales))}` + (g.now.length ? ` · ${g.now.length} open` : "");
   }
 
+  // ---------- multi-order views
+  const clock = () => new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+  // The time something is due: the booked time, or placed time plus the usual wait.
+  function dueOf(o) {
+    if (o.scheduled_at) return utc(o.scheduled_at);
+    const placed = utc(o.created_at) || new Date();
+    return new Date(placed.getTime() + (o.order_type === "pickup" ? 25 : 45) * 60000);
+  }
+  const summaryItems = (o) => (o.items || []).map((i) => `${num(i.qty)} × ${i.name}`).join(", ");
+  const areaOf = (o) => { const [addr] = splitAddr(o.delivery_address); const parts = addr.split(",").map((x) => x.trim()).filter(Boolean); return parts.length > 2 ? parts[parts.length - 2] : (parts[1] || parts[0] || ""); };
+  const STATE_RANK = { new: 0, preparing: 1, ready: 2, out_for_delivery: 3 };
+  function queue() {
+    // Most urgent first: orders waiting to be accepted, then cooking, then the rest; by due time within each.
+    return groups().now.slice().sort((a, b) => (STATE_RANK[a.status] - STATE_RANK[b.status]) || (dueOf(a) - dueOf(b)) || a.id - b.id);
+  }
+  const rowSub = (o) => {
+    const st = { new: "New", preparing: "Cooking", ready: o.order_type === "pickup" ? "Ready for pickup" : "Ready, needs a rider", out_for_delivery: "On the way" }[o.status];
+    return `${st} · ${o.order_type === "pickup" ? "pickup" : "delivery"} ${time(dueOf(o))}${needsMoney(o) ? " · 💰 check payment" : ""}`;
+  };
+
+  function banner(q) {
+    const top = q[0];
+    const fresh = q.filter((o) => o.status === "new" && !(view === "home" && top && o.id === top.id));
+    if (!fresh.length) return "";
+    const o = fresh[fresh.length - 1];
+    return `<div class="newban" role="status"><div class="nb-t" data-open="${o.id}">
+        <div class="nb-k">NEW · #${o.id} · ${o.order_type === "pickup" ? "PICKUP" : "DELIVERY"} ${time(dueOf(o))}${fresh.length > 1 ? ` · +${fresh.length - 1} more` : ""}</div>
+        <div class="nb-i">${esc(summaryItems(o))}</div></div>
+      <button class="nb-b" data-accept="${o.id}">Accept</button></div>`;
+  }
+
+  function topbar(g, title, back) {
+    const n = g.now.length;
+    return `<header class="top"><div class="top-row">
+        ${back ? `<button class="back" id="back" aria-label="Back">‹</button>` : `<span class="clock" id="clock">${clock()}</span>`}
+        ${title ? `<span class="ttl">${title}</span>` : `<span class="on">${n} order${n === 1 ? "" : "s"} on</span>`}
+        <button class="sound ${soundOn ? "on" : "off"}" id="sound" aria-label="${soundOn ? "Sound on" : "Sound off"}">${soundOn ? "🔔" : "🔕 Sound off"}</button>
+      </div></header>`;
+  }
+
+  function nextUpCard(o) {
+    const note = (o.instructions || "").trim();
+    const itemNotes = (o.items || []).filter((i) => i.note).map((i) => `${esc(i.name)}: ${esc(i.note)}`);
+    const meta = [o.payment_method === "upi" ? (o.paid ? "Paid" : "UPI not confirmed") : "Cash", o.order_type === "delivery" ? areaOf(o) : "Pickup", `due ${time(dueOf(o))}`].filter(Boolean).join(" · ");
+    const color = o.status === "new" ? "#E8A33D" : o.status === "preparing" ? "#0E7A45" : "#1B5FA8";
+    return `<article class="nu" id="o-${o.id}" style="--ring:${color}">
+      <div class="nu-h" style="background:${color}"><span>#${o.id} · ${{ new: "NEW", preparing: "COOKING", ready: "READY", out_for_delivery: "ON THE WAY" }[o.status]}</span><span>${o.order_type === "pickup" ? "PICKUP" : "DELIVERY"}</span></div>
+      <div class="nu-b">
+        <div class="nu-items">${(o.items || []).map((i) => `${num(i.qty)} × ${esc(i.name)}`).join("<br>")}</div>
+        ${note || itemNotes.length ? `<div class="nu-note">${[esc(note), ...itemNotes].filter(Boolean).join("<br>")}</div>` : ""}
+        <div class="nu-meta">${esc(meta)}</div>
+        ${payNow(o)}
+        ${nextStep(o)}
+        <button class="more" data-open="${o.id}">All details${o.order_type === "delivery" && ["preparing", "ready"].includes(o.status) && !(o.sr_tracking_url || o.sr_courier) ? ": book the rider ›" : " ›"}</button>
+      </div></article>`;
+  }
+
+  function homeView(g) {
+    const q = queue(), top = q[0];
+    if (!top) return `${banner(q)}<main class="list"><div class="empty">No orders right now.<br>New ones appear here by themselves.</div></main>${bottomBar(g)}`;
+    const rest = q.slice(1), shown = showMore ? rest : rest.slice(0, 2);
+    const unpaid = rest.filter(needsMoney);
+    return `${banner(q)}<main class="home">
+      ${unpaid.length ? `<button class="paystrip" data-open="${unpaid[0].id}">💰 ${unpaid.length} other payment${unpaid.length > 1 ? "s" : ""} to check. Tap to open #${unpaid[0].id}.</button>` : ""}
+      <div class="lane">DO THIS NEXT</div>${nextUpCard(top)}
+      ${rest.length ? `<div class="lane dim">THEN</div><div class="rows">${shown.map((o) => `<button class="rowc" data-open="${o.id}">
+          <div><div class="rc-t">#${o.id} · ${esc(summaryItems(o))}</div><div class="rc-s">${esc(rowSub(o))}</div></div>
+          <span class="rc-time ${dueOf(o) - Date.now() < 15 * 60000 ? "soon" : ""}">${time(dueOf(o))}</span></button>`).join("")}
+        ${rest.length > shown.length ? `<button class="rowc more-rows" id="showmore">+ ${rest.length - shown.length} more</button>` : ""}</div>` : ""}
+      </main>${bottomBar(g)}`;
+  }
+  function bottomBar(g) {
+    return `<div class="bbar"><button data-view="together">Cook together</button><button data-view="later">Later (${g.later.length})</button><button data-view="done">Done (${g.done.length})</button></div>`;
+  }
+
+  // Same dish across every active order, as a prep list.
+  function togetherView(g) {
+    const act = queue().filter((o) => ["new", "preparing"].includes(o.status));
+    const map = new Map();
+    act.forEach((o) => (o.items || []).forEach((i) => {
+      const k = i.name; const e = map.get(k) || { name: k, qty: 0, chips: [] };
+      e.qty += num(i.qty); e.chips.push({ id: o.id, qty: num(i.qty), note: i.note || "" });
+      const on = (o.instructions || "").trim(); if (on && !e.chips.some((c) => c.id === o.id && c.order)) e.chips.push({ id: o.id, order: true, note: on });
+      map.set(k, e);
+    }));
+    const list = [...map.values()].sort((a, b) => b.qty - a.qty);
+    return `<main class="home"><div class="tg-h">Same dish across all active orders. Tap when plated.</div>
+      ${list.length ? list.map((e) => `<button class="tg ${plated.has(e.name) ? "done" : ""}" data-plate="${esc(e.name)}">
+        <div class="tg-top"><span class="tg-q">${e.qty} ×</span><span class="tg-n">${esc(e.name)}</span><span class="tg-c">${plated.has(e.name) ? "✓" : ""}</span></div>
+        <div class="tg-chips">${e.chips.map((c) => c.note ? `<span class="chip flagnote">#${c.id} ${esc(c.note)}</span>` : `<span class="chip">#${c.id} ×${c.qty}</span>`).join("")}</div></button>`).join("") : `<div class="empty">Nothing is being cooked right now.</div>`}
+      </main>`;
+  }
+
   function render() {
     const g = groups();
-    const list = g[tab];
     const keepScroll = window.scrollY;
-    app.innerHTML = `
-      <header class="top">
-        <div class="top-row">
-          <div><h1>Tulsi Kitchen</h1><div class="sum">${summary(g)}</div></div>
-          <button class="sound ${soundOn ? "on" : ""}" id="sound">${soundOn ? "🔔 Sound on" : "🔕 Sound off"}</button>
-        </div>
-        <nav class="tabs">
-          <button data-tab="now" class="${tab === "now" ? "on" : ""}">Now<span class="n">${g.now.length}</span></button>
-          <button data-tab="later" class="${tab === "later" ? "on" : ""}">Later<span class="n">${g.later.length}</span></button>
-          <button data-tab="done" class="${tab === "done" ? "on" : ""}">Done today<span class="n">${g.done.length}</span></button>
-        </nav>
-      </header>
-      ${g.now.filter(needsMoney).length ? `<button class="banner pay" id="payalert">💰 ${g.now.filter(needsMoney).length} UPI payment${g.now.filter(needsMoney).length > 1 ? "s" : ""} to check. Tap to see.</button>` : ""}
-      ${!soundOn ? `<button class="banner" id="sound2">🔔 Tap here so the phone rings for new orders</button>` : ""}
-      <main class="list">${list.length ? list.map(card).join("") : `<div class="empty">${tab === "now" ? "No orders right now.<br>New ones appear here by themselves." : tab === "later" ? "No orders booked for later." : "Nothing finished yet today."}</div>`}</main>`;
+    let body;
+    if (view === "focus") {
+      const o = ((data && data.orders) || []).find((x) => x.id === focusOid);
+      if (!o) { view = "home"; return render(); }
+      const lbl = { new: "NEW", preparing: "COOKING", ready: "READY", out_for_delivery: "ON THE WAY", delivered: "DELIVERED", cancelled: "CANCELLED" }[o.status] || o.status;
+      body = topbar(g, `#${o.id} · ${lbl}`, true) + banner(queue()) + `<main class="list">${card(o)}</main>`;
+    } else if (view === "together") body = topbar(g, "Cook together", true) + banner(queue()) + togetherView(g);
+    else if (view === "later" || view === "done") {
+      const list = g[view];
+      body = topbar(g, view === "later" ? "Later" : "Done today", true) + banner(queue()) +
+        `<main class="list">${list.length ? list.map(card).join("") : `<div class="empty">${view === "later" ? "No orders booked for later." : "Nothing finished yet today."}</div>`}</main>`;
+    } else body = topbar(g, "", false) + homeView(g);
+    app.innerHTML = body;
     window.scrollTo(0, keepScroll);
     bind();
   }
@@ -293,7 +385,14 @@
   function bind() {
     const pa = document.getElementById("payalert");
     if (pa) pa.onclick = () => { const o = groups().now.find(needsMoney); const el = o && document.getElementById("o-" + o.id); if (el) { el.scrollIntoView({ block: "start", behavior: "smooth" }); window.scrollBy(0, -150); el.classList.add("flash"); } };
-    app.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { tab = b.dataset.tab; render(); window.scrollTo(0, 0); });
+    const go = (v, id) => { view = v; focusOid = id || null; render(); window.scrollTo(0, 0); };
+    const bk = document.getElementById("back"); if (bk) bk.onclick = () => go("home");
+    app.querySelectorAll("[data-view]").forEach((b) => b.onclick = () => go(b.dataset.view));
+    app.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => go("focus", +b.dataset.open));
+    const sm = document.getElementById("showmore"); if (sm) sm.onclick = () => { showMore = true; render(); };
+    app.querySelectorAll("[data-plate]").forEach((b) => b.onclick = () => { const k = b.dataset.plate; plated.has(k) ? plated.delete(k) : plated.add(k); render(); });
+    app.querySelectorAll("[data-accept]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); const id = b.dataset.accept;
+      act(b, () => api(`/api/admin/orders/${id}/status`, { method: "POST", body: JSON.stringify({ status: "preparing" }) }), `Order #${id} accepted. Customer told.`); });
     const toggle = () => { soundOn = !soundOn; try { localStorage.setItem(SOUND_KEY, soundOn ? "1" : "0"); } catch (_) {} unlockSound(); if (soundOn) ring(); render(); };
     const s1 = document.getElementById("sound"), s2 = document.getElementById("sound2");
     if (s1) s1.onclick = toggle; if (s2) s2.onclick = toggle;
@@ -346,24 +445,19 @@
     const firstLoad = !seen;
     seen = ids; data = fresh;
     if (firstLoad && focusId) {
-      const g = groups();
-      tab = g.later.some((o) => o.id === focusId) ? "later" : g.done.some((o) => o.id === focusId) ? "done" : "now";
-    }
-    const typing = document.activeElement && document.activeElement.matches("input[data-draft]");
-    if (!typing) render();
-    if (firstLoad && focusId) {
-      const el = document.getElementById("o-" + focusId);
-      if (el) { el.scrollIntoView({ block: "start" }); window.scrollBy(0, -150); el.classList.add("flash"); }
+      if (fresh.orders.some((o) => o.id === focusId)) { view = "focus"; focusOid = focusId; }
       else toast(`Order #${focusId} isn't open any more.`);
       focusId = null;
     }
+    const typing = document.activeElement && document.activeElement.matches("input[data-draft]");
+    if (!typing) render();
     if (newOnes.length) {
-      ring(); tab = "now"; render();
-      toast(newOnes.length === 1 ? `🔔 New order #${newOnes[0].id}` : `🔔 ${newOnes.length} new orders`, 6000);
-      newOnes.forEach((o) => document.getElementById("o-" + o.id)?.classList.add("flash"));
+      // One chime. The banner (render) shows the order; nothing takes over the screen.
+      ring();
       document.title = "🔔 New order · Kitchen"; setTimeout(() => { document.title = "Tulsi Kitchen"; }, 15000);
     }
   }
+  setInterval(() => { const c = document.getElementById("clock"); if (c) c.textContent = clock(); }, 20000);
   let timer = null;
   function start() {
     app.innerHTML = `<div class="empty">Loading orders…</div>`;

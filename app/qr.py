@@ -51,10 +51,28 @@ def _log_scan(campaign: str | None, target: str, request: Request) -> None:
 
 @router.get("/f")
 def flyer_redirect(request: Request, c: str | None = None):
-    _log_scan(c, QR_TARGET, request)
+    """Short link for flyers, stories, WhatsApp and Google. Keeps the utm_* tags
+    so analytics still know the channel, and when utm_campaign names a live
+    discount code (utm_campaign=trial15 -> TRIAL15) the menu opens with that
+    code already saved for checkout."""
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+    q = dict(parse_qsl(request.url.query))
+    utm = {k: v[:60] for k, v in q.items() if k.startswith("utm_")}
+    campaign = c or "/".join(v for v in (utm.get("utm_source"), utm.get("utm_campaign")) if v) or None
+    params = dict(utm)
+    try:
+        from . import discounts
+        guess = (utm.get("utm_campaign") or "").upper()
+        if guess and discounts.get(guess):
+            params["code"] = guess
+    except Exception:
+        pass  # a code lookup problem must never stop the redirect
+    parts = urlsplit(QR_TARGET)
+    target = urlunsplit(parts._replace(query=urlencode({**dict(parse_qsl(parts.query)), **params})))
+    _log_scan(campaign, target, request)
     # 302, not 301: a permanent redirect gets cached by the phone's browser and
     # we lose the ability to repoint the printed code.
-    return RedirectResponse(QR_TARGET, status_code=302)
+    return RedirectResponse(target, status_code=302)
 
 
 @router.get("/api/admin/qr-scans")
