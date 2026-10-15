@@ -163,12 +163,22 @@
     if (o.order_type !== "delivery") return "";
     const [addr, landmark] = splitAddr(o.delivery_address);
     const k = (data && data.kitchen) || {};
-    const pin = o.delivery_lat && o.delivery_lng ? `https://www.google.com/maps/search/?api=1&query=${o.delivery_lat},${o.delivery_lng}` : "";
+    // Directions from the kitchen to the drop, as a 2-wheeler, so the Maps app opens
+    // with the route and ride time. If the order has no pin (or the pin is still the
+    // kitchen's own default), fall back to searching the typed address instead.
+    const klat = parseFloat(k.lat), klng = parseFloat(k.lng);
+    const dlat = parseFloat(o.delivery_lat), dlng = parseFloat(o.delivery_lng);
+    const nearKitchen = isFinite(klat) && isFinite(dlat) && Math.abs(klat - dlat) < 0.0012 && Math.abs(klng - dlng) < 0.0012;
+    const hasPin = isFinite(dlat) && isFinite(dlng) && !nearKitchen;
+    const origin = isFinite(klat) ? `&origin=${klat},${klng}` : "";
+    const pin = hasPin
+      ? `https://www.google.com/maps/dir/?api=1${origin}&destination=${dlat},${dlng}&travelmode=two-wheeler`
+      : `https://www.google.com/maps/dir/?api=1${origin}&destination=${encodeURIComponent(addr + (landmark ? ", " + landmark : "") + ", Chennai")}&travelmode=two-wheeler`;
     const booked = o.sr_tracking_url || o.sr_courier;
     const flag = o.address_flagged ? `<div class="flag">⚠ ${esc(o.address_flag_reason || "Check this address.")} Open the pin below and, if it looks wrong, call the customer before booking.</div>` : "";
     const head = `<div class="sec"><h3>Deliver to</h3><div class="addr">${esc(addr)}</div>
       ${landmark ? `<div class="hint">Landmark: ${esc(landmark)}</div>` : ""}
-      ${pin ? `<a class="maplink" href="${pin}" target="_blank" rel="noopener">📍 Open the customer's pin in Maps</a>` : ""}${flag}`;
+      <a class="maplink" href="${pin}" target="_blank" rel="noopener">${hasPin ? "🧭 Directions to the customer's pin" : "🧭 Directions (no exact pin, using address)"}</a>${hasPin ? "" : `<div class="hint">The customer did not drop a pin. Check the landmark or call before booking.</div>`}${flag}`;
     if (booked) {
       return head + `<div class="rider" style="margin-top:10px">🛵 ${esc(o.sr_courier || "Rider booked")}${o.sr_tracking_url ? ` · <a href="${esc(o.sr_tracking_url)}" target="_blank" rel="noopener">rider link</a>` : ""}</div></div>`;
     }
