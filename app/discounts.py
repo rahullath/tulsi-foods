@@ -15,7 +15,8 @@ IST = timezone(timedelta(hours=5, minutes=30))
 # through the admin API like any other code.
 SEED_CODES = [
     {"code": "TRIAL15", "kind": "percent", "value": 15, "max_discount": 100,
-     "once_per_customer": 1, "note": "15% off, once per customer, up to ₹100"},
+     "once_per_customer": 1, "first_order_only": 1,
+     "note": "15% off your first order, up to ₹100"},
 ]
 
 
@@ -32,9 +33,14 @@ def seed() -> None:
     for c in SEED_CODES:
         conn.execute(
             "INSERT OR IGNORE INTO discount_codes(code, kind, value, max_discount, "
-            "once_per_customer, note) VALUES(?,?,?,?,?,?)",
+            "once_per_customer, first_order_only, note) VALUES(?,?,?,?,?,?,?)",
             (c["code"], c["kind"], c["value"], c.get("max_discount"),
-             c.get("once_per_customer", 1), c.get("note")))
+             c.get("once_per_customer", 1), c.get("first_order_only", 0), c.get("note")))
+    # TRIAL15 was first seeded as "once per customer". The launch material promises
+    # "first order", so tighten it, but only if nobody has edited the row since.
+    conn.execute(
+        "UPDATE discount_codes SET first_order_only=1, note='15% off your first order, up to ₹100' "
+        "WHERE code='TRIAL15' AND first_order_only=0 AND note='15% off, once per customer, up to ₹100'")
     conn.commit()
     conn.close()
 
