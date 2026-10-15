@@ -145,7 +145,7 @@ section[id] { scroll-margin-top: 76px; }
     </div>
     <div class="faq-item">
       <div class="faq-q">Where is Tulsi Foods located?</div>
-      <p class="faq-a">34 Murrays Gate Road, Alwarpet, Chennai 600018, on the Alwarpet and Teynampet border, a short walk from Mylapore.</p>
+      <p class="faq-a">{{ biz.address }}, on the Alwarpet and Teynampet border, a short walk from Mylapore.</p>
     </div>
     <div class="faq-item">
       <div class="faq-q">What areas do you deliver to?</div>
@@ -157,7 +157,7 @@ section[id] { scroll-margin-top: 76px; }
     </div>
     <div class="faq-item">
       <div class="faq-q">Can I order directly instead of through Swiggy or Zomato?</div>
-      <p class="faq-a">Yes, and it's how we keep prices fair. <a href="/menu">order on the website</a> or message us on <a href="https://wa.me/919940621800" target="_blank" rel="noopener">WhatsApp</a> directly.</p>
+      <p class="faq-a">Yes, and it's how we keep prices fair. <a href="/menu">order on the website</a> or message us on <a href="https://wa.me/{{ biz.phone_digits }}" target="_blank" rel="noopener">WhatsApp</a> directly.</p>
     </div>
   </div>
 </section>
@@ -172,15 +172,15 @@ section[id] { scroll-margin-top: 76px; }
     </div>
     <div class="contact-card">
       <div class="contact-label">Call or WhatsApp the kitchen</div>
-      <div class="contact-value"><a href="tel:+919940621800">+91 99406 21800</a></div>
+      <div class="contact-value"><a href="tel:{{ biz.phone_e164 }}">{{ biz.phone_display }}</a></div>
     </div>
     <div class="contact-card">
       <div class="contact-label">Also on WhatsApp (older number)</div>
-      <div class="contact-value"><a href="https://wa.me/919940062840" target="_blank" rel="noopener">+91 99400 62840</a></div>
+      <div class="contact-value"><a href="https://wa.me/{{ biz.contact_whatsapp_digits }}" target="_blank" rel="noopener">{{ biz.contact_whatsapp_display }}</a></div>
     </div>
     <div class="contact-card">
       <div class="contact-label">Address</div>
-      <div class="contact-value"><a href="https://www.google.com/maps/search/?api=1&query=34%2C+Murrays+Gate+Road%2C+Alwarpet%2C+Chennai+600018" target="_blank" rel="noopener">34, Murrays Gate Road, Alwarpet, Chennai 600018</a></div>
+      <div class="contact-value"><a href="https://www.google.com/maps/search/?api=1&query=34%2C+Murrays+Gate+Road%2C+Alwarpet%2C+Chennai+600018" target="_blank" rel="noopener">{{ biz.address_commas }}</a></div>
     </div>
   </div>
   <p style="margin-top:18px;font-size:14px;color:#43483F">Prefer one link with everything: menu, WhatsApp, Instagram, reviews and location? <a href="/bio" style="color:var(--g);font-weight:600;text-decoration:none">Use the one-link page →</a></p>
@@ -216,7 +216,7 @@ section[id] { scroll-margin-top: 76px; }
       "name": "Where is Tulsi Foods located?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "34 Murrays Gate Road, Alwarpet, Chennai 600018, on the Alwarpet and Teynampet border, a short walk from Mylapore."
+        "text": "{{ biz.address }}, on the Alwarpet and Teynampet border, a short walk from Mylapore."
       }
     },
     {

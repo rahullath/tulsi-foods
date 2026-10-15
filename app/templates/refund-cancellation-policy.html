@@ -33,7 +33,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'IBM Pl
     <li><strong>After we start cooking</strong> — once preparation has begun, the order can no
       longer be cancelled. Please call or message us as early as possible if you need to cancel.</li>
     <li><strong>How to cancel</strong> — call or WhatsApp us on
-      <a href="tel:+919940621800">+91 99406 21800</a> and quote your order number.</li>
+      <a href="tel:{{ biz.phone_e164 }}">{{ biz.phone_display }}</a> and quote your order number.</li>
     <li>If the restaurant itself is unable to accept or complete an order (for example, an
       item is unavailable or we cannot deliver to your area), we will cancel it promptly and
       you will not be charged.</li>
@@ -50,7 +50,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'IBM Pl
     <li><strong>Wrong, missing, or unsatisfactory items</strong> — if you receive an incorrect
       or missing dish, or the quality is not what we promise, tell us within 2 hours of delivery
       (or pickup) at
-      <a href="https://wa.me/919940621800">+91 99406 21800</a>, and please share a photo of the
+      <a href="https://wa.me/{{ biz.phone_digits }}">{{ biz.phone_display }}</a>, and please share a photo of the
       dish when you do. We will either replace the item on your next order or refund the value of
       the affected items. If your entire order was affected, we will arrange a replacement or a
       full refund.</li>
@@ -77,8 +77,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'IBM Pl
 
   <h2>4. How to raise a request</h2>
   <p>Call or WhatsApp us on
-    <a href="tel:+919940621800">+91 99406 21800</a>. Please have your order number ready
+    <a href="tel:{{ biz.phone_e164 }}">{{ biz.phone_display }}</a>. Please have your order number ready
     and, for quality issues, a photo if possible. We normally respond on the same day during
-    opening hours (Mon–Sat 9 AM–9 PM, Sun 11 AM–9 PM).</p>
+    opening hours ({{ biz.hours }}).</p>
 </main>
 {% endblock %}

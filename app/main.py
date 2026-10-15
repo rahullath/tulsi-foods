@@ -64,6 +64,8 @@ templates.env.globals["wa_order_link"] = wa_order_link
 from .config import WHATSAPP_ORDER_DISPLAY, WHATSAPP_ORDER_NUMBER  # noqa: E402
 templates.env.globals["wa_order_number"] = WHATSAPP_ORDER_NUMBER
 templates.env.globals["wa_order_display"] = WHATSAPP_ORDER_DISPLAY
+from .business import business as biz  # noqa: E402
+templates.env.globals["biz"] = biz
 def _promo():
     from . import discounts
     try:
@@ -404,10 +406,10 @@ def menu_item_page(request: Request, item_id: str):
     min_order = min(z["min_order"] for z in DELIVERY_ZONES)
     ordering = {
         "zones": f"a fixed fee by distance ({fees}), shown before you pay. Minimum order ₹{min_order:g} for delivery; pickup has no minimum",
-        "hours": "Mon–Sat 9 AM – 9 PM, Sun 11 AM – 9 PM",
-        "address": "34 Murrays Gate Road, Alwarpet, Chennai 600018",
+        "hours": biz.hours_spaced,
+        "address": biz.address,
         "whatsapp": WHATSAPP_ORDER_DISPLAY,
-        "phone": "+91 99406 21800",
+        "phone": biz.phone_display,
     }
     breadcrumb = {
         "@context": "https://schema.org",
@@ -837,15 +839,15 @@ def llms_txt():
     fees = "; ".join(f"₹{z['fee']} up to {z['max_km']:g} km (minimum order ₹{z['min_order']})"
                      for z in DELIVERY_ZONES)
     lines = [
-        "# Tulsi Foods",
+        f"# {biz.name}",
         "",
-        "> Pure vegetarian, home-style North Indian kitchen on Murrays Gate Road, Alwarpet "
+        f"> Pure vegetarian, home-style North Indian kitchen on {biz.street}, {biz.locality} "
         "(Mylapore side), Chennai. Run by Kavita Lath since 2015. Thalis, parathas, sabzi, "
         "dal and chaat, cooked to order and delivered direct from the kitchen.",
         "",
         "- Cuisine: North Indian, pure vegetarian. Jain and no-onion-garlic on request.",
         "- Also known as: Tulsi Restaurant, Tulasi Foods, Thulasi Restaurant (same kitchen, different spellings)",
-        f"- Address: 34 Murrays Gate Road, Alwarpet, Chennai 600018, Tamil Nadu, India",
+        f"- Address: {biz.address}, {biz.state}, {biz.country}",
         f"- Hours: {faqs._open_text()}. On Mondays, orders open at 2 PM.",
         f"- Order online: {SITE_URL}/menu",
         f"- Order on WhatsApp: {WHATSAPP_ORDER_DISPLAY} (send \"hi\")",

@@ -66,10 +66,12 @@ MONDAY_OPENS_AT = "14:00"
 
 # Store identity — single source of truth for FAQ answers and page copy, so
 # hours/address/phone can never drift between the visible page and schema.
-STORE_NAME = "Tulsi Foods"
-STORE_ADDRESS = "34 Murrays Gate Road, Alwarpet, Chennai 600018"
-STORE_PICKUP_LINE = "34 Murrays Gate Road, Alwarpet"
-STORE_WHATSAPP = "+91 99406 21800"  # Mom's own number (calls + WhatsApp)
+from .business import business as _biz  # noqa: E402
+
+STORE_NAME = _biz.name
+STORE_ADDRESS = _biz.address
+STORE_PICKUP_LINE = _biz.pickup_line
+STORE_WHATSAPP = _biz.phone_display  # the kitchen's own number (calls + WhatsApp)
 # The ordering bot's number (Cloud API): website "Order on WhatsApp" and
 # order-question links open a chat with it; it relays questions to Mom.
 WHATSAPP_ORDER_NUMBER = os.environ.get("WHATSAPP_ORDER_NUMBER", "919361394084")

@@ -29,6 +29,7 @@ Message dicts:
 from datetime import datetime, timedelta, timezone
 
 from .. import db, menu, orders
+from ..business import business
 from . import sessions
 
 SITE = "https://tulsifoods.app"
@@ -132,7 +133,7 @@ def _closed_now() -> bool:
         return False
 
 
-KITCHEN_PHONE = "99406 21800"
+KITCHEN_PHONE = business.phone_local
 CHECKOUT_STATES = {"type", "checkout_flow", "address", "location", "when", "payment", "confirm"}
 
 
@@ -537,7 +538,7 @@ def _summary(sess: dict) -> list[dict]:
     if ctx.get("order_type") == "delivery":
         lines.append(f"📍 {ctx.get('address', '')}")
     else:
-        lines.append("📍 Pickup: 34 Murrays Gate Road, Alwarpet")
+        lines.append(f"📍 Pickup: {business.pickup_line}")
     lines.append(f"🕒 {ctx.get('when')}")
     lines.append(f"💳 {'UPI' if ctx.get('payment') == 'UPI' else 'Cash'}")
     if ctx.get("note"):

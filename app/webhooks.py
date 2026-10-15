@@ -13,6 +13,7 @@ from fastapi import APIRouter, Header, HTTPException, Query, Request, Response
 from fastapi.responses import PlainTextResponse
 
 from .config import WHATSAPP_APP_SECRET, WHATSAPP_PHONE_ID, WHATSAPP_VERIFY_TOKEN, ADMIN_PHONE
+from .business import business
 from .whatsapp import client, conversation, sessions
 from .petpooja.config import PETPOOJA_REST_ID, PETPOOJA_WEBHOOK_TOKEN
 
@@ -172,7 +173,7 @@ def _customer_media(msg: dict) -> list[dict]:
     forward_media(msg["wa_id"], msg["profile_name"], media["type"], media["id"], media.get("caption"))
     if media["type"] == "audio":
         return [{"type": "text", "text": "Thanks! I've passed your voice note to the kitchen. "
-                 "If it's urgent, please call 99406 21800."}]
+                 f"If it's urgent, please call {business.phone_local}."}]
     return [{"type": "text", "text": "Thanks! I've sent this to the kitchen, they'll get back to you here."}]
 
 
