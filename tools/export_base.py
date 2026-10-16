@@ -25,7 +25,7 @@ REMOVE = [
     "data/menu.json", "data/petpooja_menu_raw.json", "data/updates.json",
     "data/whatsapp_catalog_sheet.txt", "scripts/build_menu.py", "scripts/merge_petpooja.py",
     "scripts/petpooja_test_orders.py", "scripts/make_catalog_cards.py", "scripts/whatsapp_repl.py",
-    "app/templates/bio.html", "tools",
+    "app/templates/bio.html", "tools", ".github",
 ]
 
 # (relative path, old text, new text); old must occur, every occurrence is replaced

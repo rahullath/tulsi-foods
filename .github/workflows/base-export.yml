@@ -1,0 +1,27 @@
+name: Base export
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Export the clean base (fails on any rule mismatch or identity leak)
+        run: python tools/export_base.py "$RUNNER_TEMP/base"
+      - name: Boot the export and smoke test it
+        working-directory: ${{ runner.temp }}/base
+        env:
+          ADMIN_TOKEN: ci-token
+        run: |
+          pip install -r requirements.txt
+          uvicorn app.main:app --port 8000 &
+          for i in $(seq 1 30); do curl -sf localhost:8000/ >/dev/null && break; sleep 1; done
+          python tests/smoke.py
